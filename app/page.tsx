@@ -9,6 +9,7 @@ import { Surface } from "@/src/components/ui/Surface";
 import { ListBox } from "@heroui/react/list-box";
 import { Select } from "@heroui/react/select";
 import { Switch } from "@heroui/react/switch";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 const themes = ["chartreuse", "copper", "plum", "forest"] as const;
@@ -36,21 +37,56 @@ const sections = [
   { id: "progress", label: "Progress" },
   { id: "color-swatches", label: "Color Swatches" },
   { id: "surface", label: "Surface" },
+  { id: "glass-material", label: "Glass Material" },
 ];
 
 const chipColors = ["default", "accent", "success", "warning", "danger"] as const;
 
+function ShowcaseShell({
+  children,
+  isGlass,
+}: {
+  children: ReactNode;
+  isGlass: boolean;
+}) {
+  const className = "relative z-10 min-h-screen px-5 py-8 sm:px-8";
+
+  if (isGlass) {
+    return (
+      <Surface
+        className={`${className} fixed inset-0 overflow-y-auto`}
+        material="glass"
+      >
+        {children}
+      </Surface>
+    );
+  }
+
+  return <div className={className}>{children}</div>;
+}
+
 export default function Home() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>("chartreuse");
   const [selectedMode, setSelectedMode] = useState<ThemeMode>("light");
+  const [isViewportGlass, setIsViewportGlass] = useState(false);
 
   return (
     <main
-      className={`${selectedMode} min-h-screen bg-background px-5 py-8 text-foreground sm:px-8`}
+      className={`${selectedMode} relative min-h-screen overflow-hidden bg-background text-foreground`}
       data-mode={selectedMode}
       data-theme={selectedTheme}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 overflow-hidden"
+      >
+        <div className="absolute -left-24 top-16 size-72 rounded-full bg-accent opacity-40" />
+        <div className="absolute right-[8%] top-[28%] size-56 rotate-12 rounded-[30%] bg-warning opacity-35" />
+        <div className="absolute -bottom-24 left-[36%] size-80 rounded-full bg-success opacity-30" />
+      </div>
+
+      <ShowcaseShell isGlass={isViewportGlass}>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <header className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-medium text-muted">HeroUI design system</p>
@@ -94,7 +130,25 @@ export default function Home() {
                 Dark mode
               </Switch.Content>
             </Switch>
+
+            <Switch
+              isSelected={isViewportGlass}
+              onChange={setIsViewportGlass}
+            >
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+                Full viewport glass
+              </Switch.Content>
+            </Switch>
           </div>
+
+          <p aria-live="polite" className="text-xs text-muted">
+            {isViewportGlass
+              ? "One full-viewport filter owns the backdrop; descendant glass surfaces keep only their chrome."
+              : "Bounded glass surfaces own their backdrop filters independently."}
+          </p>
 
           <nav aria-label="Sections" className="flex flex-wrap gap-4 text-sm text-muted">
             {sections.map((section) => (
@@ -215,7 +269,67 @@ export default function Home() {
             </Surface>
           </div>
         </section>
-      </div>
+
+        <section id="glass-material" className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Glass Material</h2>
+            <p className="text-sm text-muted">
+              Opt-in Surface material with one filter owner per glass hierarchy.
+            </p>
+          </div>
+
+          <div className="relative overflow-hidden rounded-2xl border border-border p-6 sm:p-8">
+            <div
+              aria-hidden="true"
+              className="absolute -left-8 top-8 size-32 rounded-full bg-accent opacity-60"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute -right-8 bottom-4 size-40 rotate-12 rounded-[28%] bg-warning opacity-50"
+            />
+
+            <div className="relative grid gap-6 md:grid-cols-2">
+              <Surface
+                className="min-h-48 rounded-2xl p-6"
+                material="glass"
+              >
+                <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Bounded owner
+                </p>
+                <h3 className="mt-3 text-xl font-semibold">Reusable glass surface</h3>
+                <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
+                  The active theme surface token supplies the tint and ring while
+                  the shared material owns blur, saturation, and shadow.
+                </p>
+              </Surface>
+
+              <Surface
+                className="flex min-h-48 flex-col gap-4 rounded-2xl p-6"
+                material="glass"
+              >
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Nested hierarchy
+                  </p>
+                  <h3 className="mt-3 text-xl font-semibold">One backdrop filter</h3>
+                </div>
+                <Surface
+                  className="mt-auto rounded-xl p-4"
+                  material="glass"
+                  variant="secondary"
+                >
+                  <p className="text-sm font-medium">Chrome remains visible</p>
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    This child keeps tint, ring, and shadow, but its nested filter
+                    is suppressed.
+                  </p>
+                </Surface>
+              </Surface>
+            </div>
+          </div>
+        </section>
+        </div>
+      </ShowcaseShell>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@heroui/react/styles";
 @import "../src/styles/design-tokens.css";
+@import "../src/styles/glass-material.css";
 
 @theme inline {
   --color-background: var(--background);

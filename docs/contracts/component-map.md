@@ -130,12 +130,31 @@ File: `src/components/ui/Surface.tsx`
 
 ```ts
 type SurfaceVariant = "primary" | "secondary" | "elevated";
+type SurfaceMaterial = "solid" | "glass";
 
 interface SurfaceProps {
   variant?: SurfaceVariant;
+  material?: SurfaceMaterial;
   className?: string;
   children: React.ReactNode;
 }
 ```
 
-Maps to HeroUI `Surface` for layout panels and cards.
+Maps to HeroUI `Surface` for layout panels and cards. `material` defaults to
+`solid`, preserving the selected surface variant. The opt-in `glass` material
+uses HeroUI's transparent variant so solid component backgrounds cannot obscure
+the shared glass presentation.
+
+Glass tint and ring colors derive from the active theme's semantic `--surface`
+token, which represents the light or dark endpoint already present in each theme.
+The shared material owns the fixed blur, saturation, ring, and shadow values.
+
+Only `Surface` is currently allowed to opt into glass. Within a glass hierarchy,
+the outermost glass surface owns the backdrop filter. Descendant glass surfaces
+retain their tint, ring, and shadow but suppress their backdrop filter. This rule
+also permits a full-viewport glass surface without multiplying filters through
+its component tree. Keep the content behind a full-viewport owner static where
+possible, scroll inside the owner, and do not animate its blur or dimensions.
+
+Browsers without backdrop-filter support, and users requesting reduced
+transparency, receive an opaque `--surface` fallback.
