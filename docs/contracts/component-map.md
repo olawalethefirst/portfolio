@@ -61,6 +61,37 @@ interface SegmentControlProps {
 
 Maps only the compact HeroUI tabs navigation track using `Tabs.ListContainer`, `Tabs.List`, `Tabs.Tab`, `Tabs.Indicator`, and `Tabs.Separator`. It intentionally does not render `Tabs.Panel` or any tab body content.
 
+### More than one on a page
+
+HeroUI's selection indicator mispositions itself on every `Tabs` instance after
+the first on a page, offsetting it vertically by a cumulative 16 pixels per
+preceding instance until the user changes tabs. The defect is upstream and
+reproduces with raw HeroUI `Tabs`, so it is handled by convention rather than in
+this wrapper.
+
+Give every `SegmentControl` after the first on a page a `defaultValue` that
+matches none of its `items`. The documented sentinel is the string `"null"`:
+
+```tsx
+<SegmentControl defaultValue="overview" items={items} />
+<SegmentControl defaultValue="null" items={items} />
+<SegmentControl defaultValue="null" items={items} />
+```
+
+A default that matches nothing sidesteps the offset, and React Aria falls back to
+selecting the first tab, so the control still renders with a segment selected and
+its indicator correctly placed. From the user's first selection onward it behaves
+identically to any other control.
+
+Two consequences to design for. The fallback is internal to the tab state, so
+`onValueChange` does not fire for it and a consumer tracking the selection
+separately holds no value until the user picks one; controls needing their
+selection known at load should be controlled through `value` instead. And the
+sentinel must not collide with a real item value, which is why a
+reserved-looking string is preferred over an empty one. The exported
+`SEGMENT_CONTROL_NO_DEFAULT` constant carries it. See
+`docs/decisions/0002-segment-control-indicator-offset.md`.
+
 ## Progress
 
 File: `src/components/ui/Progress.tsx`
