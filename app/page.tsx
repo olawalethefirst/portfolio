@@ -2,18 +2,16 @@
 
 import { Button } from "@/src/components/ui/Button";
 import { Chip } from "@/src/components/ui/Chip";
-import { ColorSwatch } from "@/src/components/ui/ColorSwatch";
+import { ColorSwatchPicker } from "@/src/components/ui/ColorSwatchPicker";
 import { Progress } from "@/src/components/ui/Progress";
 import { SegmentControl } from "@/src/components/ui/SegmentControl";
 import { Surface } from "@/src/components/ui/Surface";
-import { ListBox } from "@heroui/react/list-box";
-import { Select } from "@heroui/react/select";
 import { Switch } from "@heroui/react/switch";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
+import type { ThemeName } from "./theme-accents";
 
-const themes = ["chartreuse", "copper", "plum", "forest"] as const;
-type ThemeName = (typeof themes)[number];
 type ThemeMode = "light" | "dark";
 
 const buttonVariants = [
@@ -35,7 +33,6 @@ const sections = [
   { id: "segment-control", label: "Segment Control" },
   { id: "chips", label: "Chips" },
   { id: "progress", label: "Progress" },
-  { id: "color-swatches", label: "Color Swatches" },
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
 ];
@@ -69,6 +66,9 @@ export default function Home() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>("chartreuse");
   const [selectedMode, setSelectedMode] = useState<ThemeMode>("light");
   const [isViewportGlass, setIsViewportGlass] = useState(false);
+  // Null until a document exists, so the first render shows a placeholder of
+  // matching dimensions rather than swatches with no colour.
+  const accents = useThemeAccents();
 
   return (
     <main
@@ -99,25 +99,27 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <Select
-              aria-label="Theme"
-              onChange={(key) => key != null && setSelectedTheme(String(key) as ThemeName)}
-              value={selectedTheme}
-            >
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover>
-                <ListBox>
-                  {themes.map((theme) => (
-                    <ListBox.Item key={theme} id={theme}>
-                      {formatOptionLabel(theme)}
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
+            {accents ? (
+              <ColorSwatchPicker
+                aria-label="Theme"
+                items={themes.map((theme) => ({
+                  color: accents[theme],
+                  label: formatOptionLabel(theme),
+                }))}
+                onValueChange={(hex) => {
+                  const theme = themeForAccent(accents, hex);
+
+                  if (theme) setSelectedTheme(theme);
+                }}
+                value={accents[selectedTheme]}
+              />
+            ) : (
+              <div aria-hidden="true" className="flex flex-wrap items-center gap-2">
+                {themes.map((theme) => (
+                  <span key={theme} className="size-8 rounded-2xl bg-default" />
+                ))}
+              </div>
+            )}
 
             <Switch
               isSelected={selectedMode === "dark"}
@@ -236,21 +238,6 @@ export default function Home() {
           </Surface>
         </section>
 
-        <section id="color-swatches" className="flex flex-col gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">Color Swatches</h2>
-            <p className="text-sm text-muted">
-              Token-referenced and literal color samples.
-            </p>
-          </div>
-          <Surface className="flex flex-wrap items-center gap-4 rounded-xl border border-border p-4">
-            <ColorSwatch color="var(--accent)" colorName="Accent" isSelected />
-            <ColorSwatch color="var(--accent-soft)" colorName="Accent soft" />
-            <ColorSwatch color="var(--surface)" colorName="Surface" shape="square" />
-            <ColorSwatch color="var(--foreground)" colorName="Foreground" shape="square" />
-            <ColorSwatch color="#a1a1aa" colorName="Disabled" isDisabled />
-          </Surface>
-        </section>
 
         <section id="surface" className="flex flex-col gap-4">
           <div>

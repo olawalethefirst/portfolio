@@ -134,26 +134,63 @@ interface ChipProps {
 
 Maps to HeroUI `Chip`. Prop names and values pass straight through to the HeroUI primitive with no renaming.
 
-## ColorSwatch
+## ColorSwatchPicker
 
-File: `src/components/ui/ColorSwatch.tsx`
+File: `src/components/ui/ColorSwatchPicker.tsx`
 
 ```ts
-type ColorSwatchSize = "sm" | "md" | "lg";
-type ColorSwatchShape = "circle" | "square";
+type ColorSwatchPickerSize = "xs" | "sm" | "md" | "lg" | "xl";
+type ColorSwatchPickerShape = "circle" | "square";
+type ColorSwatchPickerLayout = "grid" | "stack";
 
-interface ColorSwatchProps {
+interface ColorSwatchPickerItem {
   color: string;
-  colorName?: string;
-  isSelected?: boolean;
+  label: string;
   isDisabled?: boolean;
-  size?: ColorSwatchSize;
-  shape?: ColorSwatchShape;
+}
+
+interface ColorSwatchPickerProps {
+  items: ColorSwatchPickerItem[];
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
+  size?: ColorSwatchPickerSize;
+  shape?: ColorSwatchPickerShape;
+  layout?: ColorSwatchPickerLayout;
   className?: string;
 }
 ```
 
-Maps to HeroUI `ColorSwatch`. `isSelected` and `isDisabled` are exposed as data state attributes. Concrete CSS colors use the native HeroUI primitive; CSS variable mappings such as `var(--accent)` use the same HeroUI swatch class contract because React Aria's color parser does not accept CSS variables.
+Maps to HeroUI `ColorSwatchPicker`. Replaces the former display-only
+`ColorSwatch`, which rendered `role="img"` and whose `isSelected` was decorative.
+
+`item.color` must be a color React Aria can parse: hex, `rgb()`, or `hsl()`. It
+cannot be `oklch()` or a `var(--token)` reference. React Aria's color model
+covers only hex, rgb, hsl, and hsb, and anything else throws `Invalid color
+value` at render. Design tokens are authored in `oklch()`, so a consumer wanting
+a token color must convert it first rather than passing the variable through;
+`app/theme-accents.ts` shows that pattern for the showcase themes.
+
+Passing a real color rather than a placeholder styled by CSS is required, not
+merely preferred, because HeroUI derives the selected checkmark's light-or-dark
+treatment from the parsed color's luminance.
+
+`item.label` is required and supplies both the accessible name, via the swatch's
+`colorName`, and the tooltip shown on hover and keyboard focus. Without it React
+Aria generates a description such as "dark vibrant lime", which is wrong for a
+swatch that stands for something rather than for a color.
+
+Divergences from the HeroUI primitive:
+
+- `shape` maps to HeroUI's `variant`, renamed because `variant` already means
+  visual style on `Button` and `SegmentControl`.
+- `onValueChange` receives a hex string rather than a React Aria `Color`,
+  matching `SegmentControl` and keeping React Aria types out of consumer code.
+- Items are a flat `items` array rather than compound children, also matching
+  `SegmentControl`.
+- The tooltip is a CSS-driven element rather than the HeroUI `Tooltip`, because
+  `Tooltip.Trigger` renders a focusable `role="button"` wrapper that is invalid
+  inside a listbox option. See the component source for the full reasoning.
 
 ## Surface
 
