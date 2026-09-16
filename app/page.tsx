@@ -5,6 +5,7 @@ import { Chip } from "@/src/components/ui/Chip";
 import { ColorSwatchPicker } from "@/src/components/ui/ColorSwatchPicker";
 import { Progress } from "@/src/components/ui/Progress";
 import { SegmentControl } from "@/src/components/ui/SegmentControl";
+import { Slider } from "@/src/components/ui/Slider";
 import { Surface } from "@/src/components/ui/Surface";
 import { Switch } from "@heroui/react/switch";
 import type { ReactNode } from "react";
@@ -33,6 +34,7 @@ const sections = [
   { id: "segment-control", label: "Segment Control" },
   { id: "chips", label: "Chips" },
   { id: "progress", label: "Progress" },
+  { id: "slider", label: "Slider" },
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
 ];
@@ -238,6 +240,23 @@ export default function Home() {
           </Surface>
         </section>
 
+        <section id="slider" className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Slider</h2>
+            <p className="text-sm text-muted">
+              Numeric input from 0.5 to 1.5 with its value beside the track.
+            </p>
+          </div>
+          <Surface className="rounded-xl border border-border p-4">
+            <Slider
+              aria-label="Scale"
+              defaultValue={1}
+              minValue={0.5}
+              maxValue={1.5}
+              step={0.1}
+            />
+          </Surface>
+        </section>
 
         <section id="surface" className="flex flex-col gap-4">
           <div>

@@ -114,6 +114,39 @@ interface ProgressProps {
 
 Maps to HeroUI `ProgressBar`. Values are clamped to the supplied `minValue` and `maxValue`; use `isIndeterminate` when progress has no fixed value. The `xs` size maps to HeroUI `sm` behavior with a thinner visual track.
 
+## Slider
+
+File: `src/components/ui/Slider.tsx`
+
+```ts
+interface SliderProps {
+  value?: number;
+  defaultValue?: number;
+  onValueChange?: (value: number) => void;
+  onValueChangeEnd?: (value: number) => void;
+  minValue?: number;
+  maxValue?: number;
+  step?: number;
+  formatOptions?: Intl.NumberFormatOptions;
+  isDisabled?: boolean;
+  className?: string;
+}
+```
+
+Maps to the compound HeroUI `Slider`. The wrapper is horizontal and
+single-value only: range arrays, vertical orientation, marks, and custom
+compound children are intentionally excluded.
+
+The visible rail and fill are two pixels high, matching `Progress size="xs"`,
+but they sit inside HeroUI's 20-pixel track so the pointer target does not shrink
+with the visual treatment. The current value is always rendered directly to the
+right of the track through `Slider.Output`; `formatOptions` controls that output
+using HeroUI's locale-aware number formatter.
+
+Consumers must provide an accessible name with `aria-label` or
+`aria-labelledby`. Value-change callbacks are renamed to match the local
+`SegmentControl` and `ColorSwatchPicker` convention.
+
 ## Chip
 
 File: `src/components/ui/Chip.tsx`
