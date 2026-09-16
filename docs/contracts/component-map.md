@@ -259,3 +259,28 @@ possible, scroll inside the owner, and do not animate its blur or dimensions.
 
 Browsers without backdrop-filter support, and users requesting reduced
 transparency, receive an opaque `--surface` fallback.
+
+## Switch
+
+File: `src/components/ui/Switch.tsx`
+
+```ts
+interface SwitchProps {
+  children: React.ReactNode;
+  isSelected?: boolean;
+  defaultSelected?: boolean;
+  onValueChange?: (isSelected: boolean) => void;
+  isDisabled?: boolean;
+  className?: string;
+}
+```
+
+Maps to HeroUI `Switch` with an owned `Content` / `Control` / `Thumb`
+composition. Consumers pass the visible label directly as `children` and use
+`onValueChange` for selection changes, matching the other local input wrappers.
+
+The standard control keeps HeroUI's 40px width and default 22px × 16px pill
+thumb, with a locally thinned 10px track. The component intentionally does not
+expose HeroUI's size variants or alternate compound children. State, disabled
+behavior, focus, form integration, and ARIA semantics remain delegated to
+HeroUI and React Aria.

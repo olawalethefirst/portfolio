@@ -7,7 +7,7 @@ import { Progress } from "@/src/components/ui/Progress";
 import { SegmentControl } from "@/src/components/ui/SegmentControl";
 import { Slider } from "@/src/components/ui/Slider";
 import { Surface } from "@/src/components/ui/Surface";
-import { Switch } from "@heroui/react/switch";
+import { Switch } from "@/src/components/ui/Switch";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
@@ -125,26 +125,18 @@ export default function Home() {
 
             <Switch
               isSelected={selectedMode === "dark"}
-              onChange={(isDark) => setSelectedMode(isDark ? "dark" : "light")}
+              onValueChange={(isDark) =>
+                setSelectedMode(isDark ? "dark" : "light")
+              }
             >
-              <Switch.Content>
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
-                Dark mode
-              </Switch.Content>
+              Dark mode
             </Switch>
 
             <Switch
               isSelected={isViewportGlass}
-              onChange={setIsViewportGlass}
+              onValueChange={setIsViewportGlass}
             >
-              <Switch.Content>
-                <Switch.Control>
-                  <Switch.Thumb />
-                </Switch.Control>
-                Full viewport glass
-              </Switch.Content>
+              Full viewport glass
             </Switch>
           </div>
 
