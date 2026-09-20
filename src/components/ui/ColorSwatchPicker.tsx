@@ -59,7 +59,7 @@ export interface ColorSwatchPickerProps
    * Swatch shape.
    *
    * Maps to HeroUI's `variant`. It is renamed because `variant` already means
-   * visual style on `Button` and `SegmentControl`, so reusing it for
+   * visual style on `Button` and `Tabs`, so reusing it for
    * circle-versus-square would collide with an established meaning in this
    * design system.
    */

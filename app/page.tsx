@@ -4,16 +4,16 @@ import { Button } from "@/src/components/ui/Button";
 import { Chip } from "@/src/components/ui/Chip";
 import { ColorSwatchPicker } from "@/src/components/ui/ColorSwatchPicker";
 import { Progress } from "@/src/components/ui/Progress";
-import { SegmentControl } from "@/src/components/ui/SegmentControl";
 import { Slider } from "@/src/components/ui/Slider";
 import { Surface } from "@/src/components/ui/Surface";
 import { Switch } from "@/src/components/ui/Switch";
+import { Tabs } from "@/src/components/ui/Tabs";
+import { NavigationPanel } from "@/src/components/ui/navigation-panel";
+import type { ThemeMode } from "@/src/components/ui/navigation-panel";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
 import type { ThemeName } from "./theme-accents";
-
-type ThemeMode = "light" | "dark";
 
 const buttonVariants = [
   "primary",
@@ -31,12 +31,20 @@ function formatOptionLabel(value: string) {
 
 const sections = [
   { id: "buttons", label: "Buttons" },
-  { id: "segment-control", label: "Segment Control" },
+  { id: "tabs", label: "Tabs" },
   { id: "chips", label: "Chips" },
   { id: "progress", label: "Progress" },
   { id: "slider", label: "Slider" },
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
+];
+
+const navigationPanelItems = [
+  { href: "#buttons", label: "Buttons" },
+  { href: "#tabs", label: "Tabs" },
+  { href: "#chips", label: "Chips" },
+  { href: "#progress", label: "Progress" },
+  { href: "https://lucide.dev", label: "Lucide", isExternal: true },
 ];
 
 const chipColors = ["default", "accent", "success", "warning", "danger"] as const;
@@ -48,7 +56,8 @@ function ShowcaseShell({
   children: ReactNode;
   isGlass: boolean;
 }) {
-  const className = "relative z-10 min-h-screen px-5 py-8 sm:px-8";
+  const className =
+    "relative z-10 min-h-screen px-5 pt-8 pb-32 sm:px-8";
 
   if (isGlass) {
     return (
@@ -68,9 +77,20 @@ export default function Home() {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>("chartreuse");
   const [selectedMode, setSelectedMode] = useState<ThemeMode>("light");
   const [isViewportGlass, setIsViewportGlass] = useState(false);
+  const [fontScale, setFontScale] = useState(1);
   // Null until a document exists, so the first render shows a placeholder of
   // matching dimensions rather than swatches with no colour.
   const accents = useThemeAccents();
+
+  useEffect(() => {
+    const previousFontSize = document.documentElement.style.fontSize;
+
+    document.documentElement.style.fontSize = `${fontScale * 100}%`;
+
+    return () => {
+      document.documentElement.style.fontSize = previousFontSize;
+    };
+  }, [fontScale]);
 
   return (
     <main
@@ -138,6 +158,7 @@ export default function Home() {
             >
               Full viewport glass
             </Switch>
+
           </div>
 
           <p aria-live="polite" className="text-xs text-muted">
@@ -175,23 +196,43 @@ export default function Home() {
           </Surface>
         </section>
 
-        <section id="segment-control" className="flex flex-col gap-4">
+        <section id="tabs" className="flex flex-col gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Segment Control</h2>
+            <h2 className="text-lg font-semibold">Tabs</h2>
             <p className="text-sm text-muted">
-              Compact tab navigation with disabled-item support.
+              Compact tab navigation with matching content panels.
             </p>
           </div>
           <Surface className="rounded-xl border border-border p-4">
-            <SegmentControl
-              defaultValue="overview"
-              items={[
-                { value: "overview", label: "Overview" },
-                { value: "work", label: "Work" },
-                { value: "notes", label: "Notes" },
-                { value: "disabled", label: "Disabled", isDisabled: true },
-              ]}
-            />
+            <Tabs defaultSelectedKey="overview">
+              <Tabs.ListContainer>
+                <Tabs.List aria-label="Portfolio sections">
+                  <Tabs.Tab id="overview">
+                    <Tabs.Indicator />
+                    Overview
+                  </Tabs.Tab>
+                  <Tabs.Tab id="work">
+                    <Tabs.Separator />
+                    <Tabs.Indicator />
+                    Work
+                  </Tabs.Tab>
+                  <Tabs.Tab id="notes">
+                    <Tabs.Separator />
+                    <Tabs.Indicator />
+                    Notes
+                  </Tabs.Tab>
+                  <Tabs.Tab id="disabled" isDisabled>
+                    <Tabs.Separator />
+                    <Tabs.Indicator />
+                    Disabled
+                  </Tabs.Tab>
+                </Tabs.List>
+              </Tabs.ListContainer>
+              <Tabs.Panel id="overview">Overview panel content.</Tabs.Panel>
+              <Tabs.Panel id="work">Work panel content.</Tabs.Panel>
+              <Tabs.Panel id="notes">Notes panel content.</Tabs.Panel>
+              <Tabs.Panel id="disabled">Disabled panel content.</Tabs.Panel>
+            </Tabs>
           </Surface>
         </section>
 
@@ -328,6 +369,26 @@ export default function Home() {
         </section>
         </div>
       </ShowcaseShell>
+
+      <NavigationPanel
+        fontScale={fontScale}
+        navigationItems={navigationPanelItems}
+        onFontScaleChange={setFontScale}
+        onModeChange={setSelectedMode}
+        onThemeColorChange={(hex) => {
+          if (!accents) return;
+
+          const theme = themeForAccent(accents, hex);
+
+          if (theme) setSelectedTheme(theme);
+        }}
+        selectedMode={selectedMode}
+        selectedThemeColor={accents?.[selectedTheme]}
+        themeOptions={themes.map((theme) => ({
+          color: accents?.[theme],
+          label: formatOptionLabel(theme),
+        }))}
+      />
     </main>
   );
 }

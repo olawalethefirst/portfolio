@@ -26,6 +26,7 @@ interface ButtonProps {
   isDisabled?: boolean;
   startContent?: React.ReactNode;
   endContent?: React.ReactNode;
+  isIconOnly?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -33,33 +34,47 @@ interface ButtonProps {
 
 Maps to HeroUI `Button`. Local `isLoading` is rendered as a visible spinner and mapped to the native pending state.
 
-## SegmentControl
+`isIconOnly` passes straight through to HeroUI. Pass the icon as `children` rather
+than through `startContent`, and always supply an `aria-label`, because an
+icon-only button has no text to name it. HeroUI renders icon-only buttons as
+squares of 36, 40, or 44 pixels for `sm`, `md`, and `lg`, each narrowing by four
+pixels at the `md` breakpoint, so `size="lg"` meets the 44 pixel touch target on
+touch-sized viewports. The button radius is larger than half the side at every
+one of those sizes, so the browser clamps it and an icon-only button renders as a
+true circle without any extra styling. Icons inside a button are sized
+automatically.
 
-File: `src/components/ui/SegmentControl.tsx`
+## Tabs
 
-```ts
-type SegmentControlVariant = "primary" | "secondary";
+File: `src/components/ui/Tabs.tsx`
 
-interface SegmentControlItem {
-  value: string;
-  label: React.ReactNode;
-  isDisabled?: boolean;
-  href?: string;
-}
+Re-exports HeroUI v3's compound `Tabs` API and its public prop types through the
+local design-system boundary. Use HeroUI's native selection props:
+`selectedKey`, `defaultSelectedKey`, and `onSelectionChange`.
 
-interface SegmentControlProps {
-  items: SegmentControlItem[];
-  value?: string;
-  defaultValue?: string;
-  onValueChange?: (value: string) => void;
-  variant?: SegmentControlVariant;
-  className?: string;
-  listClassName?: string;
-  tabClassName?: string;
-}
+```tsx
+<Tabs defaultSelectedKey="overview">
+  <Tabs.ListContainer>
+    <Tabs.List aria-label="Sections">
+      <Tabs.Tab id="overview">
+        <Tabs.Indicator />
+        Overview
+      </Tabs.Tab>
+      <Tabs.Tab id="settings">
+        <Tabs.Separator />
+        <Tabs.Indicator />
+        Settings
+      </Tabs.Tab>
+    </Tabs.List>
+  </Tabs.ListContainer>
+  <Tabs.Panel id="overview">Overview content</Tabs.Panel>
+  <Tabs.Panel id="settings">Settings content</Tabs.Panel>
+</Tabs>
 ```
 
-Maps only the compact HeroUI tabs navigation track using `Tabs.ListContainer`, `Tabs.List`, `Tabs.Tab`, `Tabs.Indicator`, and `Tabs.Separator`. It intentionally does not render `Tabs.Panel` or any tab body content.
+Every content tab must have a `Tabs.Panel` whose `id` matches the tab's `id`.
+Panels may be omitted only for link navigation or when the tab controls content
+in another explicitly associated region. There is no local `renderPanel` API.
 
 ### More than one on a page
 
@@ -69,28 +84,29 @@ preceding instance until the user changes tabs. The defect is upstream and
 reproduces with raw HeroUI `Tabs`, so it is handled by convention rather than in
 this wrapper.
 
-Give every `SegmentControl` after the first on a page a `defaultValue` that
-matches none of its `items`. The documented sentinel is the string `"null"`:
+Give every uncontrolled `Tabs` instance after the first on a page a
+`defaultSelectedKey` that matches no tab id. The documented sentinel is the
+string `"null"`:
 
 ```tsx
-<SegmentControl defaultValue="overview" items={items} />
-<SegmentControl defaultValue="null" items={items} />
-<SegmentControl defaultValue="null" items={items} />
+<Tabs defaultSelectedKey="overview">...</Tabs>
+<Tabs defaultSelectedKey={TABS_NO_DEFAULT}>...</Tabs>
+<Tabs defaultSelectedKey={TABS_NO_DEFAULT}>...</Tabs>
 ```
 
 A default that matches nothing sidesteps the offset, and React Aria falls back to
-selecting the first tab, so the control still renders with a segment selected and
-its indicator correctly placed. From the user's first selection onward it behaves
-identically to any other control.
+selecting the first tab, so the control still renders with a tab selected and its
+indicator correctly placed. From the user's first selection onward it behaves
+identically to any other Tabs instance.
 
 Two consequences to design for. The fallback is internal to the tab state, so
-`onValueChange` does not fire for it and a consumer tracking the selection
+`onSelectionChange` does not fire for it and a consumer tracking the selection
 separately holds no value until the user picks one; controls needing their
-selection known at load should be controlled through `value` instead. And the
-sentinel must not collide with a real item value, which is why a
+selection known at load should be controlled through `selectedKey` instead. And
+the sentinel must not collide with a real tab id, which is why a
 reserved-looking string is preferred over an empty one. The exported
-`SEGMENT_CONTROL_NO_DEFAULT` constant carries it. See
-`docs/decisions/0002-segment-control-indicator-offset.md`.
+`TABS_NO_DEFAULT` constant carries it. See
+`docs/decisions/0002-tabs-indicator-offset.md`.
 
 ## Progress
 
@@ -145,7 +161,7 @@ using HeroUI's locale-aware number formatter.
 
 Consumers must provide an accessible name with `aria-label` or
 `aria-labelledby`. Value-change callbacks are renamed to match the local
-`SegmentControl` and `ColorSwatchPicker` convention.
+`ColorSwatchPicker` convention.
 
 ## Chip
 
@@ -216,11 +232,12 @@ swatch that stands for something rather than for a color.
 Divergences from the HeroUI primitive:
 
 - `shape` maps to HeroUI's `variant`, renamed because `variant` already means
-  visual style on `Button` and `SegmentControl`.
+  visual style on `Button` and `Tabs`.
 - `onValueChange` receives a hex string rather than a React Aria `Color`,
-  matching `SegmentControl` and keeping React Aria types out of consumer code.
-- Items are a flat `items` array rather than compound children, also matching
-  `SegmentControl`.
+  matching the local value-callback convention and keeping React Aria types out
+  of consumer code.
+- Items are a flat `items` array rather than compound children so each parsed
+  color stays paired with its accessible label.
 - The tooltip is a CSS-driven element rather than the HeroUI `Tooltip`, because
   `Tooltip.Trigger` renders a focusable `role="button"` wrapper that is invalid
   inside a listbox option. See the component source for the full reasoning.
@@ -284,3 +301,107 @@ thumb, with a locally thinned 10px track. The component intentionally does not
 expose HeroUI's size variants or alternate compound children. State, disabled
 behavior, focus, form integration, and ARIA semantics remain delegated to
 HeroUI and React Aria.
+
+## NavigationItem
+
+File: `src/components/ui/navigation-panel/NavigationItem.tsx`
+
+```ts
+interface NavigationItemProps {
+  label: React.ReactNode;
+  href: string;
+  isExternal?: boolean;
+  className?: string;
+}
+```
+
+A flat, full-width navigation row with its label on the left and an internal
+icon on the right. `isExternal` defaults to `false`: internal destinations show
+Lucide `ArrowRight`, while explicitly external destinations show Lucide
+`ArrowUpRight`. The distinction is explicit rather than inferred from `href`,
+because an absolute URL can still belong to the current application.
+
+The entire row is one native link and owns its hover, pressed, and focus-visible
+treatment. It has no radius or outer border; render multiple items inside one
+rounded, overflow-clipped container and use separators between them. Standard
+anchor props such as `target`, `rel`, and `onClick` pass through unchanged.
+
+## SettingsItem
+
+File: `src/components/ui/navigation-panel/SettingsItem.tsx`
+
+```ts
+interface SettingsItemProps {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  controlClassName?: string;
+}
+```
+
+A non-interactive flat row sharing `NavigationItem`'s height, padding, label
+typography, and trailing alignment. The label appears on the left and `children`
+provides one trailing control, such as `Slider`, `Switch`, or
+`ColorSwatchPicker`, on the right.
+
+The row and visible label deliberately do not activate or focus the control.
+The trailing control must therefore provide its own accessible name. Use an
+`aria-label` on `Slider` and `ColorSwatchPicker`; a compact `Switch` can receive
+an `aria-label` and visually hidden children. Like `NavigationItem`, this
+component has no radius or border because the shared container owns both.
+
+## NavPill
+
+File: `src/components/ui/navigation-panel/NavPill.tsx`
+
+```ts
+interface NavPillProps {
+  onMenuPress?: () => void;
+  onSettingsPress?: () => void;
+  menuLabel?: string;
+  settingsLabel?: string;
+  menuButtonRef?: React.Ref<HTMLButtonElement>;
+  settingsButtonRef?: React.Ref<HTMLButtonElement>;
+  panelId?: string;
+  isExpanded?: boolean;
+  className?: string;
+}
+```
+
+A floating navigation pill: a glass `Surface` with a full border radius wrapping
+two icon-only `Button`s in a horizontal row, a menu control on the left and a
+settings control on the right. It adds no layout or material CSS of its own; the
+shape, size, and glass presentation all come from the components it composes.
+
+Both controls use the `outline` button variant at the `lg` size, which is a 44
+pixel square on touch-sized viewports. Their transparent fill lets the glass
+behind them show through. The variant's default border uses `--border`, which is
+tuned for dividers and nearly disappears against glass, so the component
+strengthens it to `--muted` at half opacity — the theme's mid-tone in both light
+and dark modes. That keeps each control legible as a discrete target without
+reading as heavily as `--foreground` would.
+
+The icons are internal implementation detail and are not configurable. Their
+accessible names are, through `menuLabel` and `settingsLabel`, so the names are
+not hardcoded English. Both press handlers are optional, which lets the component
+render inert in a showcase.
+
+The optional button refs support focus restoration when the pill launches an
+overlay. When `panelId` is present, both controls expose `aria-controls` and
+`aria-haspopup="dialog"` for that panel. `isExpanded` defaults to `false` and,
+when `panelId` is present, supplies the matching `aria-expanded` value to both
+launchers. The consumer still owns expanded state, dismissal, and focus
+movement.
+
+`NavPill` does not position itself. Fixed or absolute placement is page-level
+layout glue supplied by the consumer through `className`, so the same component
+can be used anywhere rather than only as a viewport-fixed element.
+
+Placement interacts with the glass material and is worth stating explicitly.
+Within a glass hierarchy only the outermost glass surface owns the backdrop
+filter, and a nested glass surface keeps its tint, ring, and shadow while its own
+filter is suppressed. That tint is only a few percent opaque, which is fine over
+a static backdrop but not behind a fixed element that page content scrolls under:
+the text would remain sharp and legible straight through the pill. Render
+`NavPill` outside any full-viewport glass surface so that it owns its own
+backdrop filter, and give it something with contrast to refract.
