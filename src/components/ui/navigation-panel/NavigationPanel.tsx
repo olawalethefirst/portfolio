@@ -1,12 +1,11 @@
 "use client";
 
 import { X } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useTransform } from "motion/react";
 import { useCallback, useEffect, useId, useReducer, useRef } from "react";
 
 import { Button } from "../Button";
 import { Surface } from "../Surface";
-import { AnimatedAutoHeight } from "./AnimatedAutoHeight";
 import { AnimatedScaleSwap } from "./AnimatedScaleSwap";
 import { NavPill } from "./NavPill";
 import {
@@ -63,10 +62,29 @@ export function NavigationPanel({
     beginTransition,
     panelProgress,
     progress,
-    shouldReduceMotion,
     visualPhase,
   } = useNavigationPanelMotion(isOpen);
   const isPanelInteractive = isOpen && visualPhase === "open";
+  /**
+   * The panel is hinged at its bottom edge, which the wrapper below pins with
+   * `bottom-[calc(100%+0.75rem)]`. The reveal must not fight that pin.
+   *
+   * A size animation — `height`, or the `0fr -> 1fr` grid trick — cannot express
+   * the hinge, because it pins nothing on its own: whichever edge stays put is
+   * whatever layout already fixed, and normal flow fixes the *top* of the
+   * content. That leaves the box growing upward while the card inside it slides
+   * upward too, which reads as expanding from the centre. Clipping instead
+   * leaves the card fully laid out and motionless and moves only the visible
+   * cut, so every edge is pinned for free.
+   *
+   * The radius matches `rounded-2xl` on the Surface in NavigationPanelContent
+   * so the revealed strip keeps the card's corners rather than showing a square
+   * cut. Keep the two in sync.
+   */
+  const clipPath = useTransform(
+    panelProgress,
+    (value) => `inset(${(1 - value) * 100}% 0 0 0 round 1rem)`,
+  );
   const activeControl =
     visualPhase === "closed"
       ? "primary"
@@ -137,32 +155,21 @@ export function NavigationPanel({
         inert={!isPanelInteractive || undefined}
         role={isOpen ? "dialog" : undefined}
       >
-        <AnimatedAutoHeight progress={panelProgress}>
-          <motion.div
-            layout={shouldReduceMotion ? false : "size"}
-            style={{ transformOrigin: "bottom center" }}
-            transition={{
-              layout: {
-                duration: 0.24,
-                ease: [0.22, 1, 0.36, 1],
-              },
-            }}
-          >
-            <NavigationPanelContent
-              fontScale={fontScale}
-              navigationItems={navigationItems}
-              onFontScaleChange={onFontScaleChange}
-              onModeChange={onModeChange}
-              onNavigate={() => closePanel(false)}
-              onThemeColorChange={onThemeColorChange}
-              onViewChange={(view) => dispatch({ type: "select", view })}
-              selectedMode={selectedMode}
-              selectedThemeColor={selectedThemeColor}
-              themeOptions={themeOptions}
-              view={panelState.view}
-            />
-          </motion.div>
-        </AnimatedAutoHeight>
+        <motion.div style={{ clipPath }}>
+          <NavigationPanelContent
+            fontScale={fontScale}
+            navigationItems={navigationItems}
+            onFontScaleChange={onFontScaleChange}
+            onModeChange={onModeChange}
+            onNavigate={() => closePanel(false)}
+            onThemeColorChange={onThemeColorChange}
+            onViewChange={(view) => dispatch({ type: "select", view })}
+            selectedMode={selectedMode}
+            selectedThemeColor={selectedThemeColor}
+            themeOptions={themeOptions}
+            view={panelState.view}
+          />
+        </motion.div>
       </div>
 
       <AnimatedScaleSwap

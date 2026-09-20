@@ -9,13 +9,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 export type NavigationPanelVisualPhase = "closed" | "transitioning" | "open";
 
 const openingTransition = {
-  duration: 0.36,
+  duration: 0.15,
   ease: [0.22, 1, 0.36, 1] as const,
   type: "tween" as const,
 };
 
 const closingTransition = {
-  duration: 0.36,
+  duration: 0.15,
   ease: [0.65, 0, 0.35, 1] as const,
   type: "tween" as const,
 };

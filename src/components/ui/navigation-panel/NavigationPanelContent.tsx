@@ -68,6 +68,19 @@ export function NavigationPanelContent({
     ? themeOptions
     : null;
 
+  /**
+   * The card's height is left to its content. The panel is hinged at its bottom
+   * edge by the wrapper in NavigationPanel, so a height change moves only the
+   * top edge — no animation is applied on tab change, and the resize is
+   * instant by design.
+   *
+   * Do not reach for Motion's `layout` prop to smooth this. It animates size
+   * with `scaleY`, which stretched the tab bar between 21px and 48px against
+   * its natural 32px, and its documented remedy — giving direct children
+   * `layout` so they counter-scale — cannot work here, because React Aria
+   * unmounts the inactive tab panel and the body is a fresh element on every
+   * switch with no previous box to correct against.
+   */
   return (
     <Surface
       className="flex max-h-[min(70dvh,36rem)] flex-col overflow-hidden rounded-2xl"
