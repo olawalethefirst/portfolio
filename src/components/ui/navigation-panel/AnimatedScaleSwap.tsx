@@ -1,6 +1,6 @@
 import { motion, useTransform } from "motion/react";
 import type { MotionValue } from "motion/react";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 import { cn } from "../utils";
 
@@ -14,7 +14,12 @@ export interface AnimatedScaleSwapProps {
   className?: string;
 }
 
-export function AnimatedScaleSwap({
+/**
+ * Memoised because the panel re-renders around it while the reveal runs, and
+ * the swap itself only depends on `active`. This holds only while the caller
+ * keeps `primary`, `secondary`, and `progress` stable — `NavigationPanel` does.
+ */
+export const AnimatedScaleSwap = memo(function AnimatedScaleSwap({
   active,
   primary,
   progress,
@@ -37,7 +42,7 @@ export function AnimatedScaleSwap({
           active !== "primary" && "pointer-events-none",
         )}
         inert={active !== "primary" || undefined}
-        style={{ opacity: primaryVisibility, scale: primaryVisibility }}
+        style={{ scale: primaryVisibility }}
       >
         {primary}
       </motion.div>
@@ -49,10 +54,10 @@ export function AnimatedScaleSwap({
           active !== "secondary" && "pointer-events-none",
         )}
         inert={active !== "secondary" || undefined}
-        style={{ opacity: secondaryVisibility, scale: secondaryVisibility }}
+        style={{ scale: secondaryVisibility }}
       >
         {secondary}
       </motion.div>
     </div>
   );
-}
+});

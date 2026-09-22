@@ -1,6 +1,6 @@
 # 3. Drive navigation panel motion from one reversible progress value
 
-- Status: accepted
+- Status: superseded by [ADR 0004](0004-retain-navigation-panel-clip-reveal.md)
 - Date: 2026-09-20
 
 ## Context

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useMemo } from "react";
 import { ColorSwatchPicker } from "../ColorSwatchPicker";
 import { Slider } from "../Slider";
 import { Surface } from "../Surface";
@@ -36,10 +37,24 @@ interface NavigationPanelContentProps {
   onFontScaleChange: (scale: number) => void;
 }
 
-const panelTabs = [
-  { id: "navigation", label: "Navigation" },
-  { id: "settings", label: "Settings" },
-] as const;
+/*
+  Deliberately not `Tabs.Indicator`. That is a single shared element React Aria
+  moves between tabs by writing an inline `translate`, which `.tabs__indicator`
+  transitions — so the selected state slides. Fading it instead would mean
+  overriding that internal class, which
+  docs/decisions/0002-tabs-indicator-offset.md rules out.
+
+  Giving each tab its own underline keeps to the public API and removes the
+  translation entirely: nothing moves, the outgoing mark fades out and the
+  incoming one fades in. `.tabs__tab` is already `relative`, so this anchors to
+  the tab.
+*/
+const tabUnderline = (
+  <span
+    aria-hidden="true"
+    className="absolute inset-x-0 bottom-0 h-0.5 bg-accent opacity-0 transition-opacity duration-150 group-data-[selected=true]:opacity-100 motion-reduce:transition-none"
+  />
+);
 
 function isNavigationPanelView(value: string): value is NavigationPanelView {
   return value === "navigation" || value === "settings";
@@ -51,7 +66,92 @@ function hasColor(
   return typeof option.color === "string";
 }
 
-export function NavigationPanelContent({
+const ThemeSetting = memo(function ThemeSetting({
+  themeOptions,
+  selectedThemeColor,
+  onThemeColorChange,
+}: Pick<NavigationPanelContentProps,
+  "themeOptions" | "selectedThemeColor" | "onThemeColorChange"
+>) {
+  const themeSwatchItems = useMemo(
+    () =>
+      themeOptions.length > 0 && themeOptions.every(hasColor)
+        ? themeOptions.map(({ color, label }) => ({ color, label }))
+        : null,
+    [themeOptions],
+  );
+
+  const themeSwatchPlaceholders = useMemo(
+    () =>
+      themeOptions.map(({ label }) => (
+        <span key={label} className="size-6 rounded-full bg-default" />
+      )),
+    [themeOptions],
+  );
+
+  return (
+    <SettingsItem label="Theme">
+      {themeSwatchItems && selectedThemeColor ? (
+        <ColorSwatchPicker
+          aria-label="Theme"
+          items={themeSwatchItems}
+          onValueChange={onThemeColorChange}
+          size="xs"
+          value={selectedThemeColor}
+          className="overflow-hidden"
+        />
+      ) : (
+        <div aria-hidden="true" className="flex items-center gap-2">
+          {themeSwatchPlaceholders}
+        </div>
+      )}
+    </SettingsItem>
+  );
+});
+
+const ModeSetting = memo(function ModeSetting({
+  selectedMode,
+  onModeChange,
+}: Pick<NavigationPanelContentProps, "selectedMode" | "onModeChange">) {
+  return (
+    <SettingsItem label="Mode">
+      <Switch
+        aria-label="Dark mode"
+        isSelected={selectedMode === "dark"}
+        onValueChange={(isDark) => onModeChange(isDark ? "dark" : "light")}
+      >
+        <span className="sr-only">Dark mode</span>
+      </Switch>
+    </SettingsItem>
+  );
+});
+
+const FontSetting = memo(function FontSetting({
+  fontScale,
+  onFontScaleChange,
+}: Pick<NavigationPanelContentProps, "fontScale" | "onFontScaleChange">) {
+  return (
+    <SettingsItem label="Font" controlClassName="max-w-48">
+      <Slider
+        aria-label="Font scale"
+        formatOptions={{ style: "percent" }}
+        maxValue={1.25}
+        minValue={0.75}
+        onValueChange={onFontScaleChange}
+        step={0.05}
+        value={fontScale}
+      />
+    </SettingsItem>
+  );
+});
+
+/**
+ * Memoised because opening and closing the same view changes the surrounding
+ * panel's interactivity without changing what the body shows.
+ * This only pays off while `NavigationPanel` keeps every prop below stable, so
+ * the two have to stay in step.
+ */
+export const NavigationPanelContent = memo(function NavigationPanelContent({
   view,
   onViewChange,
   onNavigate,
@@ -64,9 +164,22 @@ export function NavigationPanelContent({
   fontScale,
   onFontScaleChange,
 }: NavigationPanelContentProps) {
-  const resolvedThemeOptions = themeOptions.length > 0 && themeOptions.every(hasColor)
-    ? themeOptions
-    : null;
+
+  const navigationLinks = useMemo(
+    () =>
+      navigationItems.map(({ href, label, isExternal }) => (
+        <NavigationItem
+          key={href}
+          href={href}
+          isExternal={isExternal}
+          label={label}
+          onClick={onNavigate}
+          rel={isExternal ? "noreferrer" : undefined}
+          target={isExternal ? "_blank" : undefined}
+        />
+      )),
+    [navigationItems, onNavigate],
+  );
 
   /**
    * The card's height is left to its content. The panel is hinged at its bottom
@@ -74,16 +187,13 @@ export function NavigationPanelContent({
    * top edge — no animation is applied on tab change, and the resize is
    * instant by design.
    *
-   * Do not reach for Motion's `layout` prop to smooth this. It animates size
-   * with `scaleY`, which stretched the tab bar between 21px and 48px against
-   * its natural 32px, and its documented remedy — giving direct children
-   * `layout` so they counter-scale — cannot work here, because React Aria
-   * unmounts the inactive tab panel and the body is a fresh element on every
-   * switch with no previous box to correct against.
+   * Keep both tab bodies mounted to avoid initializing their controls during
+   * opening; hide the inactive body so only the selected one contributes to the
+   * card's intrinsic height.
    */
   return (
     <Surface
-      className="flex max-h-[min(70dvh,36rem)] flex-col overflow-hidden rounded-2xl"
+      className="flex max-h-[min(70dvh,36rem)] flex-col overflow-hidden rounded-2xl inset-ring inset-ring-border"
       material="solid"
     >
       <Tabs
@@ -97,90 +207,53 @@ export function NavigationPanelContent({
       >
         <Tabs.ListContainer className="shrink-0 border-b border-separator p-3">
           <Tabs.List aria-label="Panel section" className="w-full">
-            {panelTabs.map(({ id, label }, index) => (
-              <Tabs.Tab key={id} className="flex-1" id={id}>
-                {index > 0 && <Tabs.Separator />}
-                <Tabs.Indicator />
-                {label}
-              </Tabs.Tab>
-            ))}
+            <Tabs.Tab className="group flex-1" id="navigation">
+              {tabUnderline}
+              Navigation
+            </Tabs.Tab>
+
+            <Tabs.Tab className="group flex-1" id="settings">
+              <Tabs.Separator />
+              {tabUnderline}
+              Settings
+            </Tabs.Tab>
           </Tabs.List>
         </Tabs.ListContainer>
 
         <Tabs.Panel
-          className="mt-0 min-h-0 overflow-y-auto overscroll-contain p-0 [scrollbar-gutter:stable]"
+          className="mt-0 min-h-0 overflow-y-auto p-0"
+          hidden={view !== "navigation"}
           id="navigation"
+          shouldForceMount
         >
           <nav aria-label="Primary" className="divide-y divide-separator">
-            {navigationItems.map(({ href, label, isExternal }) => (
-              <NavigationItem
-                key={href}
-                href={href}
-                isExternal={isExternal}
-                label={label}
-                onClick={onNavigate}
-                rel={isExternal ? "noreferrer" : undefined}
-                target={isExternal ? "_blank" : undefined}
-              />
-            ))}
+            {navigationLinks}
           </nav>
         </Tabs.Panel>
 
         <Tabs.Panel
-          className="mt-0 min-h-0 overflow-y-auto overscroll-contain p-0 [scrollbar-gutter:stable]"
+          className="mt-0 min-h-0 overflow-y-auto p-0"
+          hidden={view !== "settings"}
           id="settings"
+          shouldForceMount
         >
           <div className="divide-y divide-separator">
-            <SettingsItem label="Theme">
-              {resolvedThemeOptions && selectedThemeColor ? (
-                <ColorSwatchPicker
-                  aria-label="Theme"
-                  items={resolvedThemeOptions.map(({ color, label }) => ({
-                    color,
-                    label,
-                  }))}
-                  onValueChange={onThemeColorChange}
-                  size="xs"
-                  value={selectedThemeColor}
-                />
-              ) : (
-                <div aria-hidden="true" className="flex items-center gap-2">
-                  {themeOptions.map(({ label }) => (
-                    <span
-                      key={label}
-                      className="size-6 rounded-full bg-default"
-                    />
-                  ))}
-                </div>
-              )}
-            </SettingsItem>
-
-            <SettingsItem label="Mode">
-              <Switch
-                aria-label="Dark mode"
-                isSelected={selectedMode === "dark"}
-                onValueChange={(isDark) =>
-                  onModeChange(isDark ? "dark" : "light")
-                }
-              >
-                <span className="sr-only">Dark mode</span>
-              </Switch>
-            </SettingsItem>
-
-            <SettingsItem label="Font" controlClassName="max-w-48">
-              <Slider
-                aria-label="Font scale"
-                formatOptions={{ style: "percent" }}
-                maxValue={1.25}
-                minValue={0.75}
-                onValueChange={onFontScaleChange}
-                step={0.05}
-                value={fontScale}
-              />
-            </SettingsItem>
+            <ThemeSetting
+              themeOptions={themeOptions}
+              selectedThemeColor={selectedThemeColor}
+              onThemeColorChange={onThemeColorChange}
+            />
+            <ModeSetting
+              selectedMode={selectedMode}
+              onModeChange={onModeChange}
+            />
+            <FontSetting
+              fontScale={fontScale}
+              onFontScaleChange={onFontScaleChange}
+            />
           </div>
         </Tabs.Panel>
       </Tabs>
     </Surface>
   );
-}
+});
