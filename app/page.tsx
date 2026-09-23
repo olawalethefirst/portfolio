@@ -9,6 +9,7 @@ import { Surface } from "@/src/components/ui/Surface";
 import { Switch } from "@/src/components/ui/Switch";
 import { Tabs } from "@/src/components/ui/Tabs";
 import { NavigationPanel } from "@/src/components/ui/navigation-panel";
+import { HeroControlPanelPreview } from "@/src/components/ui/hero-control-panel";
 import type { ThemeMode } from "@/src/components/ui/navigation-panel";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ const sections = [
   { id: "slider", label: "Slider" },
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
+  { id: "hero-control-panel", label: "Hero Control Panel" },
 ];
 
 const navigationPanelItems = [
@@ -366,6 +368,16 @@ export default function Home() {
               </Surface>
             </div>
           </div>
+        </section>
+
+        <section id="hero-control-panel" className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Hero Control Panel</h2>
+            <p className="text-sm text-muted">
+              Fully controlled hero navigation with manual triggers for every state.
+            </p>
+          </div>
+          <HeroControlPanelPreview />
         </section>
         </div>
       </ShowcaseShell>
