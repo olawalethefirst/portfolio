@@ -7,4 +7,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 - `contracts/`: stable API, event, schema, and integration contracts when code or an authoritative schema is not already the better source.
 - `context/`: non-obvious subsystem context, operational assumptions, and known constraints.
 
+## Current subsystem context
+
+- [`context/prism-fiber-architecture.md`](context/prism-fiber-architecture.md):
+  scene graph, architectural layers, utility responsibilities, state and
+  transition ownership, and current deferred integration work.
+
 Create a directory only when its first real document is needed. Keep temporary plans, evidence, reviews, and handoffs in the root-level, locally ignored `local-workspace/`.
