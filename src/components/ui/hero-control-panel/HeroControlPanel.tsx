@@ -4,25 +4,24 @@ import { Pause, Play, SquareCenterlineDashedHorizontal } from "lucide-react";
 import type { MotionValue } from "motion/react";
 import { useCallback, useSyncExternalStore } from "react";
 
+import {
+  PRISM_STATES,
+  type PrismState,
+} from "../../prism-fiber/state/prism-state";
 import { Button } from "../Button";
 import { Progress } from "../Progress";
 import { Surface } from "../Surface";
 import { Tabs } from "../Tabs";
 import { cn } from "../utils";
-import styles from "./HeroControlPanel.module.css";
-
-const heroSegments = ["idea", "iterate", "solution"] as const;
-
-export type HeroSegment = (typeof heroSegments)[number];
 
 export interface HeroControlPanelProps {
-  activeSegment: HeroSegment;
+  activeSegment: PrismState;
   autoplayProgress: MotionValue<number>;
   isAutoplayRunning: boolean;
   hasEnteredZoom: boolean;
   hasRotationDrifted: boolean;
   isVisible: boolean;
-  onSegmentSelect: (segment: HeroSegment) => void;
+  onSegmentSelect: (segment: PrismState) => void;
   onAutoplayToggle: () => void;
   onRecentre: () => void;
   className?: string;
@@ -33,8 +32,8 @@ interface MotionProgressProps {
   isAutoplayRunning: boolean;
 }
 
-function isHeroSegment(value: string): value is HeroSegment {
-  return heroSegments.some((segment) => segment === value);
+function isPrismState(value: string): value is PrismState {
+  return PRISM_STATES.some((state) => state === value);
 }
 
 function MotionProgress({
@@ -57,7 +56,6 @@ function MotionProgress({
   return (
     <Progress
       aria-label="Autoplay progress"
-      className={styles.progress}
       maxValue={100}
       minValue={0}
       size="xs"
@@ -94,7 +92,7 @@ export function HeroControlPanel({
     <Surface
       aria-label="Hero controls"
       className={cn(
-        "flex w-full max-w-sm flex-col gap-5 rounded-3xl p-4 sm:p-5",
+        "flex w-full max-w-sm flex-col gap-1 rounded-3xl p-4 sm:p-5",
         className,
       )}
       material="glass"
@@ -102,7 +100,7 @@ export function HeroControlPanel({
       <Tabs
         onSelectionChange={(key) => {
           const nextSegment = String(key);
-          if (isHeroSegment(nextSegment)) onSegmentSelect(nextSegment);
+          if (isPrismState(nextSegment)) onSegmentSelect(nextSegment);
         }}
         selectedKey={activeSegment}
         variant="secondary"
@@ -111,7 +109,7 @@ export function HeroControlPanel({
           aria-label="Hero phase"
           className="w-full rounded-3xl bg-default"
         >
-          {heroSegments.map((segment, index) => (
+          {PRISM_STATES.map((segment, index) => (
             <Tabs.Tab className="group capitalize" id={segment} key={segment}>
               {index > 0 ? <Tabs.Separator /> : null}
               <span
@@ -143,8 +141,8 @@ export function HeroControlPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Button fullWidth>Explore</Button>
-        <Button fullWidth variant="secondary">
+        <Button size="sm" fullWidth>Explore</Button>
+        <Button size="sm" fullWidth variant="secondary">
           Hire
         </Button>
       </div>

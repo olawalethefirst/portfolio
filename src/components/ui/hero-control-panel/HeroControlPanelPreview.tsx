@@ -1,56 +1,25 @@
 "use client";
 
-import { animate, useMotionValue, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
+import { usePrismAutoplay } from "../../prism-fiber/ui/usePrismAutoplay";
 import { Surface } from "../Surface";
 import { Switch } from "../Switch";
 import { HeroControlPanel } from "./HeroControlPanel";
-import type { HeroSegment } from "./HeroControlPanel";
-
-const previewSegments: readonly HeroSegment[] = [
-  "idea",
-  "iterate",
-  "solution",
-];
-
-function getNextSegment(activeSegment: HeroSegment): HeroSegment {
-  const currentIndex = previewSegments.indexOf(activeSegment);
-  return previewSegments[(currentIndex + 1) % previewSegments.length];
-}
 
 export function HeroControlPanelPreview() {
-  const [activeSegment, setActiveSegment] = useState<HeroSegment>("idea");
-  const [isAutoplayRunning, setIsAutoplayRunning] = useState(true);
+  const {
+    state: activeSegment,
+    autoplayProgress,
+    isAutoplayRunning,
+    pauseAutoplay,
+    playAutoplay,
+    selectState,
+    toggleAutoplay,
+  } = usePrismAutoplay();
   const [hasEnteredZoom, setHasEnteredZoom] = useState(false);
   const [hasRotationDrifted, setHasRotationDrifted] = useState(false);
   const [isPanelVisible, setIsPanelVisible] = useState(true);
-  const autoplayProgress = useMotionValue(0);
-  const shouldReduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    if (!isAutoplayRunning) {
-      autoplayProgress.stop();
-      return;
-    }
-
-    autoplayProgress.jump(0);
-
-    if (shouldReduceMotion) {
-      autoplayProgress.jump(100);
-      return;
-    }
-
-    const playback = animate(autoplayProgress, 100, {
-      duration: 6,
-      ease: "linear",
-      onComplete: () => {
-        setActiveSegment((currentSegment) => getNextSegment(currentSegment));
-      },
-    });
-
-    return () => playback.stop();
-  }, [activeSegment, autoplayProgress, isAutoplayRunning, shouldReduceMotion]);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -71,12 +40,9 @@ export function HeroControlPanelPreview() {
           hasRotationDrifted={hasRotationDrifted}
           isAutoplayRunning={isAutoplayRunning}
           isVisible={isPanelVisible}
-          onAutoplayToggle={() => setIsAutoplayRunning((isRunning) => !isRunning)}
+          onAutoplayToggle={toggleAutoplay}
           onRecentre={() => setHasRotationDrifted(false)}
-          onSegmentSelect={(segment) => {
-            autoplayProgress.set(0);
-            setActiveSegment(segment);
-          }}
+          onSegmentSelect={selectState}
         />
         {!isPanelVisible ? (
           <p className="relative z-10 text-sm text-muted">Panel hidden</p>
@@ -95,7 +61,10 @@ export function HeroControlPanelPreview() {
           <Switch
             aria-label="Autoplay running"
             isSelected={isAutoplayRunning}
-            onValueChange={setIsAutoplayRunning}
+            onValueChange={(isRunning) => {
+              if (isRunning) playAutoplay();
+              else pauseAutoplay();
+            }}
           >
             Autoplay running
           </Switch>
