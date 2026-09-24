@@ -1,0 +1,73 @@
+import { render, screen } from "@testing-library/react";
+import { createRef, forwardRef, useImperativeHandle } from "react";
+import { describe, expect, it, vi } from "vitest";
+
+import type { PrismState } from "./state/prism-state";
+import type { PrismViewState } from "./stage/PrismStage";
+
+const stageRecentre = vi.hoisted(() => vi.fn());
+
+vi.mock("./stage/PrismStage", () => ({
+  PrismStage: forwardRef(function PrismStageMock(
+    {
+      className,
+      onViewStateChange,
+      state,
+    }: {
+      className?: string;
+      onViewStateChange?: (viewState: PrismViewState) => void;
+      state: PrismState;
+    },
+    ref,
+  ) {
+    useImperativeHandle(ref, () => ({ recentreView: stageRecentre }));
+
+    return (
+      <div className={className} data-state={state} data-testid="stage-state">
+        <button
+          onClick={() =>
+            onViewStateChange?.({
+              hasEnteredZoom: true,
+              hasRotationDrifted: true,
+            })
+          }
+        >
+          Explore
+        </button>
+      </div>
+    );
+  }),
+}));
+
+import { Prism, type PrismHandle } from "./Prism";
+
+describe("Prism public API", () => {
+  it("accepts a semantic state and delegates presentation to the Stage Layer", () => {
+    render(<Prism className="embedded" state="solution" />);
+
+    const stage = screen.getByTestId("stage-state");
+    expect(stage.getAttribute("data-state")).toBe("solution");
+    expect(stage.className).toBe("embedded");
+  });
+
+  it("forwards semantic view events and the recentre command", () => {
+    const onViewStateChange = vi.fn();
+    const ref = createRef<PrismHandle>();
+    render(
+      <Prism
+        ref={ref}
+        onViewStateChange={onViewStateChange}
+        state="idea"
+      />,
+    );
+
+    screen.getByRole("button", { name: "Explore" }).click();
+    expect(onViewStateChange).toHaveBeenCalledWith({
+      hasEnteredZoom: true,
+      hasRotationDrifted: true,
+    });
+
+    ref.current?.recentreView();
+    expect(stageRecentre).toHaveBeenCalled();
+  });
+});
