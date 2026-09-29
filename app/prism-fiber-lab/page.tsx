@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { PrismPresentation } from "@/src/components/prism-fiber/ui/PrismPresentation";
+import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
 
 export const metadata: Metadata = {
   title: "Prism Fiber Lab",
 };
 
 export default function PrismFiberLabPage() {
-  return <PrismPresentation />;
+  return <PrismHeroLayoutLab />;
 }
