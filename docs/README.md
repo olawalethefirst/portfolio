@@ -12,5 +12,11 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/prism-fiber-architecture.md`](context/prism-fiber-architecture.md):
   scene graph, architectural layers, utility responsibilities, state and
   transition ownership, and current deferred integration work.
+- [`context/responsive-prism-hero-spec.md`](context/responsive-prism-hero-spec.md):
+  broader responsive hero, Prism discovery, and glass-application handoff
+  contract.
+- [`context/responsive-prism-hero-layout-review.md`](context/responsive-prism-hero-layout-review.md):
+  authoritative compact content, unified responsive layout, controls, and
+  DOM-to-Three.js composition-frame decisions.
 
 Create a directory only when its first real document is needed. Keep temporary plans, evidence, reviews, and handoffs in the root-level, locally ignored `local-workspace/`.
