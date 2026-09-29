@@ -24,6 +24,7 @@ export interface HeroControlPanelProps {
   onSegmentSelect: (segment: PrismState) => void;
   onAutoplayToggle: () => void;
   onRecentre: () => void;
+  showPortfolioActions?: boolean;
   className?: string;
 }
 
@@ -60,6 +61,7 @@ function MotionProgress({
       minValue={0}
       size="xs"
       value={progress}
+      className="-translate-y-0.5"
     />
   );
 }
@@ -68,84 +70,112 @@ export function HeroControlPanel({
   activeSegment,
   autoplayProgress,
   isAutoplayRunning,
-  hasEnteredZoom,
-  hasRotationDrifted,
   isVisible,
   onSegmentSelect,
   onAutoplayToggle,
   onRecentre,
+  showPortfolioActions = true,
   className,
 }: HeroControlPanelProps) {
   if (!isVisible) return null;
 
-  const centerLabel = hasEnteredZoom
-    ? "Recentre view"
-    : `${isAutoplayRunning ? "Pause" : "Play"} autoplay`;
-  const centerAction = hasEnteredZoom ? onRecentre : onAutoplayToggle;
-  const CenterIcon = hasEnteredZoom
-    ? SquareCenterlineDashedHorizontal
-    : isAutoplayRunning
-      ? Pause
-      : Play;
+  const autoplayVerb = isAutoplayRunning ? "Pause" : "Play";
+  const autoplayLabel = `${autoplayVerb} autoplay`;
+  const AutoplayIcon = isAutoplayRunning ? Pause : Play;
 
-  return (
-    <Surface
-      aria-label="Hero controls"
-      className={cn(
-        "flex w-full max-w-sm flex-col gap-1 rounded-3xl p-4 sm:p-5",
-        className,
-      )}
-      material="glass"
+  const actionsRow = (
+    <div
+      className="grid grid-cols-2 gap-1"
+      data-control-row="actions"
     >
+      <Button
+        aria-label={autoplayLabel}
+        fullWidth
+        onPress={onAutoplayToggle}
+        size="sm"
+        startContent={<AutoplayIcon aria-hidden="true" className="size-4" />}
+        variant="outline"
+      >
+        {autoplayVerb}
+      </Button>
+      <Button
+        aria-label="Recentre view"
+        fullWidth
+        onPress={onRecentre}
+        size="sm"
+        startContent={
+          <SquareCenterlineDashedHorizontal
+            aria-hidden="true"
+            className="size-4"
+          />
+        }
+        variant="outline"
+      >
+        Recenter
+      </Button>
+    </div>
+  );
+
+  const progressRow = (
+    <div data-control-row="progress">
+      <MotionProgress
+        autoplayProgress={autoplayProgress}
+        isAutoplayRunning={isAutoplayRunning}
+      />
+    </div>
+  );
+
+  const statesRow = (
+    <div data-control-row="states">
       <Tabs
         onSelectionChange={(key) => {
           const nextSegment = String(key);
           if (isPrismState(nextSegment)) onSegmentSelect(nextSegment);
         }}
         selectedKey={activeSegment}
-        variant="secondary"
+        variant="primary"
       >
-        <Tabs.List
-          aria-label="Hero phase"
-          className="w-full rounded-3xl bg-default"
-        >
-          {PRISM_STATES.map((segment, index) => (
-            <Tabs.Tab className="group capitalize" id={segment} key={segment}>
-              {index > 0 ? <Tabs.Separator /> : null}
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-3xl bg-segment opacity-0 transition-opacity duration-150 group-data-[selected=true]:opacity-100 motion-reduce:transition-none"
-              />
-              <span className="relative">{segment}</span>
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
+        <Tabs.ListContainer className="w-full">
+          <Tabs.List aria-label="Hero phase" className="w-full">
+            {PRISM_STATES.map((segment, index) => (
+              <Tabs.Tab className="capitalize" id={segment} key={segment}>
+                {index > 0 ? <Tabs.Separator /> : null}
+                <Tabs.Indicator />
+                {segment}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs.ListContainer>
       </Tabs>
+    </div>
+  );
 
-      <div className="relative flex min-h-10 items-center">
-        <MotionProgress
-          autoplayProgress={autoplayProgress}
-          isAutoplayRunning={isAutoplayRunning}
-        />
-        <Button
-          aria-label={centerLabel}
-          className="absolute left-1/2 -translate-x-1/2 border-muted/50 bg-surface"
-          isDisabled={hasEnteredZoom && !hasRotationDrifted}
-          isIconOnly
-          onPress={centerAction}
-          size="sm"
-          variant="outline"
-        >
-          <CenterIcon aria-hidden="true" className="size-4" />
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Button size="sm" fullWidth>Explore</Button>
-        <Button size="sm" fullWidth variant="secondary">
-          Hire
-        </Button>
-      </div>
+  return (
+    <Surface
+      aria-label="Hero controls"
+      className={cn(
+        "flex w-full flex-col gap-1 rounded-3xl",
+        showPortfolioActions
+          ? "max-w-sm p-4 sm:p-5"
+          : "max-w-xs p-3 sm:max-w-sm",
+        className,
+      )}
+      data-testid="hero-controls"
+      material="glass"
+    >
+      {actionsRow}
+      {progressRow}
+      {statesRow}
+      {showPortfolioActions ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Button size="sm" fullWidth>
+            Explore
+          </Button>
+          <Button size="sm" fullWidth variant="secondary">
+            Hire
+          </Button>
+        </div>
+      ) : null}
     </Surface>
   );
 }
