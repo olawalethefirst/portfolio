@@ -40,7 +40,7 @@ import { PrismHeroLayout } from "./PrismHeroLayout";
 
 describe("PrismHeroLayout", () => {
   it("keeps one full-hero Canvas behind every responsive composition", () => {
-    const { rerender } = render(<PrismHeroLayout layout="two-column" />);
+    render(<PrismHeroLayout />);
 
     const hero = screen.getByTestId("prism-hero");
     const contentContainer = screen.getByTestId("prism-content-container");
@@ -74,23 +74,16 @@ describe("PrismHeroLayout", () => {
     expect(controls.className).not.toContain("md:landscape:row-start-2");
     expect(controls.className).not.toContain("md:landscape:right-8");
     expect(controls.className).not.toContain("lg:right-12");
-    expect(screen.getByText("Interactive Prism · drag to inspect").parentElement).toBe(
-      controls,
-    );
-    const twoColumnControlClasses = controls.className;
-
-    rerender(<PrismHeroLayout layout="three-column" />);
-
-    const threeColumnControls = screen.getByLabelText("Prism controls");
-    expect(threeColumnControls.className).toBe(twoColumnControlClasses);
-    expect(threeColumnControls.className).not.toContain("lg:col-start-3");
+    expect(controls.className).toContain("flex-col");
+    expect(controls.className).toContain("items-center");
+    expect(screen.queryByText("Interactive Prism · drag to inspect")).toBeNull();
     expect(
       hero.querySelector('[aria-hidden="true"]'),
     ).toBeNull();
   });
 
   it("presents one compact state-led editorial flow", () => {
-    render(<PrismHeroLayout layout="two-column" />);
+    render(<PrismHeroLayout />);
 
     expect(
       screen.getByRole("heading", { level: 1, name: "Ideas into products." }),
@@ -115,7 +108,7 @@ describe("PrismHeroLayout", () => {
   });
 
   it("uses one state for the Prism and editorial content", () => {
-    render(<PrismHeroLayout layout="two-column" />);
+    render(<PrismHeroLayout />);
 
     fireEvent.click(screen.getByRole("button", { name: "Solution" }));
 

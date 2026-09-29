@@ -88,16 +88,13 @@ describe("PrismHeroLayoutLab", () => {
     expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
   });
 
-  it("switches layout without remounting the Prism or losing semantic state", () => {
-    render(<PrismHeroLayoutLab />);
+  it("retains the Prism instance and semantic state through ordinary rerenders", () => {
+    const { rerender } = render(<PrismHeroLayoutLab />);
 
     fireEvent.click(screen.getByRole("button", { name: "Prism marker 0" }));
     fireEvent.click(screen.getByRole("button", { name: "Solution" }));
-    fireEvent.click(screen.getByRole("button", { name: "Three column" }));
+    rerender(<PrismHeroLayoutLab />);
 
-    expect(screen.getByTestId("prism-hero").getAttribute("data-layout")).toBe(
-      "three-column",
-    );
     expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
       "solution",
     );
@@ -106,11 +103,8 @@ describe("PrismHeroLayoutLab", () => {
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Prism marker 1" })).toBeTruthy();
     expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
-    expect(
-      screen.getByRole("button", { name: "Three column" }).getAttribute(
-        "aria-pressed",
-      ),
-    ).toBe("true");
+    expect(screen.queryByRole("button", { name: "Two column" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Three column" })).toBeNull();
   });
 
   it("retains manual-view suspension and recentre behavior", () => {
