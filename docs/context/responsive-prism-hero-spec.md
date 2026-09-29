@@ -142,7 +142,6 @@ Stable content does not change with Prism state:
 - end-to-end product-delivery headline;
 - supporting description where the breakpoint permits it;
 - primary and secondary calls to action where the breakpoint permits them;
-- concise interaction guidance where the breakpoint permits it;
 - subtle scroll cue.
 
 There is no conventional page header in the hero.
@@ -179,7 +178,7 @@ The UI-owned semantic `PrismState` drives both the narrative and the existing
 |---|---|
 | Phone portrait | identity, short positioning, Prism, compact state control, primary CTA, scroll cue |
 | Short phone landscape | compact identity and primary CTA, Prism, condensed state control, scroll cue |
-| Tablet portrait | phone core plus supporting description, secondary CTA, and interaction guidance |
+| Tablet portrait | phone core plus supporting description and secondary CTA |
 | Tablet landscape | tablet content in an asymmetric split composition |
 | Desktop | stable hero content plus active-state process narrative and bookended stage controls |
 | Wide desktop | same information as desktop with more breathing room; no extra content solely to fill space |
@@ -253,9 +252,8 @@ Requirements:
 
 ### Tablet portrait: expanded three-zone stack
 
-The phone stack gains supporting description, secondary CTA, and clearer
-interaction guidance. The Prism remains the dominant middle region and controls
-remain combined beneath it.
+The phone stack gains supporting description and a secondary CTA. The Prism
+remains the dominant middle region and controls remain combined beneath it.
 
 ### Tablet landscape: asymmetric split
 
@@ -375,6 +373,9 @@ Stage controls contain only:
 - recenter action after camera interaction.
 
 They do not contain explanatory state copy or portfolio calls to action.
+Direct rotation has no instructional label; it is deliberately discovered
+through manipulation, while the named state controls remain the explicit
+non-drag path through every meaningful Prism state.
 
 ### Combined compact controls
 
