@@ -7,7 +7,9 @@ gives phone a full-viewport Canvas, top/bottom HTML overlays, and a measured
 `PrismHomeFrame` derived from the actual hero and control boundaries. Stage
 framing owns initial placement and recentering. The lab now presents only the
 approved asymmetric composition. Scroll-driven zoom remains deferred until its
-activation behavior is approved.
+activation behavior is approved. Sampled-view semantic rotation and
+shortest-path interpolation are implemented and automated checks pass; visual
+confirmation after manual orbit remains part of the human approval checkpoint.
 
 Authoritative layout review:
 
@@ -108,6 +110,29 @@ This plan stops after responsive visual approval. Scroll discovery, application
 handoff, ambient mode, and conditional navigation remain deferred to a new
 approved plan based on the accepted geometry.
 
+### 7. Semantic rotation uses a sampled view frame
+
+The Prism's semantic Y angles remain canonical scene values owned by
+`PRISM_STATE_TARGETS`. `OrbitControls` continues to own an independent camera
+azimuth. When a new semantic state is requested, the Stage samples that
+azimuth once and resolves an internal presentation target from the canonical
+state angle plus the sampled view offset. The offset is held for that
+transition; the Prism does not continuously counter-rotate while the user is
+dragging.
+
+This is an internal Stage-to-Scene contract. Hero UI and public `Prism` props
+continue to exchange only `PrismState`, view-status flags, and semantic
+commands. They do not receive cameras, controls, radians, degrees, or Three.js
+objects. The rotation channel normalizes the resolved target onto the shortest
+angular path so crossing the OrbitControls wrap boundary cannot produce an
+unintended full turn.
+
+Manual orbiting pauses autoplay as it does now. A later named-state transition
+uses the latest sampled view frame, allowing the camera and Prism to keep
+independent axles while presenting the requested face coherently from the
+user's chosen viewpoint. Recenter remains an explicit command that restores
+the approved home camera rather than a prerequisite for state selection.
+
 ## Dependency graph
 
 ```text
@@ -118,6 +143,8 @@ compact stage controls ─────┘            │
                                          │              │
                                          │              ▼
                                          │       Stage optical fitting
+                                         │              │
+                                         │       sampled view frame
                                          │              │
                                          ▼              ▼
                                responsive breakpoint compositions
@@ -150,6 +177,11 @@ compact stage controls ─────┘            │
 4. Define and test normalized home-frame measurement from DOM geometry.
 5. Add stable scene bounds and Stage-owned optical fit/projection behavior, then
    integrate the measured frame through the Prism facade.
+5A. Define the internal state-plus-view rotation target and normalize the
+    rotation channel onto the shortest angular path.
+5B. Sample and hold the OrbitControls azimuth at the Stage boundary, then pass
+    the internal presentation target to the Scene without changing public
+    `Prism` props.
 
 #### Checkpoint 2: Framing proof
 
@@ -157,6 +189,8 @@ compact stage controls ─────┘            │
   clamped values.
 - The Prism fits both width and height without nonuniform scaling.
 - State transitions do not shift the optical center.
+- A named state presents its intended face after manual orbiting without
+  resetting the camera or continuously counter-rotating during drag.
 - Drag rotation, zoom state, damping, and recenter remain coherent.
 
 ### Phase 3: Compose every review breakpoint
@@ -221,6 +255,9 @@ perform browser inspection unless explicitly delegated.
 | Compact controls lose accessible target size | High | Separate visual density from a minimum 44 px hit area |
 | DOM measurement leaks camera implementation into UI | High | Pass only a normalized frame; Stage owns projection and fitting |
 | Framing fights OrbitControls | High | Use projection offset for placement and keep one camera/interaction owner |
+| Named states appear incorrect after manual orbit | High | Sample camera azimuth at the state-transition boundary and resolve one held presentation target |
+| Camera and Prism appear mechanically locked during drag | High | Never apply live counter-rotation; sample only when a semantic transition begins |
+| Azimuth wrap causes a long spin | High | Normalize the resolved target to the shortest angular delta before interpolation |
 | Animated assets exceed measured bounds | High | Capture conservative stable scene bounds once with explicit padding |
 | Phone Prism ignores the available live UI space | High | Derive the frame from the actual top-content and bottom-control boundaries |
 | UI boundaries leave no usable gap on short screens | High | Enforce a minimum physical frame, clamp it to the Canvas, and allow predictable natural overlap |
@@ -240,6 +277,8 @@ perform browser inspection unless explicitly delegated.
 
 - Preserve one semantic hero subtree and one Canvas.
 - Keep `PrismState` literal: Idea, Iterate, Solution.
+- Keep canonical state angles independent from the sampled camera reference
+  frame.
 - Use semantic tokens and existing UI primitives.
 - Keep HTML content readable without relying on the Canvas.
 - Preserve native document scrolling.

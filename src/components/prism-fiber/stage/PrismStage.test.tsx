@@ -70,8 +70,18 @@ vi.mock("@react-three/drei", () => ({
 }));
 
 vi.mock("../scene/PrismScene", () => ({
-  PrismScene: ({ state }: { state: PrismState }) => (
-    <div data-prism-state={state} data-testid="prism-scene" />
+  PrismScene: ({
+    state,
+    viewAzimuthYRad,
+  }: {
+    state: PrismState;
+    viewAzimuthYRad?: number;
+  }) => (
+    <div
+      data-prism-state={state}
+      data-testid="prism-scene"
+      data-view-azimuth-y-rad={viewAzimuthYRad}
+    />
   ),
 }));
 
@@ -158,5 +168,34 @@ describe("PrismStage", () => {
       hasEnteredZoom: true,
       hasRotationDrifted: false,
     });
+  });
+
+  it("samples and holds the camera azimuth when semantic state changes", () => {
+    const ref = createRef<PrismStageHandle>();
+    const { rerender } = render(<PrismStage ref={ref} state="idea" />);
+    const scene = screen.getByTestId("prism-scene");
+
+    expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0");
+
+    orbit.azimuth = 0.5;
+    fireEvent.click(screen.getByText("Start orbit"));
+    fireEvent.click(screen.getByText("Change orbit"));
+
+    expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0");
+
+    rerender(<PrismStage ref={ref} state="solution" />);
+
+    expect(scene.getAttribute("data-prism-state")).toBe("solution");
+    expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0.5");
+    expect(orbit.reset).not.toHaveBeenCalled();
+
+    orbit.azimuth = 0.75;
+    fireEvent.click(screen.getByText("Change orbit"));
+
+    expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0.5");
+
+    act(() => ref.current?.recentreView());
+
+    expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0");
   });
 });

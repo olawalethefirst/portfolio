@@ -33,7 +33,7 @@ export function PrismHeroLayout() {
     selectState,
     state,
     toggleAutoplay,
-  } = usePrismAutoplay();
+  } = usePrismAutoplay({ initialState: "solution" });
   const content = PRISM_HERO_CONTENT[state];
   const handleViewStateChange = useCallback(
     (nextViewState: PrismViewState) => {

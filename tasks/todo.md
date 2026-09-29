@@ -172,11 +172,89 @@ frame, stable scene bounds, and pure perspective-fit/projection calculations.
 
 **Estimated scope:** M.
 
+### Task 5A: Define view-relative rotation target resolution
+
+**Description:** Define the internal presentation-target contract and pure
+rotation math before connecting it to OrbitControls. A target combines the
+canonical state angle with one sampled view azimuth, while the rotation channel
+resolves the nearest equivalent angle for interruption-safe, shortest-path
+motion.
+
+**Acceptance criteria:**
+
+- [x] Zero view offset preserves the existing Idea, Iterate, and Solution
+  rotation targets exactly.
+- [x] Positive and negative offsets resolve deterministic absolute targets,
+  and equivalent angles across the wrap boundary take the shortest path.
+- [x] The offset affects only Prism rotation; figure pose and monitor opacity
+  continue to resolve exclusively from `PrismState`.
+
+**Verification:**
+
+- [x] Pure rotation tests cover zero offset, positive and negative azimuth,
+  wraparound, and shortest-path resolution.
+- [x] Transition tests prove that the view offset affects only the rotation
+  channel while pose and opacity still follow `PrismState`.
+- [x] `pnpm exec vitest run src/components/prism-fiber/motion/prism-rotation.test.ts src/components/prism-fiber/motion/prism-transition.test.ts`
+- [x] TypeScript, repository ESLint, and `git diff --check` pass.
+
+**Dependencies:** Task 5 and the existing semantic transition controller.
+
+**Files likely touched:**
+
+- `src/components/prism-fiber/motion/prism-rotation.ts`
+- `src/components/prism-fiber/motion/prism-rotation.test.ts`
+- `src/components/prism-fiber/motion/prism-transition.ts`
+- `src/components/prism-fiber/motion/prism-transition.test.ts`
+- `src/components/prism-fiber/scene/PrismStructure.ts`
+
+**Estimated scope:** M.
+
+### Task 5B: Sample and hold the current view frame
+
+**Description:** Connect the pure target contract to OrbitControls. When a new
+semantic state reaches the Stage, capture the current camera azimuth once,
+hold it with that state as one presentation request, and pass it to the Scene.
+Do not reset the camera or update the held offset continuously during drag.
+
+**Acceptance criteria:**
+
+- [ ] Selecting a different named state after orbiting presents that state's
+  intended face from the current camera position without recentering the camera.
+- [x] Camera azimuth is sampled once per semantic transition; the Prism does
+  not chase or counter-rotate continuously during a pointer gesture.
+- [x] Initial centered presentation, interrupted state transitions, autoplay
+  ordering, zoom, damping, and explicit recenter behavior remain unchanged.
+
+**Verification:**
+
+- [x] Stage tests reproduce the failure by orbiting, changing semantic state,
+  and asserting one held presentation target with the sampled azimuth.
+- [x] Scene tests prove initial snap and subsequent transitions receive the
+  combined state/view target without rebuilding the scene.
+- [x] `pnpm exec vitest run src/components/prism-fiber/stage/PrismStage.test.tsx src/components/prism-fiber/scene/PrismScene.test.tsx`
+- [x] TypeScript, repository ESLint, and `git diff --check` pass.
+- [ ] Human controller orbits left and right, selects every named state, and
+  confirms correct faces, harmonious motion, preserved camera position, and no
+  long spin near the azimuth wrap boundary.
+
+**Dependencies:** Task 5A.
+
+**Files likely touched:**
+
+- `src/components/prism-fiber/stage/PrismStage.tsx`
+- `src/components/prism-fiber/stage/PrismStage.test.tsx`
+- `src/components/prism-fiber/scene/PrismScene.tsx`
+- `src/components/prism-fiber/scene/PrismScene.test.tsx`
+
+**Estimated scope:** M.
+
 ## Checkpoint 2: Framing proof
 
-- [x] Tasks 4–5 automated checks pass.
+- [x] Tasks 4–5B automated checks pass.
 - [ ] The Prism remains proportionate and optically centered in every fixture.
-- [ ] The controller confirms camera interaction and recenter remain coherent.
+- [ ] The controller confirms named-state rotation, camera interaction, and
+  recenter remain coherent after orbiting.
 - [ ] Stop if layout placement requires raw camera values in UI code.
 
 ## Phase 3: Compose every review breakpoint
@@ -341,7 +419,7 @@ framing contract into durable documentation.
 - [ ] Full tests, TypeScript, repository ESLint, and `git diff --check` pass.
 - [ ] Human-controller results are recorded before the task is accepted.
 
-**Dependencies:** Tasks 6–8 and Checkpoint 2.
+**Dependencies:** Tasks 5B, 6–8, and Checkpoint 2.
 
 **Files likely touched:**
 
@@ -353,7 +431,7 @@ framing contract into durable documentation.
 
 ## Checkpoint 3: Layout approval
 
-- [ ] Tasks 6, 6A, and 7–9 are complete.
+- [ ] Tasks 5A–5B, 6, 6A, and 7–9 are complete.
 - [ ] All automated and human-owned checks pass.
 - [ ] The responsive layout and framing contract are approved.
 - [ ] Do not begin scroll, glass handoff, ambient mode, or navigation work under

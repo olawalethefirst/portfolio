@@ -82,7 +82,7 @@ describe("PrismHeroLayout", () => {
     ).toBeNull();
   });
 
-  it("presents one compact state-led editorial flow", () => {
+  it("begins the state-led editorial flow from the solution state", () => {
     render(<PrismHeroLayout />);
 
     expect(
@@ -90,9 +90,12 @@ describe("PrismHeroLayout", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Align user needs, business goals, and technical reality.",
+        "Deliver a coherent product built to evolve.",
       ),
     ).toBeTruthy();
+    expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
+      "solution",
+    );
     expect(
       screen.getByRole("link", { name: "Work" }).className,
     ).toContain("button--sm");

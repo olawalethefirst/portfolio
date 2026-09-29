@@ -1,4 +1,8 @@
 import type { MotionChannel } from "./motion-channel";
+import {
+  resolvePrismRotationYDeg,
+  type PrismPresentationTarget,
+} from "./prism-rotation";
 import { PRISM_STATE_TARGETS, type PrismState } from "../state/prism-state";
 
 export interface PrismMotionChannels {
@@ -8,21 +12,31 @@ export interface PrismMotionChannels {
 }
 
 export interface PrismTransitionController {
-  snap(state: PrismState): void;
-  transitionTo(state: PrismState): void;
+  snap(target: PrismPresentationTarget): void;
+  transitionTo(target: PrismPresentationTarget): void;
   advance(deltaMs: number): void;
   isTransitioning(): boolean;
 }
 
 function applyTargets(
   channels: PrismMotionChannels,
-  state: PrismState,
+  target: PrismPresentationTarget,
   method: "snap" | "beginTransition",
 ) {
-  const targets = PRISM_STATE_TARGETS[state];
-  channels.prismRotation[method](targets.prismRotationYDeg);
-  channels.figurePose[method](state);
-  channels.monitorOpacity[method](targets.monitorOpacity);
+  const stateTargets = PRISM_STATE_TARGETS[target.state];
+  channels.prismRotation[method](resolvePrismRotationYDeg(target));
+  channels.figurePose[method](target.state);
+  channels.monitorOpacity[method](stateTargets.monitorOpacity);
+}
+
+function targetsMatch(
+  current: PrismPresentationTarget | null,
+  next: PrismPresentationTarget,
+) {
+  return (
+    current?.state === next.state &&
+    current.viewAzimuthYRad === next.viewAzimuthYRad
+  );
 }
 
 export function createPrismTransitionController(
@@ -30,15 +44,17 @@ export function createPrismTransitionController(
   durationMs: number,
 ): PrismTransitionController {
   const duration = Math.max(0, durationMs);
-  let targetState: PrismState | null = null;
+  let currentTarget: PrismPresentationTarget | null = null;
   let elapsedMs = 0;
   let transitioning = false;
+  let animateSemanticChannels = false;
 
-  const snap = (state: PrismState) => {
-    applyTargets(channels, state, "snap");
-    targetState = state;
+  const snap = (target: PrismPresentationTarget) => {
+    applyTargets(channels, target, "snap");
+    currentTarget = target;
     elapsedMs = 0;
     transitioning = false;
+    animateSemanticChannels = false;
   };
 
   const advance = (deltaMs: number) => {
@@ -46,22 +62,33 @@ export function createPrismTransitionController(
     elapsedMs += Math.max(0, deltaMs);
     const progress = duration === 0 ? 1 : Math.min(1, elapsedMs / duration);
     channels.prismRotation.update(progress);
-    channels.figurePose.update(progress);
-    channels.monitorOpacity.update(progress);
+    if (animateSemanticChannels) {
+      channels.figurePose.update(progress);
+      channels.monitorOpacity.update(progress);
+    }
     if (progress === 1) transitioning = false;
   };
 
-  const transitionTo = (state: PrismState) => {
-    if (targetState === null) {
-      snap(state);
+  const transitionTo = (target: PrismPresentationTarget) => {
+    if (currentTarget === null) {
+      snap(target);
       return;
     }
-    if (state === targetState) return;
+    if (targetsMatch(currentTarget, target)) return;
 
-    applyTargets(channels, state, "beginTransition");
-    targetState = state;
+    const shouldRebaseSemanticChannels =
+      transitioning || currentTarget.state !== target.state;
+    if (shouldRebaseSemanticChannels) {
+      applyTargets(channels, target, "beginTransition");
+    } else {
+      channels.prismRotation.beginTransition(
+        resolvePrismRotationYDeg(target),
+      );
+    }
+    currentTarget = target;
     elapsedMs = 0;
     transitioning = true;
+    animateSemanticChannels = shouldRebaseSemanticChannels;
 
     if (duration === 0) advance(0);
   };

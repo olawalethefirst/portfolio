@@ -13,9 +13,10 @@ const TRANSITION_DURATION_MS = 700;
 
 export interface PrismSceneProps {
   state: PrismState;
+  viewAzimuthYRad?: number;
 }
 
-export function PrismScene({ state }: PrismSceneProps) {
+export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
   const board = useGLTF(`${ASSET_ROOT}/board.glb`).scene;
   const figure = useGLTF(`${ASSET_ROOT}/figure.glb`).scene;
   const notes = useGLTF(`${ASSET_ROOT}/notes.glb`).scene;
@@ -57,13 +58,14 @@ export function PrismScene({ state }: PrismSceneProps) {
   const initializedController = useRef<typeof transition | null>(null);
 
   useLayoutEffect(() => {
+    const target = { state, viewAzimuthYRad };
     if (initializedController.current !== transition) {
-      transition.snap(state);
+      transition.snap(target);
       initializedController.current = transition;
       return;
     }
-    transition.transitionTo(state);
-  }, [state, transition]);
+    transition.transitionTo(target);
+  }, [state, transition, viewAzimuthYRad]);
 
   useEffect(
     () => () => {

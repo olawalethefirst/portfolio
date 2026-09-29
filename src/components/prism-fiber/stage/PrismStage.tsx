@@ -10,6 +10,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type ComponentRef,
   type MutableRefObject,
 } from "react";
@@ -127,6 +128,20 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
       hasEnteredZoom: false,
       hasRotationDrifted: false,
     });
+    const [presentationTarget, setPresentationTarget] = useState(() => ({
+      state,
+      viewAzimuthYRad: 0,
+    }));
+
+    useLayoutEffect(() => {
+      if (presentationTarget.state === state) return;
+
+      setPresentationTarget({
+        state,
+        viewAzimuthYRad:
+          controlsRef.current?.getAzimuthalAngle() ?? 0,
+      });
+    }, [presentationTarget.state, state]);
     const publishViewState = useCallback(
       (nextViewState: PrismViewState) => {
         const currentViewState = viewStateRef.current;
@@ -156,9 +171,10 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             hasEnteredZoom: viewStateRef.current.hasEnteredZoom,
             hasRotationDrifted: false,
           });
+          setPresentationTarget({ state, viewAzimuthYRad: 0 });
         },
       }),
-      [homeFrame, publishViewState],
+      [homeFrame, publishViewState, state],
     );
 
     return (
@@ -202,7 +218,10 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
           />
           <ambientLight color={0xffffff} intensity={0.5} />
           <Suspense fallback={null}>
-            <PrismScene state={state} />
+            <PrismScene
+              state={presentationTarget.state}
+              viewAzimuthYRad={presentationTarget.viewAzimuthYRad}
+            />
           </Suspense>
           <OrbitControls
             ref={controlsRef}

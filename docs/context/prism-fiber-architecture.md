@@ -169,15 +169,19 @@ content is unavailable.
 OrbitControls changes the camera only. It does not mutate the semantic prism
 state. The Stage translates control activity into `hasEnteredZoom` and
 `hasRotationDrifted`, so the UI does not need access to OrbitControls or camera
-angles. Wheel zoom remains enabled for the lab; page-scroll integration is a
-separate future decision.
+angles. When a later semantic state arrives, the Stage samples the current
+camera azimuth once and holds it with that state as an internal presentation
+target. Ordinary control changes do not update the held target, so the Prism
+does not counter-rotate while the user explores. Explicit recentering restores
+the zero-offset presentation frame. Wheel zoom remains enabled for the lab;
+page-scroll integration is a separate future decision.
 
 ### Scene Layer
 
-`scene/PrismScene.tsx` receives the named state, loads cached assets, constructs
-the object graph once, and advances private transitions from the render loop.
-It is the boundary between React's declarative state and mutable Three.js
-objects.
+`scene/PrismScene.tsx` receives the named state and Stage-owned sampled view
+offset, loads cached assets, constructs the object graph once, and advances
+private transitions from the render loop. It is the boundary between React's
+declarative presentation target and mutable Three.js objects.
 
 On the first render it snaps directly to the requested state. On later state
 changes it starts a 700 ms transition from the objects' currently rendered
@@ -234,12 +238,26 @@ The target type can suit the object: a number for prism rotation and opacity,
 or `PrismState` for the figure. Object-specific transition values remain
 private.
 
+### `motion/prism-rotation.ts`
+
+`PrismPresentationTarget` pairs one semantic state with the camera azimuth
+sampled by the Stage. The rotation resolver adds that view-frame offset to the
+state's canonical angle. A separate shortest-path helper maps the resolved
+angle to the nearest equivalent angle around the current Prism rotation. This
+prevents a wrap at ±180° from producing an unintended full turn.
+
+The sampled offset is held for the complete transition. It is not a live
+camera binding and is not part of the public `Prism` API.
+
 ### `motion/prism-transition.ts`
 
-The transition controller coordinates all channels. It resolves one named
-state, starts every channel at the same moment, and supplies the same temporary
-timeline position on each frame. It does not know how a quaternion or material
-should interpolate.
+The transition controller coordinates all channels. It resolves one
+state-plus-view presentation target, starts the necessary channels at the same
+moment, and supplies the same temporary timeline position on each frame. A
+semantic state change updates rotation, figure pose, and monitor opacity. A
+settled view-offset-only change updates rotation without replaying the pose or
+opacity channels. It does not know how a quaternion or material should
+interpolate.
 
 This shared clock prevents the prism, figure, and monitor from completing at
 unrelated times. At the same time, it lets each channel apply a suitable local
@@ -369,14 +387,17 @@ When UI state changes from `idea` to `solution`:
 1. A panel selection or completed autoplay interval updates UI state to
    `solution`.
 2. `PrismPresentation` renders `Prism` with `state="solution"`.
-3. Its Stage passes the same string to `PrismScene`.
-4. The transition controller resolves the Solution targets.
-5. Every motion channel captures its current rendered value.
-6. On each frame, the controller advances one private 0–1 timeline.
-7. The rotation channel lerps the prism angle with cubic easing.
-8. The figure channel slerps rest-relative bone quaternions with sine easing.
-9. The office channel fades monitor opacity with ease-out cubic.
-10. At progress 1, the controller stops transitioning and no progress value is
+3. Its Stage samples the current OrbitControls azimuth and holds it with
+   `solution` as one internal presentation target.
+4. `PrismScene` passes that target to the transition controller.
+5. The transition controller resolves the Solution pose and opacity plus the
+   view-relative absolute rotation target.
+6. Every active motion channel captures its current rendered value.
+7. On each frame, the controller advances one private 0–1 timeline.
+8. The rotation channel follows the shortest angular path with cubic easing.
+9. The figure channel slerps rest-relative bone quaternions with sine easing.
+10. The office channel fades monitor opacity with ease-out cubic.
+11. At progress 1, the controller stops transitioning and no progress value is
    retained as application state.
 
 ## Renderer and stage settings
@@ -416,11 +437,17 @@ required-bone validation make an incompatible asset revision fail explicitly.
   mappings.
 - `Prism.test.tsx` locks the semantic public API and its Stage delegation.
 - `motion/prism-transition.test.ts` verifies initial snapping, shared timeline
-  updates, interruption from current values, and completed-transition idling.
+  updates, view-offset channel isolation, interruption from current values,
+  and completed-transition idling.
+- `motion/prism-rotation.test.ts` verifies canonical targets, sampled positive
+  and negative view offsets, and shortest-path wraparound.
+- `scene/PrismScene.test.tsx` verifies that one persistent scene consumes
+  initial and subsequent presentation targets.
 - `scene/objects/figure-poses.test.ts` locks the approved pose values and
   verifies rest-relative quaternion composition.
 - `stage/PrismStage.test.tsx` verifies the Stage boundary, named-state flow,
-  semantic exploration events, and recenter command.
+  sampled-and-held camera azimuth, semantic exploration events, and recenter
+  command.
 - `ui/usePrismAutoplay.test.tsx` verifies ordered looping, manual selection,
   progress reset, and pause behavior.
 - `ui/PrismPresentation.test.tsx` verifies control-panel wiring, UI state

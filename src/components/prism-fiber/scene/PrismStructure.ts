@@ -10,6 +10,7 @@ import {
 
 import { easeInOutCubic } from "../motion/easing";
 import type { MotionChannel } from "../motion/motion-channel";
+import { nearestEquivalentAngleRad } from "../motion/prism-rotation";
 import type { PrismMotionChannels } from "../motion/prism-transition";
 import { buildBoardObject } from "./objects/BoardObject";
 import { buildFigureObject } from "./objects/FigureObject";
@@ -53,7 +54,10 @@ function createRotationChannel(prism: Group): MotionChannel<number> {
     },
     beginTransition(targetDegrees) {
       startRotation = prism.rotation.y;
-      targetRotation = MathUtils.degToRad(targetDegrees);
+      targetRotation = nearestEquivalentAngleRad(
+        startRotation,
+        MathUtils.degToRad(targetDegrees),
+      );
     },
     update(timelineProgress) {
       prism.rotation.y = MathUtils.lerp(
