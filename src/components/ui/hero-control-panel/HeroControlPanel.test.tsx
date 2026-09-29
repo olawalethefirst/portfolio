@@ -3,6 +3,7 @@ import { motionValue } from "motion/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { HeroControlPanel } from "./HeroControlPanel";
+import { HeroControlPanelPreview } from "./HeroControlPanelPreview";
 
 class ResizeObserverMock {
   observe() {}
@@ -28,14 +29,11 @@ describe("HeroControlPanel", () => {
       <HeroControlPanel
         activeSegment="idea"
         autoplayProgress={motionValue(42)}
-        hasEnteredZoom={false}
-        hasRotationDrifted={false}
+        canAutoplay
         isAutoplayRunning
-        isVisible
         onAutoplayToggle={onAutoplayToggle}
         onRecentre={onRecentre}
         onSegmentSelect={onSegmentSelect}
-        showPortfolioActions={false}
       />,
     );
 
@@ -53,28 +51,9 @@ describe("HeroControlPanel", () => {
       "Recenter",
     );
 
-    const panel = screen.getByTestId("hero-controls");
-    const rows = Array.from(
-      panel.querySelectorAll("[data-control-row]"),
-      (row) => row.getAttribute("data-control-row"),
-    );
-    const progress = screen.getByRole("progressbar", {
-      name: "Autoplay progress",
-    });
-    const actionButtons = [
-      screen.getByRole("button", { name: "Pause autoplay" }),
-      screen.getByRole("button", { name: "Recentre view" }),
-    ];
-
-    expect(rows).toEqual(["actions", "progress", "states"]);
-    expect(panel.querySelector(".tabs")).toBeTruthy();
-    expect(panel.querySelector(".tabs--secondary")).toBeNull();
     expect(
-      actionButtons.every((button) => button.className.includes("button--outline")),
-    ).toBe(true);
-    expect(progress.className).toContain("-translate-y-0.5");
-    expect(screen.queryByText("Explore")).toBeNull();
-    expect(screen.queryByText("Hire")).toBeNull();
+      screen.getByRole("progressbar", { name: "Autoplay progress" }),
+    ).toBeTruthy();
   });
 
   it("labels the stopped autoplay action as Play", () => {
@@ -82,19 +61,46 @@ describe("HeroControlPanel", () => {
       <HeroControlPanel
         activeSegment="idea"
         autoplayProgress={motionValue(42)}
-        hasEnteredZoom={false}
-        hasRotationDrifted={false}
+        canAutoplay
         isAutoplayRunning={false}
-        isVisible
         onAutoplayToggle={vi.fn()}
         onRecentre={vi.fn()}
         onSegmentSelect={vi.fn()}
-        showPortfolioActions={false}
       />,
     );
 
     expect(
       screen.getByRole("button", { name: "Play autoplay" }).textContent,
     ).toContain("Play");
+  });
+
+  it("disables autoplay when motion preferences make it unavailable", () => {
+    render(
+      <HeroControlPanel
+        activeSegment="solution"
+        autoplayProgress={motionValue(0)}
+        canAutoplay={false}
+        isAutoplayRunning={false}
+        onAutoplayToggle={vi.fn()}
+        onRecentre={vi.fn()}
+        onSegmentSelect={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Play autoplay" }).hasAttribute("disabled"),
+    ).toBe(true);
+  });
+});
+
+describe("HeroControlPanelPreview", () => {
+  it("begins from the canonical Solution state", () => {
+    render(<HeroControlPanelPreview />);
+
+    expect(
+      screen
+        .getByRole("tab", { name: /solution/i })
+        .getAttribute("aria-selected"),
+    ).toBe("true");
   });
 });

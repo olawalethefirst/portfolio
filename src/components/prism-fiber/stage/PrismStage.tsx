@@ -5,7 +5,6 @@ import { Canvas, useThree } from "@react-three/fiber";
 import {
   forwardRef,
   Suspense,
-  useCallback,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -31,34 +30,28 @@ import {
 export interface PrismStageProps {
   state: PrismState;
   homeFrame?: PrismHomeFrame;
-  onViewStateChange?: (viewState: PrismViewState) => void;
+  onInteractionStart?: () => void;
   className?: string;
-}
-
-export interface PrismViewState {
-  hasEnteredZoom: boolean;
-  hasRotationDrifted: boolean;
 }
 
 export interface PrismStageHandle {
   recentreView(): void;
 }
 
-const CENTERED_AZIMUTH_EPSILON = 0.001;
 const DEFAULT_CAMERA_DISTANCE = 3;
 
 interface PrismHomeCameraProps {
   controlsRef: MutableRefObject<ComponentRef<typeof OrbitControls> | null>;
+  hasInteractedRef: MutableRefObject<boolean>;
   homeFrame?: PrismHomeFrame;
   homeViewRef: MutableRefObject<(() => void) | null>;
-  viewStateRef: MutableRefObject<PrismViewState>;
 }
 
 function PrismHomeCamera({
   controlsRef,
+  hasInteractedRef,
   homeFrame,
   homeViewRef,
-  viewStateRef,
 }: PrismHomeCameraProps) {
   const camera = useThree((state) => state.camera);
   const size = useThree((state) => state.size);
@@ -107,27 +100,32 @@ function PrismHomeCamera({
 
     applyProjection();
     homeViewRef.current = applyHomeView;
-    if (!viewStateRef.current.hasEnteredZoom) applyHomeView();
+    if (!hasInteractedRef.current) applyHomeView();
 
     return () => {
       if (homeViewRef.current === applyHomeView) homeViewRef.current = null;
     };
-  }, [camera, controlsRef, homeView, homeViewRef, size.height, size.width, viewStateRef]);
+  }, [
+    camera,
+    controlsRef,
+    hasInteractedRef,
+    homeView,
+    homeViewRef,
+    size.height,
+    size.width,
+  ]);
 
   return null;
 }
 
 export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
   function PrismStage(
-    { state, homeFrame, onViewStateChange, className = "" },
+    { state, homeFrame, onInteractionStart, className = "" },
     ref,
   ) {
     const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
+    const hasInteractedRef = useRef(false);
     const homeViewRef = useRef<(() => void) | null>(null);
-    const viewStateRef = useRef<PrismViewState>({
-      hasEnteredZoom: false,
-      hasRotationDrifted: false,
-    });
     const [presentationTarget, setPresentationTarget] = useState(() => ({
       state,
       viewAzimuthYRad: 0,
@@ -138,26 +136,9 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
 
       setPresentationTarget({
         state,
-        viewAzimuthYRad:
-          controlsRef.current?.getAzimuthalAngle() ?? 0,
+        viewAzimuthYRad: controlsRef.current?.getAzimuthalAngle() ?? 0,
       });
     }, [presentationTarget.state, state]);
-    const publishViewState = useCallback(
-      (nextViewState: PrismViewState) => {
-        const currentViewState = viewStateRef.current;
-        if (
-          currentViewState.hasEnteredZoom === nextViewState.hasEnteredZoom &&
-          currentViewState.hasRotationDrifted ===
-            nextViewState.hasRotationDrifted
-        ) {
-          return;
-        }
-        viewStateRef.current = nextViewState;
-        onViewStateChange?.(nextViewState);
-      },
-      [onViewStateChange],
-    );
-
     useImperativeHandle(
       ref,
       () => ({
@@ -167,14 +148,10 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
           } else {
             controlsRef.current?.reset();
           }
-          publishViewState({
-            hasEnteredZoom: viewStateRef.current.hasEnteredZoom,
-            hasRotationDrifted: false,
-          });
           setPresentationTarget({ state, viewAzimuthYRad: 0 });
         },
       }),
-      [homeFrame, publishViewState, state],
+      [homeFrame, state],
     );
 
     return (
@@ -233,28 +210,17 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             maxDistance={6}
             minPolarAngle={Math.PI / 2}
             maxPolarAngle={Math.PI / 2}
-            onChange={() => {
-              if (!viewStateRef.current.hasEnteredZoom) return;
-              const azimuth = controlsRef.current?.getAzimuthalAngle() ?? 0;
-              publishViewState({
-                hasEnteredZoom: true,
-                hasRotationDrifted:
-                  Math.abs(azimuth) > CENTERED_AZIMUTH_EPSILON,
-              });
-            }}
             onStart={() => {
-              publishViewState({
-                ...viewStateRef.current,
-                hasEnteredZoom: true,
-              });
+              hasInteractedRef.current = true;
+              onInteractionStart?.();
             }}
             target={[0, 0, 0]}
           />
           <PrismHomeCamera
             controlsRef={controlsRef}
+            hasInteractedRef={hasInteractedRef}
             homeFrame={homeFrame}
             homeViewRef={homeViewRef}
-            viewStateRef={viewStateRef}
           />
         </Canvas>
       </section>

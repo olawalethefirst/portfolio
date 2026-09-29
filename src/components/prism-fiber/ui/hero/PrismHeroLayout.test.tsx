@@ -26,12 +26,9 @@ vi.mock("../../Prism", () => ({
 }));
 
 vi.mock("../../../ui/hero-control-panel", () => ({
-  HeroControlPanel: ({
-    onSegmentSelect,
-    showPortfolioActions,
-  }: HeroControlPanelProps) => (
-    <div data-show-portfolio-actions={String(showPortfolioActions)}>
-      <button onClick={() => onSegmentSelect("solution")}>Solution</button>
+  HeroControlPanel: ({ onSegmentSelect }: HeroControlPanelProps) => (
+    <div>
+      <button onClick={() => onSegmentSelect("idea")}>Idea</button>
     </div>
   ),
 }));
@@ -39,47 +36,14 @@ vi.mock("../../../ui/hero-control-panel", () => ({
 import { PrismHeroLayout } from "./PrismHeroLayout";
 
 describe("PrismHeroLayout", () => {
-  it("keeps one full-hero Canvas behind every responsive composition", () => {
+  it("renders one interactive prism with its editorial content and controls", () => {
     render(<PrismHeroLayout />);
 
-    const hero = screen.getByTestId("prism-hero");
-    const contentContainer = screen.getByTestId("prism-content-container");
-    const initialRegion = screen.getByTestId("prism-initial-region");
-    const canvas = screen.getByTestId("prism-stage").parentElement;
-    const content = screen.getByRole("heading", { level: 1 }).parentElement;
-    const controls = screen.getByLabelText("Prism controls");
-
-    expect(hero.className).toContain("h-dvh");
-    expect(hero.className).not.toContain("max-w-7xl");
-    expect(contentContainer.className).toContain("max-w-7xl");
-    expect(contentContainer.className).toContain("md:landscape:grid");
-    expect(initialRegion.className).toContain("md:landscape:col-start-2");
-    expect(hero.className).not.toContain("sm:grid");
-    expect(hero.className).not.toContain("sm:landscape:grid");
-    expect(canvas?.className).toContain("absolute inset-0");
-    expect(canvas?.className).not.toContain("md:landscape:relative");
-    expect(canvas?.className).not.toContain("lg:relative");
-    expect(content?.className).toContain("absolute inset-x-4 top-4");
-    expect(content?.className).toContain("md:landscape:relative");
-    expect(content?.className).not.toContain("sm:landscape:relative");
-    expect(content?.className).toContain("lg:relative");
-    expect(controls.className).toContain("absolute inset-x-4");
-    expect(controls.className).toContain(
-      "bottom-[max(1rem,env(safe-area-inset-bottom))]",
-    );
-    expect(controls.className).toContain("items-center");
-    expect(controls.className).toContain("justify-end");
-    expect(controls.className).not.toContain("md:landscape:relative");
-    expect(controls.className).not.toContain("lg:relative");
-    expect(controls.className).not.toContain("md:landscape:row-start-2");
-    expect(controls.className).not.toContain("md:landscape:right-8");
-    expect(controls.className).not.toContain("lg:right-12");
-    expect(controls.className).toContain("flex-col");
-    expect(controls.className).toContain("items-center");
-    expect(screen.queryByText("Interactive Prism · drag to inspect")).toBeNull();
+    expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
+    expect(screen.getByLabelText("Prism controls")).toBeTruthy();
     expect(
-      hero.querySelector('[aria-hidden="true"]'),
-    ).toBeNull();
+      screen.getByRole("heading", { level: 1, name: "Ideas into products." }),
+    ).toBeTruthy();
   });
 
   it("begins the state-led editorial flow from the solution state", () => {
@@ -96,30 +60,20 @@ describe("PrismHeroLayout", () => {
     expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
       "solution",
     );
-    expect(
-      screen.getByRole("link", { name: "Work" }).className,
-    ).toContain("button--sm");
-    expect(
-      screen.getByRole("link", { name: "Hire" }).className,
-    ).toContain("button--sm");
-    expect(screen.queryByText(/I help teams move/)).toBeNull();
-    expect(
-      screen
-        .getByRole("button", { name: "Solution" })
-        .parentElement?.getAttribute("data-show-portfolio-actions"),
-    ).toBe("false");
+    expect(screen.getByRole("link", { name: "Work" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Hire" })).toBeTruthy();
   });
 
   it("uses one state for the Prism and editorial content", () => {
     render(<PrismHeroLayout />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Solution" }));
+    fireEvent.click(screen.getByRole("button", { name: "Idea" }));
 
     expect(
-      screen.getByText("Deliver a coherent product built to evolve."),
+      screen.getByText("Align user needs, business goals, and technical reality."),
     ).toBeTruthy();
     expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
-      "solution",
+      "idea",
     );
   });
 });

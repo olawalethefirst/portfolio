@@ -1,10 +1,25 @@
 import { describe, expect, it } from "vitest";
 
-import { PRISM_STATES, PRISM_STATE_TARGETS } from "./prism-state";
+import {
+  getNextPrismState,
+  PRISM_INITIAL_STATE,
+  PRISM_STATES,
+  PRISM_STATE_TARGETS,
+} from "./prism-state";
 
 describe("PRISM_STATES", () => {
   it("defines the shared hero segment order", () => {
     expect(PRISM_STATES).toEqual(["idea", "iterate", "solution"]);
+  });
+
+  it("defines Solution as the shared initial state", () => {
+    expect(PRISM_INITIAL_STATE).toBe("solution");
+  });
+
+  it("cycles through the shared segment order", () => {
+    expect(getNextPrismState("solution")).toBe("idea");
+    expect(getNextPrismState("idea")).toBe("iterate");
+    expect(getNextPrismState("iterate")).toBe("solution");
   });
 });
 

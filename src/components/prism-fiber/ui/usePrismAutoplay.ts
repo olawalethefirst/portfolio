@@ -3,56 +3,38 @@
 import { animate, useMotionValue, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 
-import type { PrismState } from "../state/prism-state";
+import {
+  getNextPrismState,
+  PRISM_INITIAL_STATE,
+  type PrismState,
+} from "../state/prism-state";
 
 const AUTOPLAY_DURATION_SECONDS = 6;
 
-export interface UsePrismAutoplayOptions {
-  initialState?: PrismState;
-  initiallyRunning?: boolean;
-}
-
-function getNextState(state: PrismState): PrismState {
-  switch (state) {
-    case "idea":
-      return "iterate";
-    case "iterate":
-      return "solution";
-    case "solution":
-      return "idea";
-  }
-}
-
-export function usePrismAutoplay({
-  initialState = "idea",
-  initiallyRunning = true,
-}: UsePrismAutoplayOptions = {}) {
-  const [state, setState] = useState<PrismState>(initialState);
-  const [isAutoplayRunning, setIsAutoplayRunning] =
-    useState(initiallyRunning);
+export function usePrismAutoplay() {
+  const [state, setState] = useState<PrismState>(PRISM_INITIAL_STATE);
+  const [isAutoplayRequested, setIsAutoplayRequested] = useState(true);
   const autoplayProgress = useMotionValue(0);
   const shouldReduceMotion = useReducedMotion();
+  const canAutoplay = !shouldReduceMotion;
+  const isAutoplayRunning = isAutoplayRequested && canAutoplay;
 
   useEffect(() => {
     if (!isAutoplayRunning) {
       autoplayProgress.stop();
+      if (!canAutoplay) autoplayProgress.jump(0);
       return;
     }
 
     autoplayProgress.jump(0);
-    if (shouldReduceMotion) {
-      autoplayProgress.jump(100);
-      return;
-    }
-
     const playback = animate(autoplayProgress, 100, {
       duration: AUTOPLAY_DURATION_SECONDS,
       ease: "linear",
-      onComplete: () => setState(getNextState),
+      onComplete: () => setState(getNextPrismState),
     });
 
     return () => playback.stop();
-  }, [autoplayProgress, isAutoplayRunning, shouldReduceMotion, state]);
+  }, [autoplayProgress, canAutoplay, isAutoplayRunning, state]);
 
   const selectState = useCallback(
     (nextState: PrismState) => {
@@ -62,19 +44,18 @@ export function usePrismAutoplay({
     },
     [autoplayProgress],
   );
-  const playAutoplay = useCallback(() => setIsAutoplayRunning(true), []);
-  const pauseAutoplay = useCallback(() => setIsAutoplayRunning(false), []);
+  const pauseAutoplay = useCallback(() => setIsAutoplayRequested(false), []);
   const toggleAutoplay = useCallback(
-    () => setIsAutoplayRunning((isRunning) => !isRunning),
+    () => setIsAutoplayRequested((isRunning) => !isRunning),
     [],
   );
 
   return {
     state,
     autoplayProgress,
+    canAutoplay,
     isAutoplayRunning,
     selectState,
-    playAutoplay,
     pauseAutoplay,
     toggleAutoplay,
   };

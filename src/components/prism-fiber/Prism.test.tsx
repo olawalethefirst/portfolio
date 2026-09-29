@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { PrismState } from "./state/prism-state";
 import type { PrismHomeFrame } from "./stage/prism-home-frame";
-import type { PrismViewState } from "./stage/PrismStage";
 
 const stageRecentre = vi.hoisted(() => vi.fn());
 
@@ -13,12 +12,12 @@ vi.mock("./stage/PrismStage", () => ({
     {
       className,
       homeFrame,
-      onViewStateChange,
+      onInteractionStart,
       state,
     }: {
       className?: string;
       homeFrame?: PrismHomeFrame;
-      onViewStateChange?: (viewState: PrismViewState) => void;
+      onInteractionStart?: () => void;
       state: PrismState;
     },
     ref,
@@ -33,12 +32,7 @@ vi.mock("./stage/PrismStage", () => ({
         data-testid="stage-state"
       >
         <button
-          onClick={() =>
-            onViewStateChange?.({
-              hasEnteredZoom: true,
-              hasRotationDrifted: true,
-            })
-          }
+          onClick={onInteractionStart}
         >
           Explore
         </button>
@@ -69,22 +63,19 @@ describe("Prism public API", () => {
     );
   });
 
-  it("forwards semantic view events and the recentre command", () => {
-    const onViewStateChange = vi.fn();
+  it("forwards interaction events and the recentre command", () => {
+    const onInteractionStart = vi.fn();
     const ref = createRef<PrismHandle>();
     render(
       <Prism
         ref={ref}
-        onViewStateChange={onViewStateChange}
+        onInteractionStart={onInteractionStart}
         state="idea"
       />,
     );
 
     screen.getByRole("button", { name: "Explore" }).click();
-    expect(onViewStateChange).toHaveBeenCalledWith({
-      hasEnteredZoom: true,
-      hasRotationDrifted: true,
-    });
+    expect(onInteractionStart).toHaveBeenCalledTimes(1);
 
     ref.current?.recentreView();
     expect(stageRecentre).toHaveBeenCalled();

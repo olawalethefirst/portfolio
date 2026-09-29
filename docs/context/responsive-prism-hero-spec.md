@@ -384,7 +384,8 @@ Prism:
 
 ```text
 [ Idea | Iterate | Solution ]
-[ progress ───────── play/pause or recenter ]
+[ play/pause | recenter ]
+[ progress ──────────────────────────────── ]
 ```
 
 The composition may share one glass surface or use visually connected glass
@@ -395,7 +396,8 @@ segments, provided the selected state, progress, and action remain legible.
 Desktop stage controls surround rather than cover the Prism:
 
 ```text
-[ progress ───────────────────── play/pause or recenter ]
+[ play/pause | recenter ]
+[ progress ─────────────────────────────────────────── ]
 
                          PRISM
 
@@ -406,8 +408,7 @@ Requirements:
 
 - Glass reveals the Prism beneath while preserving control contrast.
 - Progress and its pause action remain visibly associated.
-- Recenter replaces the playback action only after manual camera exploration,
-  preserving the existing semantic behavior.
+- Playback and recenter remain independent actions with stable positions.
 - The selector uses named states, not numeric progress or raw angles.
 - Visual placement and DOM tab order remain logical and consistent.
 
@@ -741,7 +742,6 @@ type HeroMode = "hero" | "discovery" | "handoff" | "application";
 
 interface PrismHeroProps {
   comparisonLayout: HeroLayout;
-  initialState?: PrismState;
 }
 
 interface PrismHeroView {

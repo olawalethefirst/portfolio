@@ -138,36 +138,23 @@ describe("PrismStage", () => {
     expect(orbit.saveState).toHaveBeenCalled();
   });
 
-  it("reports manual exploration and recentres through a semantic handle", () => {
-    const onViewStateChange = vi.fn();
+  it("reports interaction starts and recentres through a semantic handle", () => {
+    const onInteractionStart = vi.fn();
     const ref = createRef<PrismStageHandle>();
     render(
       <PrismStage
         ref={ref}
-        onViewStateChange={onViewStateChange}
+        onInteractionStart={onInteractionStart}
         state="idea"
       />,
     );
 
     fireEvent.click(screen.getByText("Start orbit"));
-    expect(onViewStateChange).toHaveBeenLastCalledWith({
-      hasEnteredZoom: true,
-      hasRotationDrifted: false,
-    });
-
-    orbit.azimuth = 0.5;
-    fireEvent.click(screen.getByText("Change orbit"));
-    expect(onViewStateChange).toHaveBeenLastCalledWith({
-      hasEnteredZoom: true,
-      hasRotationDrifted: true,
-    });
+    fireEvent.click(screen.getByText("Start orbit"));
+    expect(onInteractionStart).toHaveBeenCalledTimes(2);
 
     act(() => ref.current?.recentreView());
     expect(orbit.reset).toHaveBeenCalled();
-    expect(onViewStateChange).toHaveBeenLastCalledWith({
-      hasEnteredZoom: true,
-      hasRotationDrifted: false,
-    });
   });
 
   it("samples and holds the camera azimuth when semantic state changes", () => {

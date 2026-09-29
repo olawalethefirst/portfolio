@@ -129,16 +129,17 @@ one of the three names, never an angle or scene-animation percentage. It also
 owns the full-viewport lab presentation, theme attributes, HTML interaction
 hint, and `HeroControlPanel` integration.
 
-`ui/usePrismAutoplay.ts` owns the UI playback sequence. It cycles through
-Idea, Iterate, and Solution every six seconds and supplies a MotionValue from
-0 to 100 for the panel's progress bar. Selecting a tab resets that UI timer.
-This value describes time until the next named state; it is separate from the
-Scene Layer's private 0–1 interpolation used after a state has changed.
+`ui/usePrismAutoplay.ts` owns the UI playback timer. It begins from the
+canonical Solution state, follows the canonical state order every six seconds,
+and supplies a MotionValue from 0 to 100 for the panel's progress bar.
+Selecting a tab resets that UI timer. This value describes time until the next
+named state; it is separate from the Scene Layer's private 0–1 interpolation
+used after a state has changed.
 
-Manual camera exploration pauses autoplay. The panel then uses its center
-button for recentering rather than play/pause. Recentring clears rotational
-drift but deliberately retains the fact that the user has entered manual
-exploration.
+Manual camera exploration pauses autoplay. Playback and recentering remain
+independent panel actions, so neither camera interaction nor playback changes
+the meaning or position of the other control. Recentring restores the authored
+camera and presentation frame while leaving autoplay paused.
 
 The UI does not own animation easing. It says *where the experience should
 go*, while each rendered object decides *how its own property moves there*.
@@ -146,7 +147,7 @@ go*, while each rendered object decides *how its own property moves there*.
 ### Stage Layer
 
 `Prism.tsx` is the stable public facade. Its API has a required semantic
-`state`, an optional container `className`, an optional semantic view-state
+`state`, an optional container `className`, an optional semantic interaction
 callback, and a `recentreView()` handle. It exposes no Three.js types,
 animation progress, or object-level controls. The facade delegates rendering
 to `stage/PrismStage.tsx` so internal stage organization can evolve without
@@ -167,13 +168,14 @@ rendering context. It prevents a blank region and tells the user why the 3D
 content is unavailable.
 
 OrbitControls changes the camera only. It does not mutate the semantic prism
-state. The Stage translates control activity into `hasEnteredZoom` and
-`hasRotationDrifted`, so the UI does not need access to OrbitControls or camera
-angles. When a later semantic state arrives, the Stage samples the current
-camera azimuth once and holds it with that state as an internal presentation
-target. Ordinary control changes do not update the held target, so the Prism
-does not counter-rotate while the user explores. Explicit recentering restores
-the zero-offset presentation frame. Wheel zoom remains enabled for the lab;
+state. The Stage reports the start of camera interaction without exposing
+OrbitControls or camera angles, and privately remembers that the user has taken
+camera control so responsive measurements do not overwrite their view. When a
+later semantic state arrives, the Stage samples the current camera azimuth once
+and holds it with that state as an internal presentation target. Ordinary
+control changes do not update the held target, so the Prism does not
+counter-rotate while the user explores. Explicit recentering restores the
+zero-offset presentation frame. Wheel zoom remains enabled for the lab;
 page-scroll integration is a separate future decision.
 
 ### Scene Layer
@@ -196,16 +198,20 @@ consumer. It stops being advanced once the animation completes.
 
 ### `state/prism-state.ts`
 
-`PrismState` is the only value passed from normal React code into the 3D
-layers:
+`PrismState` is derived from the canonical tuple and is the only value passed
+from normal React code into the 3D layers:
 
 ```ts
-type PrismState = "idea" | "iterate" | "solution";
+const PRISM_STATES = ["idea", "iterate", "solution"] as const;
+type PrismState = (typeof PRISM_STATES)[number];
+const PRISM_INITIAL_STATE: PrismState = "solution";
 ```
 
 `PRISM_STATES` is the canonical ordered list used by both autoplay and the
 control-panel tabs. It prevents those consumers from defining duplicate state
-lists that could drift apart.
+lists that could drift apart. `PRISM_INITIAL_STATE` is the only orchestration
+starting point, and `getNextPrismState()` derives the loop from that ordered
+list. Consumers cannot override the initial state.
 
 `PRISM_STATE_TARGETS` maps each name to the object-specific numeric targets:
 

@@ -1,14 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef } from "react";
 
 import { HeroControlPanel } from "../../../ui/hero-control-panel";
 import { Button } from "../../../ui/Button";
-import {
-  Prism,
-  type PrismHandle,
-  type PrismViewState,
-} from "../../Prism";
+import { Prism, type PrismHandle } from "../../Prism";
 import { usePrismAutoplay } from "../usePrismAutoplay";
 import { PRISM_HERO_CONTENT, PRISM_HERO_TITLE } from "./prism-hero-content";
 import { usePrismHomeFrame } from "./usePrismHomeFrame";
@@ -22,26 +18,16 @@ export function PrismHeroLayout() {
     initialRegionRef,
     topBoundaryRef,
   } = usePrismHomeFrame();
-  const [viewState, setViewState] = useState<PrismViewState>({
-    hasEnteredZoom: false,
-    hasRotationDrifted: false,
-  });
   const {
     autoplayProgress,
+    canAutoplay,
     isAutoplayRunning,
     pauseAutoplay,
     selectState,
     state,
     toggleAutoplay,
-  } = usePrismAutoplay({ initialState: "solution" });
+  } = usePrismAutoplay();
   const content = PRISM_HERO_CONTENT[state];
-  const handleViewStateChange = useCallback(
-    (nextViewState: PrismViewState) => {
-      setViewState(nextViewState);
-      if (nextViewState.hasEnteredZoom) pauseAutoplay();
-    },
-    [pauseAutoplay],
-  );
 
   return (
     <section
@@ -56,7 +42,7 @@ export function PrismHeroLayout() {
           ref={prismRef}
           className="absolute inset-0"
           homeFrame={homeFrame}
-          onViewStateChange={handleViewStateChange}
+          onInteractionStart={pauseAutoplay}
           state={state}
         />
       </div>
@@ -106,14 +92,11 @@ export function PrismHeroLayout() {
           <HeroControlPanel
             activeSegment={state}
             autoplayProgress={autoplayProgress}
-            hasEnteredZoom={viewState.hasEnteredZoom}
-            hasRotationDrifted={viewState.hasRotationDrifted}
+            canAutoplay={canAutoplay}
             isAutoplayRunning={isAutoplayRunning}
-            isVisible
             onAutoplayToggle={toggleAutoplay}
             onRecentre={() => prismRef.current?.recentreView()}
             onSegmentSelect={selectState}
-            showPortfolioActions={false}
           />
         </aside>
       </div>

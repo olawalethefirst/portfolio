@@ -7,6 +7,7 @@ export function HeroControlPanelPreview() {
   const {
     state: activeSegment,
     autoplayProgress,
+    canAutoplay,
     isAutoplayRunning,
     selectState,
     toggleAutoplay,
@@ -25,15 +26,12 @@ export function HeroControlPanelPreview() {
       <HeroControlPanel
         activeSegment={activeSegment}
         autoplayProgress={autoplayProgress}
+        canAutoplay={canAutoplay}
         className="relative z-10"
-        hasEnteredZoom={false}
-        hasRotationDrifted={false}
         isAutoplayRunning={isAutoplayRunning}
-        isVisible
         onAutoplayToggle={toggleAutoplay}
         onRecentre={() => undefined}
         onSegmentSelect={selectState}
-        showPortfolioActions={false}
       />
     </div>
   );

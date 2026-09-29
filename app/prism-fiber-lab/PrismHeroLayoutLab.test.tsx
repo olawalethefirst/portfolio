@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import type {
   PrismHandle,
   PrismProps,
-  PrismViewState,
 } from "@/src/components/prism-fiber/Prism";
 import type { HeroControlPanelProps } from "@/src/components/ui/hero-control-panel";
 
@@ -23,14 +22,10 @@ vi.mock("motion/react", async (importOriginal) => {
 
 vi.mock("@/src/components/prism-fiber/Prism", () => ({
   Prism: forwardRef<PrismHandle, PrismProps>(function PrismMock(
-    { onViewStateChange, state },
+    { onInteractionStart, state },
     ref,
   ) {
     const [marker, setMarker] = useState(0);
-    const exploredView: PrismViewState = {
-      hasEnteredZoom: true,
-      hasRotationDrifted: true,
-    };
 
     useImperativeHandle(ref, () => ({ recentreView: prismRecentre }));
 
@@ -39,7 +34,7 @@ vi.mock("@/src/components/prism-fiber/Prism", () => ({
         <button onClick={() => setMarker((value) => value + 1)}>
           Prism marker {marker}
         </button>
-        <button onClick={() => onViewStateChange?.(exploredView)}>
+        <button onClick={onInteractionStart}>
           Enter manual view
         </button>
       </div>
@@ -50,20 +45,16 @@ vi.mock("@/src/components/prism-fiber/Prism", () => ({
 vi.mock("@/src/components/ui/hero-control-panel", () => ({
   HeroControlPanel: ({
     activeSegment,
-    hasEnteredZoom,
-    hasRotationDrifted,
     isAutoplayRunning,
     onRecentre,
     onSegmentSelect,
   }: HeroControlPanelProps) => (
     <div
       data-autoplay-running={String(isAutoplayRunning)}
-      data-entered-zoom={String(hasEnteredZoom)}
-      data-rotation-drifted={String(hasRotationDrifted)}
       data-testid="hero-controls"
     >
       <span>Active phase: {activeSegment}</span>
-      <button onClick={() => onSegmentSelect("solution")}>Solution</button>
+      <button onClick={() => onSegmentSelect("idea")}>Idea</button>
       <button onClick={onRecentre}>Recentre view</button>
     </div>
   ),
@@ -92,14 +83,14 @@ describe("PrismHeroLayoutLab", () => {
     const { rerender } = render(<PrismHeroLayoutLab />);
 
     fireEvent.click(screen.getByRole("button", { name: "Prism marker 0" }));
-    fireEvent.click(screen.getByRole("button", { name: "Solution" }));
+    fireEvent.click(screen.getByRole("button", { name: "Idea" }));
     rerender(<PrismHeroLayoutLab />);
 
     expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
-      "solution",
+      "idea",
     );
     expect(
-      screen.getByText("Deliver a coherent product built to evolve."),
+      screen.getByText("Align user needs, business goals, and technical reality."),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Prism marker 1" })).toBeTruthy();
     expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
@@ -114,8 +105,6 @@ describe("PrismHeroLayoutLab", () => {
 
     const controls = screen.getByTestId("hero-controls");
     expect(controls.getAttribute("data-autoplay-running")).toBe("false");
-    expect(controls.getAttribute("data-entered-zoom")).toBe("true");
-    expect(controls.getAttribute("data-rotation-drifted")).toBe("true");
 
     fireEvent.click(screen.getByRole("button", { name: "Recentre view" }));
     expect(prismRecentre).toHaveBeenCalledTimes(1);

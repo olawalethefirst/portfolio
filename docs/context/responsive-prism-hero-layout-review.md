@@ -74,14 +74,15 @@ Tablet landscape switches to a content-left/stage-right split at
 
 ## Stage controls
 
-Hero stage controls contain only two compact regions:
+Hero stage controls contain only three compact regions:
 
-1. semantic state selector: Idea, Iterate, Solution;
-2. autoplay progress with one contextual action slot.
+1. independent playback and recenter actions;
+2. autoplay progress;
+3. semantic state selector: Idea, Iterate, Solution.
 
-The contextual slot displays play/pause during ordinary playback. Recenter may
-reuse that same slot after camera exploration; it must not introduce another
-control row. Portfolio actions do not belong inside the stage controls.
+Playback and recentering keep stable positions and independent meanings before
+and after camera exploration. Portfolio actions do not belong inside the stage
+controls.
 
 In tablet landscape and desktop two-column compositions, the control surface
 sits beneath the Prism and aligns to the stage's right edge. The editorial

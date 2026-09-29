@@ -5,7 +5,6 @@ import { forwardRef } from "react";
 import {
   PrismStage,
   type PrismStageHandle,
-  type PrismViewState,
 } from "./stage/PrismStage";
 import type { PrismHomeFrame } from "./stage/prism-home-frame";
 import type { PrismState } from "./state/prism-state";
@@ -13,15 +12,14 @@ import type { PrismState } from "./state/prism-state";
 export interface PrismProps {
   state: PrismState;
   homeFrame?: PrismHomeFrame;
-  onViewStateChange?: (viewState: PrismViewState) => void;
+  onInteractionStart?: () => void;
   className?: string;
 }
 
 export type PrismHandle = PrismStageHandle;
-export type { PrismViewState };
 
 export const Prism = forwardRef<PrismHandle, PrismProps>(function Prism(
-  { state, homeFrame, onViewStateChange, className },
+  { state, homeFrame, onInteractionStart, className },
   ref,
 ) {
   return (
@@ -29,7 +27,7 @@ export const Prism = forwardRef<PrismHandle, PrismProps>(function Prism(
       ref={ref}
       className={className}
       homeFrame={homeFrame}
-      onViewStateChange={onViewStateChange}
+      onInteractionStart={onInteractionStart}
       state={state}
     />
   );

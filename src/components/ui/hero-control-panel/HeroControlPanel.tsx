@@ -17,14 +17,11 @@ import { cn } from "../utils";
 export interface HeroControlPanelProps {
   activeSegment: PrismState;
   autoplayProgress: MotionValue<number>;
+  canAutoplay: boolean;
   isAutoplayRunning: boolean;
-  hasEnteredZoom: boolean;
-  hasRotationDrifted: boolean;
-  isVisible: boolean;
   onSegmentSelect: (segment: PrismState) => void;
   onAutoplayToggle: () => void;
   onRecentre: () => void;
-  showPortfolioActions?: boolean;
   className?: string;
 }
 
@@ -69,113 +66,85 @@ function MotionProgress({
 export function HeroControlPanel({
   activeSegment,
   autoplayProgress,
+  canAutoplay,
   isAutoplayRunning,
-  isVisible,
   onSegmentSelect,
   onAutoplayToggle,
   onRecentre,
-  showPortfolioActions = true,
   className,
 }: HeroControlPanelProps) {
-  if (!isVisible) return null;
-
   const autoplayVerb = isAutoplayRunning ? "Pause" : "Play";
   const autoplayLabel = `${autoplayVerb} autoplay`;
   const AutoplayIcon = isAutoplayRunning ? Pause : Play;
-
-  const actionsRow = (
-    <div
-      className="grid grid-cols-2 gap-1"
-      data-control-row="actions"
-    >
-      <Button
-        aria-label={autoplayLabel}
-        fullWidth
-        onPress={onAutoplayToggle}
-        size="sm"
-        startContent={<AutoplayIcon aria-hidden="true" className="size-4" />}
-        variant="outline"
-      >
-        {autoplayVerb}
-      </Button>
-      <Button
-        aria-label="Recentre view"
-        fullWidth
-        onPress={onRecentre}
-        size="sm"
-        startContent={
-          <SquareCenterlineDashedHorizontal
-            aria-hidden="true"
-            className="size-4"
-          />
-        }
-        variant="outline"
-      >
-        Recenter
-      </Button>
-    </div>
-  );
-
-  const progressRow = (
-    <div data-control-row="progress">
-      <MotionProgress
-        autoplayProgress={autoplayProgress}
-        isAutoplayRunning={isAutoplayRunning}
-      />
-    </div>
-  );
-
-  const statesRow = (
-    <div data-control-row="states">
-      <Tabs
-        onSelectionChange={(key) => {
-          const nextSegment = String(key);
-          if (isPrismState(nextSegment)) onSegmentSelect(nextSegment);
-        }}
-        selectedKey={activeSegment}
-        variant="primary"
-      >
-        <Tabs.ListContainer className="w-full">
-          <Tabs.List aria-label="Hero phase" className="w-full">
-            {PRISM_STATES.map((segment, index) => (
-              <Tabs.Tab className="capitalize" id={segment} key={segment}>
-                {index > 0 ? <Tabs.Separator /> : null}
-                <Tabs.Indicator />
-                {segment}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs.ListContainer>
-      </Tabs>
-    </div>
-  );
 
   return (
     <Surface
       aria-label="Hero controls"
       className={cn(
-        "flex w-full flex-col gap-1 rounded-3xl",
-        showPortfolioActions
-          ? "max-w-sm p-4 sm:p-5"
-          : "max-w-xs p-3 sm:max-w-sm",
+        "flex w-full max-w-xs flex-col gap-1 rounded-3xl p-3 sm:max-w-sm",
         className,
       )}
       data-testid="hero-controls"
       material="glass"
     >
-      {actionsRow}
-      {progressRow}
-      {statesRow}
-      {showPortfolioActions ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Button size="sm" fullWidth>
-            Explore
-          </Button>
-          <Button size="sm" fullWidth variant="secondary">
-            Hire
-          </Button>
-        </div>
-      ) : null}
+      <div className="grid grid-cols-2 gap-1">
+        <Button
+          aria-label={autoplayLabel}
+          fullWidth
+          isDisabled={!canAutoplay}
+          onPress={onAutoplayToggle}
+          size="sm"
+          startContent={<AutoplayIcon aria-hidden="true" className="size-4" />}
+          variant="outline"
+        >
+          {autoplayVerb}
+        </Button>
+        <Button
+          aria-label="Recentre view"
+          fullWidth
+          onPress={onRecentre}
+          size="sm"
+          startContent={
+            <SquareCenterlineDashedHorizontal
+              aria-hidden="true"
+              className="size-4"
+            />
+          }
+          variant="outline"
+        >
+          Recenter
+        </Button>
+      </div>
+
+      <div>
+        <MotionProgress
+          autoplayProgress={autoplayProgress}
+          isAutoplayRunning={isAutoplayRunning}
+        />
+      </div>
+
+      <div>
+        <Tabs
+          onSelectionChange={(key) => {
+            const nextSegment = String(key);
+            if (isPrismState(nextSegment)) onSegmentSelect(nextSegment);
+          }}
+          selectedKey={activeSegment}
+          variant="primary"
+      >
+          <Tabs.ListContainer className="w-full">
+            <Tabs.List aria-label="Hero phase" className="w-full">
+              {PRISM_STATES.map((segment, index) => (
+                <Tabs.Tab className="capitalize" id={segment} key={segment}>
+                  {index > 0 ? <Tabs.Separator /> : null}
+                  <Tabs.Indicator />
+                  {segment}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs.ListContainer>
+        </Tabs>
+      </div>
     </Surface>
   );
 }
