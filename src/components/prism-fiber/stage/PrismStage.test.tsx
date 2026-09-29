@@ -6,24 +6,46 @@ import {
   type PropsWithChildren,
   type ReactNode,
 } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PrismState } from "../state/prism-state";
 
 const orbit = vi.hoisted(() => ({
   azimuth: 0,
   reset: vi.fn(),
+  saveState: vi.fn(),
+  target: { set: vi.fn() },
+  update: vi.fn(),
+}));
+const camera = vi.hoisted(() => ({
+  clearViewOffset: vi.fn(),
+  isPerspectiveCamera: true,
+  position: { set: vi.fn() },
+  setViewOffset: vi.fn(),
+  updateProjectionMatrix: vi.fn(),
 }));
 
 vi.mock("@react-three/fiber", () => ({
   Canvas: ({
+    camera: cameraProps,
     children,
     className,
-  }: PropsWithChildren<{ className?: string; fallback?: ReactNode }>) => (
-    <div className={className} data-testid="canvas">
+  }: PropsWithChildren<{
+    camera?: { fov?: number; position?: [number, number, number] };
+    className?: string;
+    fallback?: ReactNode;
+  }>) => (
+    <div
+      className={className}
+      data-fov={cameraProps?.fov}
+      data-position={cameraProps?.position?.join(",")}
+      data-testid="canvas"
+    >
       {children}
     </div>
   ),
+  useThree: (selector: (state: unknown) => unknown) =>
+    selector({ camera, size: { height: 200, width: 100 } }),
 }));
 
 vi.mock("@react-three/drei", () => ({
@@ -34,6 +56,9 @@ vi.mock("@react-three/drei", () => ({
     useImperativeHandle(ref, () => ({
       getAzimuthalAngle: () => orbit.azimuth,
       reset: orbit.reset,
+      saveState: orbit.saveState,
+      target: orbit.target,
+      update: orbit.update,
     }));
     return (
       <div data-testid="orbit-controls">
@@ -42,13 +67,6 @@ vi.mock("@react-three/drei", () => ({
       </div>
     );
   }),
-  PerspectiveCamera: (props: { fov: number; position: [number, number, number] }) => (
-    <div
-      data-fov={props.fov}
-      data-position={props.position.join(",")}
-      data-testid="presentation-camera"
-    />
-  ),
 }));
 
 vi.mock("../scene/PrismScene", () => ({
@@ -60,6 +78,11 @@ vi.mock("../scene/PrismScene", () => ({
 import { PrismStage, type PrismStageHandle } from "./PrismStage";
 
 describe("PrismStage", () => {
+  beforeEach(() => {
+    orbit.azimuth = 0;
+    vi.clearAllMocks();
+  });
+
   it("fills its parent and forwards semantic state to the scene", () => {
     render(<PrismStage className="test-container" state="solution" />);
 
@@ -74,11 +97,35 @@ describe("PrismStage", () => {
   it("owns the presentation camera and orbit controls", () => {
     render(<PrismStage state="idea" />);
 
-    expect(screen.getByTestId("presentation-camera").getAttribute("data-fov")).toBe("50");
-    expect(
-      screen.getByTestId("presentation-camera").getAttribute("data-position"),
-    ).toBe("0,0,3");
+    expect(screen.getByTestId("canvas").getAttribute("data-fov")).toBe("50");
+    expect(screen.getByTestId("canvas").getAttribute("data-position")).toBe(
+      "0,0,3",
+    );
     expect(screen.getByTestId("orbit-controls")).toBeTruthy();
+  });
+
+  it("uses a home frame to fit and offset the presentation camera", () => {
+    render(
+      <PrismStage
+        homeFrame={{ left: 0.05, top: 0.4, width: 0.9, height: 0.5 }}
+        state="idea"
+      />,
+    );
+
+    expect(camera.setViewOffset).toHaveBeenCalledWith(
+      100,
+      200,
+      expect.closeTo(0),
+      expect.closeTo(-30),
+      100,
+      200,
+    );
+    expect(camera.position.set).toHaveBeenCalledWith(
+      0,
+      0,
+      expect.any(Number),
+    );
+    expect(orbit.saveState).toHaveBeenCalled();
   });
 
   it("reports manual exploration and recentres through a semantic handle", () => {

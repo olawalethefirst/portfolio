@@ -1,23 +1,35 @@
 "use client";
 
-import { OrbitControls, PerspectiveCamera } from "@react-three/drei";
-import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { Canvas, useThree } from "@react-three/fiber";
 import {
   forwardRef,
   Suspense,
   useCallback,
   useImperativeHandle,
+  useLayoutEffect,
+  useMemo,
   useRef,
   type ComponentRef,
+  type MutableRefObject,
 } from "react";
-import { ACESFilmicToneMapping, SRGBColorSpace } from "three";
+import {
+  ACESFilmicToneMapping,
+  PerspectiveCamera,
+  SRGBColorSpace,
+} from "three";
 
 import { cn } from "../../ui/utils";
 import { PrismScene } from "../scene/PrismScene";
 import type { PrismState } from "../state/prism-state";
+import {
+  calculatePrismHomeView,
+  type PrismHomeFrame,
+} from "./prism-home-frame";
 
 export interface PrismStageProps {
   state: PrismState;
+  homeFrame?: PrismHomeFrame;
   onViewStateChange?: (viewState: PrismViewState) => void;
   className?: string;
 }
@@ -32,13 +44,85 @@ export interface PrismStageHandle {
 }
 
 const CENTERED_AZIMUTH_EPSILON = 0.001;
+const DEFAULT_CAMERA_DISTANCE = 3;
+
+interface PrismHomeCameraProps {
+  controlsRef: MutableRefObject<ComponentRef<typeof OrbitControls> | null>;
+  homeFrame?: PrismHomeFrame;
+  homeViewRef: MutableRefObject<(() => void) | null>;
+  viewStateRef: MutableRefObject<PrismViewState>;
+}
+
+function PrismHomeCamera({
+  controlsRef,
+  homeFrame,
+  homeViewRef,
+  viewStateRef,
+}: PrismHomeCameraProps) {
+  const camera = useThree((state) => state.camera);
+  const size = useThree((state) => state.size);
+  const homeView = useMemo(
+    () =>
+      homeFrame
+        ? calculatePrismHomeView(
+            homeFrame,
+            size.height > 0 ? size.width / size.height : 1,
+          )
+        : undefined,
+    [homeFrame, size.height, size.width],
+  );
+
+  useLayoutEffect(() => {
+    const perspectiveCamera = camera as PerspectiveCamera;
+    if (!perspectiveCamera.isPerspectiveCamera) return;
+
+    const applyProjection = () => {
+      if (size.width <= 0 || size.height <= 0) return;
+      if (homeView) {
+        perspectiveCamera.setViewOffset(
+          size.width,
+          size.height,
+          homeView.viewOffsetX * size.width,
+          homeView.viewOffsetY * size.height,
+          size.width,
+          size.height,
+        );
+      } else {
+        perspectiveCamera.clearViewOffset();
+      }
+    };
+    const applyHomeView = () => {
+      applyProjection();
+      perspectiveCamera.position.set(
+        0,
+        0,
+        homeView?.distance ?? DEFAULT_CAMERA_DISTANCE,
+      );
+      const controls = controlsRef.current;
+      controls?.target.set(0, 0, 0);
+      controls?.update();
+      controls?.saveState();
+    };
+
+    applyProjection();
+    homeViewRef.current = applyHomeView;
+    if (!viewStateRef.current.hasEnteredZoom) applyHomeView();
+
+    return () => {
+      if (homeViewRef.current === applyHomeView) homeViewRef.current = null;
+    };
+  }, [camera, controlsRef, homeView, homeViewRef, size.height, size.width, viewStateRef]);
+
+  return null;
+}
 
 export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
   function PrismStage(
-    { state, onViewStateChange, className = "" },
+    { state, homeFrame, onViewStateChange, className = "" },
     ref,
   ) {
     const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
+    const homeViewRef = useRef<(() => void) | null>(null);
     const viewStateRef = useRef<PrismViewState>({
       hasEnteredZoom: false,
       hasRotationDrifted: false,
@@ -63,14 +147,18 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
       ref,
       () => ({
         recentreView() {
-          controlsRef.current?.reset();
+          if (homeFrame) {
+            homeViewRef.current?.();
+          } else {
+            controlsRef.current?.reset();
+          }
           publishViewState({
             hasEnteredZoom: viewStateRef.current.hasEnteredZoom,
             hasRotationDrifted: false,
           });
         },
       }),
-      [publishViewState],
+      [homeFrame, publishViewState],
     );
 
     return (
@@ -79,6 +167,12 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
         className={cn("relative size-full", className)}
       >
         <Canvas
+          camera={{
+            far: 100,
+            fov: 50,
+            near: 0.1,
+            position: [0, 0, DEFAULT_CAMERA_DISTANCE],
+          }}
           className="size-full"
           dpr={[1, 2]}
           fallback={
@@ -96,13 +190,6 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             gl.useLegacyLights = true;
           }}
         >
-          <PerspectiveCamera
-            makeDefault
-            fov={50}
-            near={0.1}
-            far={100}
-            position={[0, 0, 3]}
-          />
           <directionalLight
             color={0xffffff}
             intensity={1.1}
@@ -143,6 +230,12 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
               });
             }}
             target={[0, 0, 0]}
+          />
+          <PrismHomeCamera
+            controlsRef={controlsRef}
+            homeFrame={homeFrame}
+            homeViewRef={homeViewRef}
+            viewStateRef={viewStateRef}
           />
         </Canvas>
       </section>
