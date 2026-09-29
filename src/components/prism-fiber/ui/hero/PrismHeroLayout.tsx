@@ -48,7 +48,7 @@ export function PrismHeroLayout() {
       </div>
 
       <div
-        className="pointer-events-none relative z-10 mx-auto h-full w-full max-w-7xl md:landscape:grid md:landscape:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] md:landscape:items-center md:landscape:gap-x-8 md:landscape:px-8 md:landscape:py-8 lg:grid lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-center lg:gap-x-10 lg:px-12 lg:py-12"
+        className="pointer-events-none relative z-10 mx-auto h-full w-full max-w-7xl md:landscape:grid md:landscape:grid-cols-2 md:landscape:items-center md:landscape:gap-x-8 md:landscape:px-8 md:landscape:py-8 lg:grid lg:grid-cols-2 lg:items-center lg:gap-x-10 lg:px-12 lg:py-12"
         data-testid="prism-content-container"
       >
         <div
@@ -59,7 +59,7 @@ export function PrismHeroLayout() {
 
         <div
           ref={topBoundaryRef}
-          className="pointer-events-none absolute inset-x-4 top-4 z-10 mx-auto flex w-auto max-w-xl flex-col items-center text-center md:landscape:relative md:landscape:inset-auto md:landscape:col-start-1 md:landscape:row-span-2 md:landscape:row-start-1 md:landscape:mx-0 md:landscape:w-full md:landscape:items-start md:landscape:justify-self-stretch md:landscape:self-center md:landscape:text-left lg:relative lg:inset-auto lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mx-0 lg:w-full lg:items-start lg:justify-self-stretch lg:self-center lg:text-left"
+          className="pointer-events-none absolute inset-x-4 top-4 z-10 mx-auto flex w-auto max-w-xl flex-col items-center text-center md:landscape:relative md:landscape:inset-auto md:landscape:col-start-1 md:landscape:row-span-2 md:landscape:row-start-1 md:landscape:w-4/5 md:landscape:items-start md:landscape:justify-self-end md:landscape:self-center md:landscape:text-left lg:relative lg:inset-auto lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:w-4/5 lg:items-start lg:justify-self-end lg:self-center lg:text-left"
         >
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-accent sm:mb-4">
             Product delivery

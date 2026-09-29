@@ -179,7 +179,7 @@ The UI-owned semantic `PrismState` drives both the narrative and the existing
 | Phone portrait | identity, short positioning, Prism, compact state control, primary CTA, scroll cue |
 | Short phone landscape | compact identity and primary CTA, Prism, condensed state control, scroll cue |
 | Tablet portrait | phone core plus supporting description and secondary CTA |
-| Tablet landscape | tablet content in an asymmetric split composition |
+| Tablet landscape | tablet content in an equal split composition |
 | Desktop | stable hero content plus active-state process narrative and bookended stage controls |
 | Wide desktop | same information as desktop with more breathing room; no extra content solely to fill space |
 
@@ -255,10 +255,10 @@ Requirements:
 The phone stack gains supporting description and a secondary CTA. The Prism
 remains the dominant middle region and controls remain combined beneath it.
 
-### Tablet landscape: asymmetric split
+### Tablet landscape: equal split
 
-The stable hero content occupies the smaller side of the split and the Prism
-occupies the larger side. Controls may remain combined unless height permits
+The stable hero content and Prism occupy equal sides of the split. Controls may
+remain combined unless height permits
 the desktop bookended treatment without reducing the Prism below its portrait
 prominence.
 
@@ -281,8 +281,8 @@ insufficient.
 
 Requirements:
 
-- Begin evaluation near a `5 / 7` or `4.5 / 7.5` text-to-stage ratio.
-- The Prism receives the larger uninterrupted region.
+- Use equal-width text and stage columns.
+- The Prism retains an uninterrupted half of the composition.
 - Stable copy, calls to action, and active-state narrative form one coherent
   editorial column.
 - The narrative block reserves enough height for every state so autoplay does

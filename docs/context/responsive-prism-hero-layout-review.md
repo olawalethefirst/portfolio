@@ -40,8 +40,8 @@ Provisional actions:
 | Phone portrait | centered identity, one-line title, state tagline, state description, and both actions |
 | Short phone landscape | the same full-Canvas editorial and controls used in portrait |
 | Tablet portrait | centered editorial and controls over the full-viewport Prism Canvas |
-| Tablet landscape | tablet content in an asymmetric split |
-| Desktop and wide desktop | the same editorial content as tablet with a wider two-column composition |
+| Tablet landscape | tablet content in an equal split |
+| Desktop and wide desktop | the same editorial content as tablet with an equal two-column composition |
 
 No breakpoint adds decorative copy merely to fill space. Desktop uses one
 two-column direction; the three-column candidate and its lab selector are
@@ -70,7 +70,8 @@ clearance gap, so its initial framing uses the available space between the two
 overlays. The full Canvas remains available when the user pans or zooms.
 
 Tablet landscape switches to a content-left/stage-right split at
-`md:landscape`; desktop uses the split from `lg` regardless of orientation.
+`md:landscape`; desktop uses the same equal split from `lg` regardless of
+orientation.
 
 ## Stage controls
 
