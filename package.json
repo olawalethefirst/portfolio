@@ -11,8 +11,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@heroui/react": "^3.2.5",
-    "@heroui/styles": "^3.2.5",
+    "@heroui/react": "^3.2.6",
+    "@heroui/styles": "^3.2.6",
     "@react-three/drei": "10.7.8",
     "@react-three/fiber": "9.8.0",
     "lucide-react": "^1.46.0",
