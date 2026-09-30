@@ -29,7 +29,34 @@ Performance is classified during scoping:
 
 Agents may run types, lint, and focused non-browser tests. They do not run production builds, start application servers, or perform browser/accessibility/performance verification unless the human controller explicitly delegates that action.
 
-Do not invent a coverage target until this repository has a real test runner and measured baseline. New behavioral work must still introduce the smallest appropriate test setup or explicitly obtain approval for another repeatable verification method.
+## Automated Test Scope
+
+Automated tests protect important user-experience behavior that is difficult to
+verify reliably through ordinary visual review. A test must provide durable
+insight into the experience it protects; adding a test merely because a file
+changed is not a quality goal.
+
+Classify changed behavior before deciding whether an automated test is needed:
+
+| Level | Requirement | Use when |
+|---|---|---|
+| 0 — Visual review | No automated test is expected | The change is cosmetic, static, low-impact, or readily verified through normal visual review. |
+| 1 — Author judgment | Add a test only when it captures durable behavioral insight; record the reasoning in the review handoff | The change has some hidden state or regression risk, but limited user impact or straightforward manual verification. |
+| 2 — Required | Add or update the smallest focused automated test that protects the experience | An important experience depends on a unique or difficult-to-reproduce state, branching, timing, recovery behavior, input handling, or coordination across components. |
+
+Tests must assert observable outcomes or an explicit user-facing contract.
+Accessible roles and names, required status messages, and user-visible state
+changes are valid assertions. Incidental class names, styling, static copy, DOM
+structure, component internals, and other implementation details are not valid
+targets unless they are themselves part of an explicit experience contract.
+
+Prefer the lowest test layer that can prove the contract without coupling the
+test to implementation. Tests do not replace visual review for styling, layout,
+animation polish, or ordinary content changes.
+
+Do not invent a coverage target until the repository has a measured baseline.
+Coverage may inform review, but it does not determine whether a test is valuable
+or required; the scope classification above does.
 
 ## Exceptions
 
