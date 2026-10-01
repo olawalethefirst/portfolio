@@ -52,7 +52,7 @@ export function NavPill({
         className={iconButtonClassName}
         isIconOnly
         onPress={onMenuPress}
-        size="lg"
+        size="sm"
         variant="outline"
       >
         <Menu aria-hidden="true" />
@@ -66,7 +66,7 @@ export function NavPill({
         className={iconButtonClassName}
         isIconOnly
         onPress={onSettingsPress}
-        size="lg"
+        size="sm"
         variant="outline"
       >
         <Settings2 aria-hidden="true" />

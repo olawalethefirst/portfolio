@@ -170,7 +170,7 @@ export function NavigationPanel({
           className="border-muted/50"
           isIconOnly
           onPress={closeWithLauncherFocus}
-          size="lg"
+          size="sm"
           variant="outline"
         >
           <X aria-hidden="true" />
