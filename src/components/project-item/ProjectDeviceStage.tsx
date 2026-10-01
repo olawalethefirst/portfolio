@@ -52,7 +52,7 @@ interface DeviceProfile {
 
 const deviceProfiles: Record<ProjectPlatform, DeviceProfile> = {
   mobile: {
-    assetPath: "/iphone_16_render_optimized.glb",
+    assetPath: "/project_mobile.glb",
     baseScale: 0.214,
     missingScreenError:
       "The mobile project model does not contain its screen mesh.",
