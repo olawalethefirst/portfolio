@@ -1,6 +1,10 @@
 "use client";
 
 import { Button } from "@/src/components/ui/Button";
+import {
+  PublicationCard,
+  type PublicationCardProps,
+} from "@/src/components/publication-card";
 import { Chip } from "@/src/components/ui/Chip";
 import { ColorSwatchPicker } from "@/src/components/ui/ColorSwatchPicker";
 import { Progress } from "@/src/components/ui/Progress";
@@ -38,6 +42,7 @@ const sections = [
   { id: "slider", label: "Slider" },
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
+  { id: "publication-cards", label: "Publication Cards" },
   { id: "hero-control-panel", label: "Hero Control Panel" },
 ];
 
@@ -50,6 +55,19 @@ const navigationPanelItems = [
 ];
 
 const chipColors = ["default", "accent", "success", "warning", "danger"] as const;
+
+const publication: PublicationCardProps = {
+  cover: {
+    alt: "Layered green geometric forms crossed by a chartreuse beam",
+    src: "/publication-cover.svg",
+  },
+  date: "2026-09-18",
+  href: "/publications/designing-for-trust-in-invisible-systems",
+  summary:
+    "A practical framework for making complex product decisions legible, accountable, and easier for teams to trust.",
+  tags: ["Product strategy", "Systems thinking", "Research"],
+  title: "Designing for trust in invisible systems",
+};
 
 function ShowcaseShell({
   children,
@@ -366,6 +384,29 @@ export default function Home() {
                   </p>
                 </Surface>
               </Surface>
+            </div>
+          </div>
+        </section>
+
+        <section id="publication-cards" className="flex flex-col gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">Publication Cards</h2>
+            <p className="text-sm text-muted">
+              A publication preview built on the continuous-glass surface.
+            </p>
+          </div>
+
+          <div className="max-w-2xl">
+            <div className="relative isolate rounded-2xl">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-10"
+              >
+                <span className="absolute -top-16 -left-16 size-72 rounded-full bg-accent/35 blur-3xl" />
+                <span className="absolute right-0 -bottom-20 size-80 rounded-full bg-surface-tertiary blur-3xl" />
+              </div>
+
+              <PublicationCard {...publication} />
             </div>
           </div>
         </section>
