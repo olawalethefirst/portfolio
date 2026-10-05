@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { PUBLICATION_COVER_ASPECT_CLASS } from "@/src/components/publication-cover";
 import { Chip } from "@/src/components/ui/Chip";
 import { Surface } from "@/src/components/ui/Surface";
 
@@ -45,7 +46,9 @@ export function PublicationCard({
           className="grid h-full grid-rows-[auto_1fr] rounded-2xl transition-opacity duration-200 active:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-inset motion-reduce:transition-none"
           href={href}
         >
-          <div className="aspect-video overflow-hidden rounded-xl ring-1 ring-border">
+          <div
+            className={`${PUBLICATION_COVER_ASPECT_CLASS} overflow-hidden rounded-xl ring-1 ring-border`}
+          >
             <div className="relative size-full transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transform-none motion-reduce:transition-none">
               <Image
                 alt={cover.alt}
