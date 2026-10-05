@@ -2,6 +2,10 @@
 
 import { Button } from "@/src/components/ui/Button";
 import {
+  ContactConversationSection,
+  type ContactConversationSectionProps,
+} from "@/src/components/contact-conversation";
+import {
   PublicationCard,
   type PublicationCardProps,
 } from "@/src/components/publication-card";
@@ -43,6 +47,7 @@ const sections = [
   { id: "surface", label: "Surface" },
   { id: "glass-material", label: "Glass Material" },
   { id: "publication-cards", label: "Publication Cards" },
+  { id: "contact", label: "Contact Conversation" },
   { id: "hero-control-panel", label: "Hero Control Panel" },
 ];
 
@@ -68,6 +73,9 @@ const publication: PublicationCardProps = {
   tags: ["Product strategy", "Systems thinking", "Research"],
   title: "Designing for trust in invisible systems",
 };
+
+const handleContactPreviewSubmit: ContactConversationSectionProps["onSubmit"] =
+  () => undefined;
 
 function ShowcaseShell({
   children,
@@ -410,6 +418,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <ContactConversationSection onSubmit={handleContactPreviewSubmit} />
 
         <section id="hero-control-panel" className="flex flex-col gap-4">
           <div>
