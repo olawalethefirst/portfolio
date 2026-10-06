@@ -45,7 +45,7 @@ export function PublicationDetails({ publication }: PublicationDetailsProps) {
       <ReadingProgress />
 
       <Surface
-        className="overflow-hidden rounded-2xl ring-1 ring-border"
+        className="overflow-hidden rounded-2xl bg-transparent ring-1 ring-border"
         variant="elevated"
       >
         <div
