@@ -183,7 +183,7 @@ export function NavigationPanel({
   return (
     <div
       ref={regionRef}
-      className="pointer-events-none fixed inset-x-0 bottom-6 z-20 flex justify-center px-5"
+      className="pointer-events-none fixed inset-x-0 bottom-2 z-20 flex justify-center px-5"
     >
       <div
         ref={panelRef}

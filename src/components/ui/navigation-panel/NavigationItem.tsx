@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ArrowUpRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "../utils";
@@ -12,19 +12,15 @@ export interface NavigationItemProps
   > {
   label: ReactNode;
   href: string;
-  isExternal?: boolean;
   className?: string;
 }
 
 export function NavigationItem({
   label,
   href,
-  isExternal = false,
   className,
   ...props
 }: NavigationItemProps) {
-  const Icon = isExternal ? ArrowUpRight : ArrowRight;
-
   return (
     <a
       {...props}
@@ -38,7 +34,7 @@ export function NavigationItem({
       href={href}
     >
       <span className="min-w-0 truncate">{label}</span>
-      <Icon aria-hidden="true" className="size-5 shrink-0" />
+      <ChevronRight aria-hidden="true" className="size-5 shrink-0 opacity-65" />
     </a>
   );
 }

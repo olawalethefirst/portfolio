@@ -171,7 +171,6 @@ export const NavigationPanelContent = memo(function NavigationPanelContent({
         <NavigationItem
           key={href}
           href={href}
-          isExternal={isExternal}
           label={label}
           onClick={onNavigate}
           rel={isExternal ? "noreferrer" : undefined}
