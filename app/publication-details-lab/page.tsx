@@ -5,6 +5,9 @@ import {
   type PublicationDetailsData,
 } from "@/src/components/publication-details";
 
+import { LabThemeShell } from "../LabThemeShell";
+import { PublicationDetailsLabActionBar } from "./PublicationDetailsLabActionBar";
+
 export const metadata: Metadata = {
   description:
     "A publication details layout lab for long-form, Markdown-authored writing.",
@@ -108,8 +111,13 @@ const publication = {
 
 export default function PublicationDetailsLabPage() {
   return (
-    <main className="min-h-screen bg-background px-5 py-8 font-sans text-foreground sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-      <PublicationDetails publication={publication} />
-    </main>
+    <LabThemeShell>
+      <main className="min-h-screen px-5 pt-8 pb-32 sm:px-8 sm:pt-12 lg:px-12 lg:pt-16">
+        <div className="mx-auto mb-4 w-full max-w-6xl sm:mb-6">
+          <PublicationDetailsLabActionBar />
+        </div>
+        <PublicationDetails publication={publication} />
+      </main>
+    </LabThemeShell>
   );
 }

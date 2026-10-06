@@ -78,6 +78,7 @@ export function Button(props: ButtonProps) {
         aria-disabled={isUnavailable || undefined}
         className={cn(
           buttonVariants({ fullWidth, size, variant }),
+          "rounded-none",
           className,
         )}
         data-slot="button"
@@ -106,6 +107,7 @@ export function Button(props: ButtonProps) {
     fullWidth = false,
     isLoading = false,
     isDisabled = false,
+    isIconOnly = false,
     startContent,
     endContent,
     className,
@@ -121,9 +123,10 @@ export function Button(props: ButtonProps) {
       size={size}
       fullWidth={fullWidth}
       isDisabled={isDisabled}
+      isIconOnly={isIconOnly}
       isPending={isLoading}
       aria-busy={isLoading || undefined}
-      className={className}
+      className={cn(!isIconOnly && "rounded-none", className)}
     >
       {isLoading ? (
         <Spinner
