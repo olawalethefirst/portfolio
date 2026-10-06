@@ -7,6 +7,15 @@ const MINIMUM_HEIGHT = 176;
 const MINIMUM_WIDTH = 320;
 
 describe("measurePrismHomeFrame", () => {
+  it("normalizes a portrait allocation without minimum expansion or duplicate insets", () => {
+    expect(measurePrismHomeFrame({
+      canvasRect: { left: 10, top: 20, width: 400, height: 800 },
+      portraitCompositionRect: { left: 50, top: 100, width: 300, height: 400 },
+      topBoundaryRect: { left: 50, top: 100, width: 300, height: 84 },
+      bottomBoundaryRect: { left: 50, top: 304, width: 300, height: 100 },
+      clearance: CLEARANCE, minimumHeight: MINIMUM_HEIGHT, minimumWidth: MINIMUM_WIDTH,
+    })).toEqual({ left: 55 / 400, top: 180 / 800, width: 270 / 400, height: 88 / 800 });
+  });
   it("maps an explicit right-column region into the full Canvas", () => {
     const frame = measurePrismHomeFrame({
       bottomBoundaryRect: { left: 900, top: 680, width: 420, height: 104 },

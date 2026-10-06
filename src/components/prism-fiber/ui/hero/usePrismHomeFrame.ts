@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import type { PrismHomeFrame } from "../../stage/prism-home-frame";
 import { measurePrismHomeFrame } from "./prism-home-frame-measurement";
+import { calculatePrismPortraitSpread, PRISM_PORTRAIT_SPREAD_FACTOR } from "./prism-portrait-spread";
 
 const FRAME_CLEARANCE_REM = 1;
 const MINIMUM_FRAME_HEIGHT_REM = 11;
@@ -33,6 +34,7 @@ function getRootFontSize() {
 
 export function usePrismHomeFrame() {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const compositionRef = useRef<HTMLDivElement>(null);
   const initialRegionRef = useRef<HTMLDivElement>(null);
   const topBoundaryRef = useRef<HTMLDivElement>(null);
   const bottomBoundaryRef = useRef<HTMLElement>(null);
@@ -48,19 +50,57 @@ export function usePrismHomeFrame() {
     const bottomBoundary = bottomBoundaryRef.current;
     if (!canvas || !initialRegion || !topBoundary || !bottomBoundary) return;
 
+    let lastFailure: string | undefined;
+
     const update = () => {
       const rootFontSize = getRootFontSize();
       const initialRegionRect = initialRegion.getBoundingClientRect();
-      const nextCentersDuringDiscovery = getComputedStyle(initialRegion).display !== "none";
+      const composition = compositionRef.current;
+      const compositionStyle = composition && getComputedStyle(composition);
+      const isPortrait = compositionStyle?.getPropertyValue("--prism-portrait-spread").trim() === "1";
+      const canvasRect = canvas.getBoundingClientRect();
+      if (canvasRect.width <= 0 || canvasRect.height <= 0) return;
+      if (isPortrait && composition && compositionStyle) {
+        const left = Number.parseFloat(compositionStyle.left);
+        const right = Number.parseFloat(compositionStyle.right);
+        const top = Number.parseFloat(compositionStyle.top);
+        const bottom = Number.parseFloat(compositionStyle.bottom);
+        const input = {
+          availableRect: {
+            left: canvasRect.left + left,
+            top: canvasRect.top + top,
+            width: canvasRect.width - left - right,
+            height: canvasRect.height - top - bottom,
+          },
+          editorialHeight: topBoundary.getBoundingClientRect().height,
+          controlsHeight: bottomBoundary.getBoundingClientRect().height,
+          gap: FRAME_CLEARANCE_REM * rootFontSize,
+        };
+        const spread = calculatePrismPortraitSpread(input);
+        if (!spread.ok) {
+          composition.style.removeProperty("--portrait-group-height");
+          const failure = JSON.stringify({ ...input, remainingHeight: spread.remainingHeight, factor: PRISM_PORTRAIT_SPREAD_FACTOR, state: topBoundary.textContent });
+          if (failure !== lastFailure) console.error("Portrait Prism spread does not fit:", failure);
+          lastFailure = failure;
+          return;
+        }
+        lastFailure = undefined;
+        const height = `${spread.groupHeight}px`;
+        if (composition.style.getPropertyValue("--portrait-group-height") !== height) {
+          composition.style.setProperty("--portrait-group-height", height);
+        }
+      }
+      const nextCentersDuringDiscovery = !isPortrait && getComputedStyle(initialRegion).display !== "none";
       if (centersDuringDiscoveryRef.current !== nextCentersDuringDiscovery) {
         centersDuringDiscoveryRef.current = nextCentersDuringDiscovery;
         setCentersDuringDiscovery(nextCentersDuringDiscovery);
       }
       const nextFrame = measurePrismHomeFrame({
         bottomBoundaryRect: bottomBoundary.getBoundingClientRect(),
-        canvasRect: canvas.getBoundingClientRect(),
+        canvasRect,
         clearance: FRAME_CLEARANCE_REM * rootFontSize,
         initialRegionRect,
+        portraitCompositionRect: isPortrait ? composition?.getBoundingClientRect() : undefined,
         minimumHeight: MINIMUM_FRAME_HEIGHT_REM * rootFontSize,
         minimumWidth: MINIMUM_FRAME_WIDTH_REM * rootFontSize,
         topBoundaryRect: topBoundary.getBoundingClientRect(),
@@ -75,6 +115,7 @@ export function usePrismHomeFrame() {
 
     const observer = new ResizeObserver(update);
     observer.observe(canvas);
+    if (compositionRef.current) observer.observe(compositionRef.current);
     observer.observe(initialRegion);
     observer.observe(topBoundary);
     observer.observe(bottomBoundary);
@@ -85,6 +126,7 @@ export function usePrismHomeFrame() {
   return {
     bottomBoundaryRef,
     canvasRef,
+    compositionRef,
     homeFrame,
     centersDuringDiscovery,
     initialRegionRef,

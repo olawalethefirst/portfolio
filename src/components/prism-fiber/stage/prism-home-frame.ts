@@ -4,6 +4,10 @@ const PRISM_BOUNDING_HEIGHT = 1.2;
 const MIN_FRAME_SIZE = 0.001;
 const HOME_FRAME_CONTENT_RATIO = 0.9;
 
+export function estimatePrismHomeHeight(frameWidth: number) {
+  return frameWidth * HOME_FRAME_CONTENT_RATIO * PRISM_BOUNDING_HEIGHT / PRISM_BOUNDING_WIDTH;
+}
+
 export interface PrismHomeFrame {
   readonly left: number;
   readonly top: number;

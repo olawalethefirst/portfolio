@@ -33,6 +33,7 @@ function HomeFrameHarness({ onRender }: { onRender?: () => void }) {
   const {
     bottomBoundaryRef,
     canvasRef,
+    compositionRef,
     homeFrame,
     centersDuringDiscovery,
     initialRegionRef,
@@ -42,6 +43,7 @@ function HomeFrameHarness({ onRender }: { onRender?: () => void }) {
   return (
     <>
       <div data-region="canvas" ref={canvasRef} />
+      <div data-region="composition" ref={compositionRef} />
       <div data-region="initial" ref={initialRegionRef} />
       <div data-region="top" ref={topBoundaryRef} />
       <aside data-region="bottom" ref={bottomBoundaryRef} />
@@ -52,6 +54,37 @@ function HomeFrameHarness({ onRender }: { onRender?: () => void }) {
 }
 
 describe("usePrismHomeFrame", () => {
+  it("caps portrait spread, remeasures content, and avoids unchanged renders", () => {
+    regions.set("composition", rect(16, 16, 368, 768));
+    const onRender = vi.fn();
+    const { container } = render(<HomeFrameHarness onRender={onRender} />);
+    const composition = container.querySelector<HTMLElement>('[data-region="composition"]')!;
+    act(() => {
+      composition.style.top = "16px";
+      composition.style.bottom = "16px";
+      composition.style.left = "16px";
+      composition.style.right = "16px";
+      composition.style.setProperty("--prism-portrait-spread", "1");
+      notifyResize?.();
+    });
+    const readFrame = () => JSON.parse(container.querySelector("output")!.textContent!);
+    const first = readFrame();
+    expect(first.width).toBeCloseTo(331.2 / 400);
+    expect(first.height).toBeCloseTo(357.696 / 800);
+    expect(Number.parseFloat(composition.style.getPropertyValue("--portrait-group-height"))).toBeCloseTo(677.696);
+    const renders = onRender.mock.calls.length;
+    act(() => notifyResize?.());
+    expect(onRender).toHaveBeenCalledTimes(renders);
+    regions.set("top", rect(16, 16, 368, 224));
+    act(() => notifyResize?.());
+    expect(readFrame().top - first.top).toBeCloseTo(20 / 800);
+    expect(readFrame().height).toBe(first.height);
+    act(() => {
+      composition.style.removeProperty("--prism-portrait-spread");
+      notifyResize?.();
+    });
+    expect(readFrame().width).toBeCloseTo(0.9);
+  });
   it("enables centering only while the desktop initial region is displayed", () => {
     render(<HomeFrameHarness />);
     const initialRegion = document.querySelector<HTMLElement>('[data-region="initial"]');
@@ -84,7 +117,16 @@ describe("usePrismHomeFrame", () => {
     vi.stubGlobal("ResizeObserver", ResizeObserverMock);
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
       function getBoundingClientRect(this: HTMLElement) {
-        return regions.get(this.getAttribute("data-region") ?? "") ?? rect(0, 0, 0, 0);
+        const name = this.getAttribute("data-region") ?? "";
+        const composition = document.querySelector<HTMLElement>('[data-region="composition"]');
+        if (composition?.style.getPropertyValue("--prism-portrait-spread") === "1") {
+          const height = Number.parseFloat(composition.style.getPropertyValue("--portrait-group-height")) || 768;
+          const top = 16 + (768 - height) / 2;
+          if (name === "composition") return rect(16, top, 368, height);
+          if (name === "top") return rect(16, top, 368, regions.get("top")!.height);
+          if (name === "bottom") return rect(16, top + height - regions.get("bottom")!.height, 368, regions.get("bottom")!.height);
+        }
+        return regions.get(name) ?? rect(0, 0, 0, 0);
       },
     );
   });

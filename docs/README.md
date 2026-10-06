@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/prism-portrait-spread-spec.md`](context/prism-portrait-spread-spec.md):
+  centered portrait hero with vertical spread capped from square Prism home height.
+
 - [`context/prism-desktop-zoom-centering-spec.md`](context/prism-desktop-zoom-centering-spec.md):
   desktop discovery projection, full-progress centering, and responsive verification contract.
 

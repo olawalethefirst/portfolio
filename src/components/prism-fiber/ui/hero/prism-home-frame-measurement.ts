@@ -13,6 +13,7 @@ interface PrismHomeFrameMeasurement {
   readonly clearance: number;
   readonly horizontalInset?: number;
   readonly initialRegionRect?: RectLike;
+  readonly portraitCompositionRect?: RectLike;
   readonly minimumHeight: number;
   readonly minimumWidth: number;
   readonly topBoundaryRect: RectLike;
@@ -73,11 +74,24 @@ export function measurePrismHomeFrame({
   clearance,
   horizontalInset = DEFAULT_HORIZONTAL_INSET,
   initialRegionRect,
+  portraitCompositionRect,
   minimumHeight,
   minimumWidth,
   topBoundaryRect,
 }: PrismHomeFrameMeasurement): PrismHomeFrame | undefined {
   if (canvasRect.width <= 0 || canvasRect.height <= 0) return undefined;
+
+  if (portraitCompositionRect) {
+    const inset = clamp(horizontalInset, 0, 0.499);
+    const top = topBoundaryRect.top + topBoundaryRect.height + clearance;
+    const bottom = bottomBoundaryRect.top - clearance;
+    return {
+      left: (portraitCompositionRect.left + portraitCompositionRect.width * inset - canvasRect.left) / canvasRect.width,
+      top: (top - canvasRect.top) / canvasRect.height,
+      width: portraitCompositionRect.width * (1 - 2 * inset) / canvasRect.width,
+      height: (bottom - top) / canvasRect.height,
+    };
+  }
 
   const canvasBottom = canvasRect.top + canvasRect.height;
   const canvasRight = canvasRect.left + canvasRect.width;

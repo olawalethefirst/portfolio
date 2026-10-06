@@ -1,0 +1,38 @@
+@reference "../../../../../app/globals.css";
+
+@variant portrait {
+@variant max-lg {
+  .composition {
+    --prism-portrait-spread: 1;
+    --outer-clearance: 1rem;
+    @variant sm {
+      --outer-clearance: 1.5rem;
+    }
+    position: absolute;
+    inset: max(var(--outer-clearance), env(safe-area-inset-top, 0px))
+      max(var(--outer-clearance), env(safe-area-inset-right, 0px))
+      max(var(--outer-clearance), env(safe-area-inset-bottom, 0px))
+      max(var(--outer-clearance), env(safe-area-inset-left, 0px));
+    width: auto;
+    height: var(--portrait-group-height, auto);
+    min-width: 0;
+    min-height: 0;
+    margin: auto;
+  }
+
+  .composition > .editorial,
+  .composition > .controls {
+    inset-inline: 0;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .composition > .editorial {
+    top: 0;
+  }
+
+  .composition > .controls {
+    bottom: 0;
+  }
+}
+}
