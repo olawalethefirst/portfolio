@@ -74,10 +74,15 @@ export function PrismHeroLayout() {
             {content.description}
           </p>
           <div className="pointer-events-auto mt-4 flex flex-nowrap gap-3 sm:mt-6">
-            <Button href="#work" size="sm">
+            <Button className="w-[70px]" href="#work" size="sm">
               Work
             </Button>
-            <Button href="#contact" size="sm" variant="tertiary">
+            <Button
+              className="w-[70px]"
+              href="#contact"
+              size="sm"
+              variant="outline"
+            >
               Hire
             </Button>
           </div>
