@@ -54,7 +54,7 @@ export function ProjectItem({
     <article
       aria-labelledby={titleId}
       className={cn(
-        "sticky top-0 min-h-dvh overflow-hidden bg-surface text-foreground [--project-edge-clearance:4rem]",
+        "sticky top-0 min-h-dvh overflow-hidden bg-surface text-foreground [--project-edge-clearance:4.5rem]",
         className,
       )}
       ref={articleRef}
@@ -74,18 +74,11 @@ export function ProjectItem({
             </p>
           </header>
 
-          <ul
-            aria-label={`${name} solutions`}
-            className="flex max-w-[28rem] flex-wrap content-start justify-end gap-2 justify-self-end"
-          >
-            {solutions.map((solution) => (
-              <li key={solution}>
-                <Chip size="sm" variant="secondary">
-                  {solution}
-                </Chip>
-              </li>
-            ))}
-          </ul>
+          <div className="justify-self-end">
+            <Chip color="accent" variant="soft">
+              {platformLabels[platform]}
+            </Chip>
+          </div>
         </div>
       </div>
 
@@ -101,11 +94,18 @@ export function ProjectItem({
 
       <div className="absolute inset-x-0 bottom-0 z-10">
         <div className="container mx-auto grid grid-cols-2 items-end gap-4 px-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8 sm:px-6 lg:px-8">
-          <div>
-            <Chip color="accent" variant="soft">
-              {platformLabels[platform]}
-            </Chip>
-          </div>
+          <ul
+            aria-label={`${name} solutions`}
+            className="flex max-w-[28rem] flex-wrap content-end gap-2"
+          >
+            {solutions.map((solution) => (
+              <li key={solution}>
+                <Chip size="sm" variant="soft">
+                  {solution}
+                </Chip>
+              </li>
+            ))}
+          </ul>
 
           <Button
             aria-label={`View ${name} live`}
@@ -113,7 +113,7 @@ export function ProjectItem({
             endContent={<ArrowUpRight aria-hidden="true" />}
             href={liveHref}
             rel="noreferrer"
-            size="lg"
+            size="md"
             target="_blank"
             variant="outline"
           >
