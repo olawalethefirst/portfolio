@@ -1,61 +1,54 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { render, screen } from "@testing-library/react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  type HTMLAttributes,
+  type PropsWithChildren,
+} from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
-  PrismHandle,
-  PrismProps,
-} from "@/src/components/prism-fiber/Prism";
-import type { HeroControlPanelProps } from "@/src/components/ui/hero-control-panel";
-
-const prismRecentre = vi.hoisted(() => vi.fn());
+  PrismHeroLayoutHandle,
+  PrismHeroLayoutProps,
+} from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
 
 vi.mock("motion/react", async (importOriginal) => {
   const motion = await importOriginal<typeof import("motion/react")>();
 
   return {
     ...motion,
-    animate: vi.fn(() => ({ stop: vi.fn() })),
     useReducedMotion: () => false,
   };
 });
 
-vi.mock("@/src/components/prism-fiber/Prism", () => ({
-  Prism: forwardRef<PrismHandle, PrismProps>(function PrismMock(
-    { onInteractionStart, state },
-    ref,
-  ) {
-    const [marker, setMarker] = useState(0);
+vi.mock("@/src/components/prism-fiber/ui/hero/PrismHeroLayout", () => ({
+  PrismHeroLayout: forwardRef<PrismHeroLayoutHandle, PrismHeroLayoutProps>(
+    function PrismHeroLayoutMock({ allowsCameraZoom }, ref) {
+      useImperativeHandle(ref, () => ({ setDiscoveryProgress: vi.fn() }));
 
-    useImperativeHandle(ref, () => ({ recentreView: prismRecentre }));
-
-    return (
-      <div data-prism-state={state} data-testid="prism-stage">
-        <button onClick={() => setMarker((value) => value + 1)}>
-          Prism marker {marker}
-        </button>
-        <button onClick={onInteractionStart}>
-          Enter manual view
-        </button>
-      </div>
-    );
-  }),
+      return (
+        <div
+          data-allows-camera-zoom={String(allowsCameraZoom)}
+          data-testid="prism-hero"
+        >
+          <h1>Ideas into products.</h1>
+        </div>
+      );
+    },
+  ),
 }));
 
-vi.mock("@/src/components/ui/hero-control-panel", () => ({
-  HeroControlPanel: ({
-    activeSegment,
-    isAutoplayRunning,
-    onRecentre,
-    onSegmentSelect,
-  }: HeroControlPanelProps) => (
-    <div
-      data-autoplay-running={String(isAutoplayRunning)}
-      data-testid="hero-controls"
-    >
-      <span>Active phase: {activeSegment}</span>
-      <button onClick={() => onSegmentSelect("idea")}>Idea</button>
-      <button onClick={onRecentre}>Recentre view</button>
+vi.mock("@/src/components/ui/Surface", () => ({
+  Surface: ({
+    children,
+    className,
+    material,
+    ...props
+  }: PropsWithChildren<
+    HTMLAttributes<HTMLDivElement> & { material?: string }
+  >) => (
+    <div {...props} className={className} data-material={material}>
+      {children}
     </div>
   ),
 }));
@@ -63,51 +56,27 @@ vi.mock("@/src/components/ui/hero-control-panel", () => ({
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
 
 describe("PrismHeroLayoutLab", () => {
-  it("presents the complete representative hero composition", () => {
+  it("renders the complete hero with page-owned camera zoom", () => {
     render(<PrismHeroLayoutLab />);
 
+    const heroes = screen.getAllByTestId("prism-hero");
+    expect(heroes).toHaveLength(1);
+    expect(heroes[0].getAttribute("data-allows-camera-zoom")).toBe("false");
     expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "Ideas into products.",
-      }),
+      screen.getByRole("heading", { level: 1, name: "Ideas into products." }),
     ).toBeTruthy();
-    expect(screen.getByText("Product delivery")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Work" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Hire" })).toBeTruthy();
-    expect(screen.getByTestId("hero-controls")).toBeTruthy();
-    expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
   });
 
-  it("retains the Prism instance and semantic state through ordinary rerenders", () => {
-    const { rerender } = render(<PrismHeroLayoutLab />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Prism marker 0" }));
-    fireEvent.click(screen.getByRole("button", { name: "Idea" }));
-    rerender(<PrismHeroLayoutLab />);
-
-    expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
-      "idea",
-    );
-    expect(
-      screen.getByText("Align user needs, business goals, and technical reality."),
-    ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Prism marker 1" })).toBeTruthy();
-    expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
-    expect(screen.queryByRole("button", { name: "Two column" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Three column" })).toBeNull();
-  });
-
-  it("retains manual-view suspension and recentre behavior", () => {
+  it("places one decorative glass panel after the hero runway", () => {
     render(<PrismHeroLayoutLab />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Enter manual view" }));
+    const runway = screen.getByTestId("prism-scroll-runway");
+    const panel = screen.getByTestId("prism-glass-panel");
 
-    const controls = screen.getByTestId("hero-controls");
-    expect(controls.getAttribute("data-autoplay-running")).toBe("false");
-
-    fireEvent.click(screen.getByRole("button", { name: "Recentre view" }));
-    expect(prismRecentre).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("button", { name: /fullscreen/i })).toBeNull();
+    expect(runway.nextElementSibling).toBe(panel);
+    expect(panel.getAttribute("aria-hidden")).toBe("true");
+    expect(panel.getAttribute("data-material")).toBe("glass");
+    expect(panel.className).toContain("pointer-events-none");
+    expect(panel.style.transform).toBe("");
   });
 });

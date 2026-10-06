@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { forwardRef, useImperativeHandle, useRef } from "react";
 
 import { HeroControlPanel } from "../../../ui/hero-control-panel";
 import { Button } from "../../../ui/Button";
@@ -9,7 +9,18 @@ import { usePrismAutoplay } from "../usePrismAutoplay";
 import { PRISM_HERO_CONTENT, PRISM_HERO_TITLE } from "./prism-hero-content";
 import { usePrismHomeFrame } from "./usePrismHomeFrame";
 
-export function PrismHeroLayout() {
+export interface PrismHeroLayoutProps {
+  allowsCameraZoom?: boolean;
+}
+
+export interface PrismHeroLayoutHandle {
+  setDiscoveryProgress(progress: number): void;
+}
+
+export const PrismHeroLayout = forwardRef<
+  PrismHeroLayoutHandle,
+  PrismHeroLayoutProps
+>(function PrismHeroLayout({ allowsCameraZoom = true }, ref) {
   const prismRef = useRef<PrismHandle>(null);
   const {
     bottomBoundaryRef,
@@ -29,6 +40,12 @@ export function PrismHeroLayout() {
   } = usePrismAutoplay();
   const content = PRISM_HERO_CONTENT[state];
 
+  useImperativeHandle(ref, () => ({
+    setDiscoveryProgress(progress) {
+      prismRef.current?.setDiscoveryProgress(progress);
+    },
+  }));
+
   return (
     <section
       className="relative h-dvh w-full overflow-hidden"
@@ -40,6 +57,7 @@ export function PrismHeroLayout() {
       >
         <Prism
           ref={prismRef}
+          allowsCameraZoom={allowsCameraZoom}
           className="absolute inset-0"
           homeFrame={homeFrame}
           onInteractionStart={pauseAutoplay}
@@ -107,4 +125,4 @@ export function PrismHeroLayout() {
       </div>
     </section>
   );
-}
+});

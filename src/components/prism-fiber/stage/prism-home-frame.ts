@@ -2,6 +2,7 @@ const CAMERA_FOV_DEGREES = 50;
 const PRISM_BOUNDING_WIDTH = 1.2;
 const PRISM_BOUNDING_HEIGHT = 1.2;
 const MIN_FRAME_SIZE = 0.001;
+const HOME_FRAME_CONTENT_RATIO = 0.9;
 
 export interface PrismHomeFrame {
   readonly left: number;
@@ -46,10 +47,14 @@ export function calculatePrismHomeView(
   );
   const widthDistance =
     PRISM_BOUNDING_WIDTH /
-    (2 * halfVerticalFovTangent * safeAspect * frame.width);
+    (2 *
+      halfVerticalFovTangent *
+      safeAspect *
+      frame.width *
+      HOME_FRAME_CONTENT_RATIO);
   const heightDistance =
     PRISM_BOUNDING_HEIGHT /
-    (2 * halfVerticalFovTangent * frame.height);
+    (2 * halfVerticalFovTangent * frame.height * HOME_FRAME_CONTENT_RATIO);
   const centerX = frame.left + frame.width / 2;
   const centerY = frame.top + frame.height / 2;
 

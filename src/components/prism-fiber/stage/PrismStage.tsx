@@ -26,22 +26,30 @@ import {
   calculatePrismHomeView,
   type PrismHomeFrame,
 } from "./prism-home-frame";
+import {
+  calculatePrismDiscoveryDistance,
+  normalizePrismDiscoveryProgress,
+} from "./prism-discovery-view";
 
 export interface PrismStageProps {
   state: PrismState;
   homeFrame?: PrismHomeFrame;
+  allowsCameraZoom?: boolean;
   onInteractionStart?: () => void;
   className?: string;
 }
 
 export interface PrismStageHandle {
   recentreView(): void;
+  setDiscoveryProgress(progress: number): void;
 }
 
 const DEFAULT_CAMERA_DISTANCE = 3;
 
 interface PrismHomeCameraProps {
   controlsRef: MutableRefObject<ComponentRef<typeof OrbitControls> | null>;
+  discoveryProgressRef: MutableRefObject<number>;
+  discoveryViewRef: MutableRefObject<(() => void) | null>;
   hasInteractedRef: MutableRefObject<boolean>;
   homeFrame?: PrismHomeFrame;
   homeViewRef: MutableRefObject<(() => void) | null>;
@@ -49,6 +57,8 @@ interface PrismHomeCameraProps {
 
 function PrismHomeCamera({
   controlsRef,
+  discoveryProgressRef,
+  discoveryViewRef,
   hasInteractedRef,
   homeFrame,
   homeViewRef,
@@ -85,12 +95,25 @@ function PrismHomeCamera({
         perspectiveCamera.clearViewOffset();
       }
     };
+    const homeDistance = homeView?.distance ?? DEFAULT_CAMERA_DISTANCE;
+    const applyDiscoveryView = () => {
+      perspectiveCamera.position.setLength(
+        calculatePrismDiscoveryDistance(
+          homeDistance,
+          discoveryProgressRef.current,
+        ),
+      );
+      controlsRef.current?.update();
+    };
     const applyHomeView = () => {
       applyProjection();
       perspectiveCamera.position.set(
         0,
         0,
-        homeView?.distance ?? DEFAULT_CAMERA_DISTANCE,
+        calculatePrismDiscoveryDistance(
+          homeDistance,
+          discoveryProgressRef.current,
+        ),
       );
       const controls = controlsRef.current;
       controls?.target.set(0, 0, 0);
@@ -99,15 +122,25 @@ function PrismHomeCamera({
     };
 
     applyProjection();
+    discoveryViewRef.current = applyDiscoveryView;
     homeViewRef.current = applyHomeView;
-    if (!hasInteractedRef.current) applyHomeView();
+    if (hasInteractedRef.current) {
+      applyDiscoveryView();
+    } else {
+      applyHomeView();
+    }
 
     return () => {
+      if (discoveryViewRef.current === applyDiscoveryView) {
+        discoveryViewRef.current = null;
+      }
       if (homeViewRef.current === applyHomeView) homeViewRef.current = null;
     };
   }, [
     camera,
     controlsRef,
+    discoveryProgressRef,
+    discoveryViewRef,
     hasInteractedRef,
     homeView,
     homeViewRef,
@@ -120,10 +153,18 @@ function PrismHomeCamera({
 
 export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
   function PrismStage(
-    { state, homeFrame, onInteractionStart, className = "" },
+    {
+      state,
+      homeFrame,
+      allowsCameraZoom = true,
+      onInteractionStart,
+      className = "",
+    },
     ref,
   ) {
     const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null);
+    const discoveryProgressRef = useRef(0);
+    const discoveryViewRef = useRef<(() => void) | null>(null);
     const hasInteractedRef = useRef(false);
     const homeViewRef = useRef<(() => void) | null>(null);
     const [presentationTarget, setPresentationTarget] = useState(() => ({
@@ -147,8 +188,14 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             homeViewRef.current?.();
           } else {
             controlsRef.current?.reset();
+            discoveryViewRef.current?.();
           }
           setPresentationTarget({ state, viewAzimuthYRad: 0 });
+        },
+        setDiscoveryProgress(progress) {
+          discoveryProgressRef.current =
+            normalizePrismDiscoveryProgress(progress);
+          discoveryViewRef.current?.();
         },
       }),
       [homeFrame, state],
@@ -205,6 +252,7 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             makeDefault
             enableDamping
             enablePan={false}
+            enableZoom={allowsCameraZoom}
             dampingFactor={0.08}
             minDistance={1.2}
             maxDistance={6}
@@ -218,6 +266,8 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
           />
           <PrismHomeCamera
             controlsRef={controlsRef}
+            discoveryProgressRef={discoveryProgressRef}
+            discoveryViewRef={discoveryViewRef}
             hasInteractedRef={hasInteractedRef}
             homeFrame={homeFrame}
             homeViewRef={homeViewRef}

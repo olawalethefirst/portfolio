@@ -131,7 +131,9 @@ Ownership remains explicit:
   side-by-side layouts retain the existing centered Stage view without reading
   `window.innerWidth`.
 - The Stage owns the Prism's stable optical bounds, camera fit, projection
-  offset, and interaction target.
+  offset, and interaction target. Its fitted view reserves 10% of the measured
+  frame, so projected Prism bounds use at most 90% of the available width and
+  height.
 - Fitting uses both frame width and height and preserves uniform object scale.
 - The optical center is stable across Idea, Iterate, and Solution transitions;
   it is not recomputed per animation frame.

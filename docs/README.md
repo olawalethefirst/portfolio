@@ -18,5 +18,8 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/responsive-prism-hero-layout-review.md`](context/responsive-prism-hero-layout-review.md):
   authoritative compact content, unified responsive layout, controls, and
   DOM-to-Three.js composition-frame decisions.
+- [`context/prism-hero-scroll-zoom-glass-lab-spec.md`](context/prism-hero-scroll-zoom-glass-lab-spec.md):
+  implemented contract for the complete Prism hero using native scroll for
+  camera zoom followed by a flow-driven decorative glass overlay.
 
 Create a directory only when its first real document is needed. Keep temporary plans, evidence, reviews, and handoffs in the root-level, locally ignored `local-workspace/`.

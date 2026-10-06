@@ -6,27 +6,34 @@ import type { PrismState } from "./state/prism-state";
 import type { PrismHomeFrame } from "./stage/prism-home-frame";
 
 const stageRecentre = vi.hoisted(() => vi.fn());
+const stageSetDiscoveryProgress = vi.hoisted(() => vi.fn());
 
 vi.mock("./stage/PrismStage", () => ({
   PrismStage: forwardRef(function PrismStageMock(
     {
       className,
+      allowsCameraZoom,
       homeFrame,
       onInteractionStart,
       state,
     }: {
       className?: string;
+      allowsCameraZoom?: boolean;
       homeFrame?: PrismHomeFrame;
       onInteractionStart?: () => void;
       state: PrismState;
     },
     ref,
   ) {
-    useImperativeHandle(ref, () => ({ recentreView: stageRecentre }));
+    useImperativeHandle(ref, () => ({
+      recentreView: stageRecentre,
+      setDiscoveryProgress: stageSetDiscoveryProgress,
+    }));
 
     return (
       <div
         className={className}
+        data-allows-camera-zoom={String(allowsCameraZoom)}
         data-home-frame={JSON.stringify(homeFrame)}
         data-state={state}
         data-testid="stage-state"
@@ -52,7 +59,12 @@ describe("Prism public API", () => {
       height: 0.5,
     };
     render(
-      <Prism className="embedded" homeFrame={homeFrame} state="solution" />,
+      <Prism
+        allowsCameraZoom={false}
+        className="embedded"
+        homeFrame={homeFrame}
+        state="solution"
+      />,
     );
 
     const stage = screen.getByTestId("stage-state");
@@ -61,6 +73,7 @@ describe("Prism public API", () => {
     expect(stage.getAttribute("data-home-frame")).toBe(
       JSON.stringify(homeFrame),
     );
+    expect(stage.getAttribute("data-allows-camera-zoom")).toBe("false");
   });
 
   it("forwards interaction events and the recentre command", () => {
@@ -79,5 +92,8 @@ describe("Prism public API", () => {
 
     ref.current?.recentreView();
     expect(stageRecentre).toHaveBeenCalled();
+
+    ref.current?.setDiscoveryProgress(0.75);
+    expect(stageSetDiscoveryProgress).toHaveBeenCalledWith(0.75);
   });
 });

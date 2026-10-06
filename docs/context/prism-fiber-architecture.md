@@ -147,10 +147,12 @@ go*, while each rendered object decides *how its own property moves there*.
 ### Stage Layer
 
 `Prism.tsx` is the stable public facade. Its API has a required semantic
-`state`, an optional container `className`, an optional semantic interaction
-callback, and a `recentreView()` handle. It exposes no Three.js types,
-animation progress, or object-level controls. The facade delegates rendering
-to `stage/PrismStage.tsx` so internal stage organization can evolve without
+`state`, optional home-frame and camera-interaction policy inputs, an optional
+container `className`, and an optional semantic interaction callback. Its
+handle exposes `recentreView()` plus normalized `setDiscoveryProgress()`; it
+does not expose camera coordinates, Motion values, Three.js types, or
+object-level controls. The facade delegates rendering to
+`stage/PrismStage.tsx` so internal stage organization can evolve without
 changing consumer code.
 
 `PrismStage` fills its parent. It does not
@@ -175,8 +177,14 @@ later semantic state arrives, the Stage samples the current camera azimuth once
 and holds it with that state as an internal presentation target. Ordinary
 control changes do not update the held target, so the Prism does not
 counter-rotate while the user explores. Explicit recentering restores the
-zero-offset presentation frame. Wheel zoom remains enabled for the lab;
-page-scroll integration is a separate future decision.
+zero-offset presentation frame while retaining the current scroll-derived
+distance. The complete-hero lab disables OrbitControls zoom and streams
+route-relative normalized page-scroll progress through a narrow hero handle to
+the persistent Prism. The Stage maps that value to camera distance while
+preserving the current camera direction and responsive home-frame projection.
+Home fitting reserves 10% of the measured frame, keeping the Prism's projected
+bounds within 90% of the available width and height. Discovery ends at 50% of
+that fitted home distance.
 
 ### Scene Layer
 
@@ -452,8 +460,12 @@ required-bone validation make an incompatible asset revision fail explicitly.
 - `scene/objects/figure-poses.test.ts` locks the approved pose values and
   verifies rest-relative quaternion composition.
 - `stage/PrismStage.test.tsx` verifies the Stage boundary, named-state flow,
-  sampled-and-held camera azimuth, semantic exploration events, and recenter
-  command.
+  sampled-and-held camera azimuth, semantic exploration events, discovery
+  progress, responsive distance reapplication, and the recenter command.
+- `app/prism-fiber-lab/usePrismDiscoveryScroll.test.tsx` verifies route-relative
+  progress clamping and reactive reduced-motion behavior.
+- `app/prism-fiber-lab/PrismHeroLayoutLab.test.tsx` verifies the complete-hero,
+  single-Prism composition and foreground glass-panel contract.
 - `ui/usePrismAutoplay.test.tsx` verifies ordered looping, manual selection,
   progress reset, and pause behavior.
 - `ui/PrismPresentation.test.tsx` verifies control-panel wiring, UI state
@@ -465,7 +477,6 @@ there is not yet an automated WebGL screenshot regression test.
 
 ## Deliberately deferred
 
-- reconciling OrbitControls wheel zoom with page scrolling;
 - production hero integration;
 - new visual tuning beyond the approved parity baseline;
 - browser-level and pixel-diff tests.

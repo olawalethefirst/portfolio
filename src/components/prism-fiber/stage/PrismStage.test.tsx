@@ -9,6 +9,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PrismState } from "../state/prism-state";
+import { calculatePrismDiscoveryDistance } from "./prism-discovery-view";
 
 const orbit = vi.hoisted(() => ({
   azimuth: 0,
@@ -20,7 +21,7 @@ const orbit = vi.hoisted(() => ({
 const camera = vi.hoisted(() => ({
   clearViewOffset: vi.fn(),
   isPerspectiveCamera: true,
-  position: { set: vi.fn() },
+  position: { set: vi.fn(), setLength: vi.fn() },
   setViewOffset: vi.fn(),
   updateProjectionMatrix: vi.fn(),
 }));
@@ -50,7 +51,11 @@ vi.mock("@react-three/fiber", () => ({
 
 vi.mock("@react-three/drei", () => ({
   OrbitControls: forwardRef(function OrbitControlsMock(
-    props: { onChange?: () => void; onStart?: () => void },
+    props: {
+      enableZoom?: boolean;
+      onChange?: () => void;
+      onStart?: () => void;
+    },
     ref,
   ) {
     useImperativeHandle(ref, () => ({
@@ -61,7 +66,10 @@ vi.mock("@react-three/drei", () => ({
       update: orbit.update,
     }));
     return (
-      <div data-testid="orbit-controls">
+      <div
+        data-enable-zoom={String(props.enableZoom)}
+        data-testid="orbit-controls"
+      >
         <button onClick={props.onStart}>Start orbit</button>
         <button onClick={props.onChange}>Change orbit</button>
       </div>
@@ -114,6 +122,14 @@ describe("PrismStage", () => {
     expect(screen.getByTestId("orbit-controls")).toBeTruthy();
   });
 
+  it("can reserve zoom for an external presentation input", () => {
+    render(<PrismStage allowsCameraZoom={false} state="idea" />);
+
+    expect(
+      screen.getByTestId("orbit-controls").getAttribute("data-enable-zoom"),
+    ).toBe("false");
+  });
+
   it("uses a home frame to fit and offset the presentation camera", () => {
     render(
       <PrismStage
@@ -155,6 +171,46 @@ describe("PrismStage", () => {
 
     act(() => ref.current?.recentreView());
     expect(orbit.reset).toHaveBeenCalled();
+  });
+
+  it("applies normalized discovery progress without resetting camera direction", () => {
+    const ref = createRef<PrismStageHandle>();
+    render(<PrismStage ref={ref} state="idea" />);
+    camera.position.setLength.mockClear();
+
+    act(() => ref.current?.setDiscoveryProgress(0.5));
+    expect(camera.position.setLength).toHaveBeenLastCalledWith(
+      calculatePrismDiscoveryDistance(3, 0.5),
+    );
+
+    act(() => ref.current?.setDiscoveryProgress(Number.NaN));
+    expect(camera.position.setLength).toHaveBeenLastCalledWith(3);
+    expect(camera.position.set).not.toHaveBeenCalledWith(0, 0, 2.475);
+  });
+
+  it("reapplies discovery progress when the fitted home view changes", () => {
+    const ref = createRef<PrismStageHandle>();
+    const { rerender } = render(
+      <PrismStage
+        ref={ref}
+        homeFrame={{ left: 0, top: 0, width: 1, height: 1 }}
+        state="idea"
+      />,
+    );
+
+    act(() => ref.current?.setDiscoveryProgress(1));
+    const initialDiscoveryDistance = camera.position.setLength.mock.lastCall?.[0];
+
+    rerender(
+      <PrismStage
+        ref={ref}
+        homeFrame={{ left: 0, top: 0, width: 1, height: 0.25 }}
+        state="idea"
+      />,
+    );
+
+    const resizedDiscoveryDistance = camera.position.set.mock.lastCall?.[2];
+    expect(resizedDiscoveryDistance).toBeGreaterThan(initialDiscoveryDistance);
   });
 
   it("samples and holds the camera azimuth when semantic state changes", () => {

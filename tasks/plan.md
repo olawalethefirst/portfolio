@@ -1,304 +1,288 @@
-# Implementation Plan: Responsive Prism Hero Layout Review
+# Implementation Plan: Prism Scroll-Zoom and Glass Overlay Lab
 
 ## Status
 
-Approved on 2026-09-27 from the layout/content review. The implemented slice
-gives phone a full-viewport Canvas, top/bottom HTML overlays, and a measured
-`PrismHomeFrame` derived from the actual hero and control boundaries. Stage
-framing owns initial placement and recentering. The lab now presents only the
-approved asymmetric composition. Scroll-driven zoom remains deferred until its
-activation behavior is approved. Sampled-view semantic rotation and
-shortest-path interpolation are implemented and automated checks pass; visual
-confirmation after manual orbit remains part of the human approval checkpoint.
+Approved on 2026-10-06. Automated implementation is complete; human build and
+browser review remain pending.
 
-Authoritative layout review:
+Approved specification:
+`docs/context/prism-hero-scroll-zoom-glass-lab-spec.md`
 
-- `docs/context/responsive-prism-hero-layout-review.md`
+The earlier responsive hero work remains preserved in:
 
-Broader experience specification:
-
-- `docs/context/responsive-prism-hero-spec.md`
-
-Task execution is tracked in `tasks/todo.md`.
+- `tasks/responsive-prism-hero-layout-plan.md`
+- `tasks/responsive-prism-hero-layout-todo.md`
 
 ## Objective
 
-Produce one responsive hero composition for visual approval before any scroll
-or application-mode work. The hero uses concise state-led copy, paired one-word
-actions, compact Prism-only controls, and a single two-column desktop direction.
-The implementation must also prove that HTML layout can position a virtual
-Prism frame while the Stage fits the 3D object into it without distortion.
+Place the complete existing `PrismHeroLayout` inside a mechanics demonstration
+with one persistent Prism Canvas. Native document scroll drives camera distance
+for the first `100dvh`; during the following `100dvh`, an empty glass surface
+rises over the pinned hero through document flow alone.
+
+The implementation stops after proving this zoom and overlay relationship. It
+does not introduce hero content, a production application handoff, ambient
+rendering, navigation, or scroll-driven content choreography.
 
 ## Architecture decisions
 
-### 1. One editorial unit
+### 1. Keep one authoritative page scroller
 
-The hierarchy is:
+The browser document owns wheel, trackpad, keyboard, scrollbar, and vertical
+touch scrolling. The lab introduces no nested scroller and does not prevent or
+synthesize scroll input.
+
+`OrbitControls` continues to own drag rotation, target, damping, and azimuth.
+Its zoom behavior is disabled for the lab integration so the wheel cannot have
+two meanings.
+
+### 2. Reproduce the nested-sticky geometry directly
+
+The route composition mirrors the proven HTML mechanics:
 
 ```text
-identity
-stable title
-state tagline
-state description
-Work + Contact
+lab document
+├─ sticky Prism runway: 200dvh
+│  └─ sticky Prism viewport: 100dvh
+└─ foreground glass panel: 100dvh
 ```
 
-There is no separate general description followed by a state card. The active
-`PrismState` selects both the tagline/description and the 3D scene state.
+The glass panel is a normal-flow sibling after the runway. It paints above the
+Prism through a local isolated stacking context. No JavaScript transform moves
+the panel, and no negative page-level `z-index` is used.
 
-### 2. Controls contain interaction, not hero content
+The expected geometry is:
 
-The hero reuses `HeroControlPanel` with its portfolio-action region disabled.
-The compact glass surface presents labeled outline playback/recenter actions,
-an `xs` autoplay progress line, and primary state tabs as three tightly spaced
-rows. Direct rotation is intentionally discovered rather than explained with
-instructional copy.
+- document travel `0–100dvh`: Prism isolated; camera zoom progresses `0–1`;
+- document travel `100–200dvh`: camera remains at `1`; glass edge travels from
+  the viewport bottom to the viewport top.
 
-### 3. One responsive composition
+### 3. Add a semantic imperative presentation command
 
-Phone uses a full-viewport Canvas with editorial content positioned from the top
-and controls positioned from the bottom. The initial Prism frame occupies the
-usable vertical space between those rendered surfaces, with a deliberate gap
-and stable horizontal gutters. When a short viewport cannot provide the minimum
-usable frame, the frame expands into the UI regions predictably rather than
-switching to a manually selected layout mode. Tablet landscape and desktop use
-the asymmetric split. In that split, the Canvas still spans the complete hero
-behind the HTML layers; only the Prism's initial home frame occupies the
-measured region to the right of the editorial content. There is no final
-three-column direction.
+Per-scroll React state would rerender the route and Three.js boundary for every
+sample. Passing a Motion-specific object through `PrismProps` would expose the
+chosen animation library at a reusable component boundary.
 
-The initial geometry defaults are a `1rem` clearance from each UI boundary, the
-existing 5% outer horizontal gutter, an `11rem` minimum frame height, and a
-`20rem` minimum useful right-side frame width matching the current Stage floor.
-They remain layout constants, not public Prism API.
+Instead, extend the existing semantic `PrismHandle` additively:
 
-### 4. Layout communicates a frame, not camera instructions
+```ts
+export interface PrismStageHandle {
+  recentreView(): void;
+  setDiscoveryProgress(progress: number): void;
+}
+```
 
-One full-hero Canvas renders behind the semantic content tree at every
-breakpoint. The layout measures the actual hero-content and Prism-control
-rectangles against the Canvas rectangle and produces a clamped,
-Canvas-relative `PrismHomeFrame` with normalized `left`, `top`, `width`, and
-`height` values.
+The command accepts only normalized presentation progress. It does not expose
+camera distance, DOM geometry, Motion values, OrbitControls, or Three.js
+objects. `Prism` continues to re-export the Stage handle as its stable facade.
 
-On stacked layouts, the content's lower edge and controls' upper edge define the
-vertical home region. On two-column layouts, the measured content right edge
-plus clearance defines the home region's left edge; the outer Canvas inset
-defines its right edge, and the home frame retains the Canvas's full vertical
-range. Neither the content nor the controls constrain the Prism vertically when
-enough useful width exists beside the content. The controls are independently
-positioned below the Prism as an absolute overlay and do not occupy a grid row.
+The Stage clamps non-finite or out-of-range input to one deterministic safe
+value before applying it. The exact invalid-number policy will be locked by a
+focused test; the preferred policy is to normalize non-finite values to `0`
+and finite values to `[0, 1]`.
 
-The geometry adapter determines whether the right-side region is viable from
-the rendered rectangles and a minimum useful physical width. It does not read a
-breakpoint, orientation, or `window.innerWidth`. CSS remains responsible for
-placing content and controls; measurement only reports the resulting available
-region.
+### 4. Keep camera math and mutation inside the Stage
 
-This additive boundary carries only layout geometry. It does not expose camera
-coordinates, Three.js objects, raw angles, scene scale, or Motion values.
+`PrismHomeCamera` already owns the fitted home distance, projection offset,
+camera target, and responsive reapplication. Extend that owner so it also:
 
-### 5. Stage owns optical fitting
+- retains the latest normalized discovery progress;
+- derives a discovery endpoint from the fitted home distance;
+- maps normalized progress to camera distance;
+- reapplies the latest progress when the home frame or viewport changes; and
+- updates OrbitControls after changing camera position.
 
-The Stage maps Canvas size, the normalized home frame, and stable scene
-bounds to camera distance/projection offset. It fits against both frame axes,
-uses uniform scale, and retains one stable optical center across semantic state
-transitions. OrbitControls continues to own manual camera interaction.
+The discovery endpoint is a Stage-owned relationship to the fitted home
+distance rather than a route-owned camera coordinate. The fitted home view
+reserves 10% of its measured frame, and discovery ends at
+`homeDistance × 0.50`. Pure helpers keep clamping, endpoints, monotonicity, and
+responsive recomputing testable without changing the public interface.
 
-### 6. Layout approval precedes motion
+Scroll zoom changes only camera distance. Existing projection offsets, FOV,
+target, drag azimuth, semantic state, and sampled presentation target remain
+unchanged.
 
-This plan stops after responsive visual approval. Scroll discovery, application
-handoff, ambient mode, and conditional navigation remain deferred to a new
-approved plan based on the accepted geometry.
+### 5. Measure route-relative scroll without React render churn
 
-### 7. Semantic rotation uses a sampled view frame
+The lab owns a ref to the scroll runway and derives progress from the runway's
+rendered start position and the current dynamic viewport height. A small
+lab-local hook or adapter may use the existing Motion dependency to observe
+scroll and reduced-motion preference, but it must emit plain normalized
+numbers to `setDiscoveryProgress()`.
 
-The Prism's semantic Y angles remain canonical scene values owned by
-`PRISM_STATE_TARGETS`. `OrbitControls` continues to own an independent camera
-azimuth. When a new semantic state is requested, the Stage samples that
-azimuth once and resolves an internal presentation target from the canonical
-state angle plus the sampled view offset. The offset is held for that
-transition; the Prism does not continuously counter-rotate while the user is
-dragging.
+The measurement must not assume that the lab starts at absolute document
+coordinate zero. Resize and dynamic viewport changes recompute the mapping.
+The listener/subscription is removed on unmount.
 
-This is an internal Stage-to-Scene contract. Hero UI and public `Prism` props
-continue to exchange only `PrismState`, view-status flags, and semantic
-commands. They do not receive cameras, controls, radians, degrees, or Three.js
-objects. The rotation channel normalizes the resolved target onto the shortest
-angular path so crossing the OrbitControls wrap boundary cannot produce an
-unintended full turn.
+When reduced motion becomes active, the route sends progress `0` and stops
+scrubbing the camera. When reduced motion becomes inactive, progress resumes
+from the current document position.
 
-Manual orbiting pauses autoplay as it does now. A later named-state transition
-uses the latest sampled view frame, allowing the camera and Prism to keep
-independent axles while presenting the requested face coherently from the
-user's chosen viewpoint. Recenter remains an explicit command that restores
-the approved home camera rather than a prerequisite for state selection.
+### 6. Reuse the existing glass material
+
+The foreground uses `Surface material="glass"` with an empty decorative body
+that fills at least one dynamic viewport. The existing material owns blur,
+tint, ring, shadow, and the reduced-transparency fallback. No second backdrop
+filter is introduced.
+
+Because the panel is visually empty and conveys no semantics, it remains out
+of the accessibility tree. It is pointer-transparent so the visible hero
+beneath it retains consistent pointer and keyboard access.
+
+### 7. Forward discovery progress through the complete hero
+
+`PrismHeroLayout` retains ownership of its content, autoplay, state controls,
+responsive home frame, and internal Prism ref. It exposes only a narrow
+`setDiscoveryProgress(progress)` handle that delegates to that persistent
+Prism. The lab scroll adapter targets this shared semantic interface, so no
+camera, Motion, or Three.js type crosses the hero boundary.
 
 ## Dependency graph
 
 ```text
-typed concise content ──────┐
-                            ├── unified semantic hero
-compact stage controls ─────┘            │
-                                         ├── home-frame measurement
-                                         │              │
-                                         │              ▼
-                                         │       Stage optical fitting
-                                         │              │
-                                         │       sampled view frame
-                                         │              │
-                                         ▼              ▼
-                               responsive breakpoint compositions
-                                         │
-                                         ▼
-                                  human visual approval
+pure normalized progress and distance mapping
+                    │
+                    ▼
+additive Prism handle command + Stage camera application
+                    │
+                    ▼
+route-relative scroll adapter
+                    │
+                    ▼
+nested-sticky lab + normal-flow glass panel
+                    │
+                    ▼
+human browser pacing and input review
 ```
+
+The work is sequential because the lab scroll adapter depends on the semantic
+Stage command, and the visual composition must be reviewed with the real camera
+endpoint. Parallel implementation would create conflicting edits in the Prism
+facade and lab tests without reducing risk.
 
 ## Implementation phases
 
-### Phase 1: Simplify the semantic hero
+### Phase 1: Prove the camera command
 
-1. Replace the current copy with the typed compact editorial model and one-word
-   actions.
-2. Reuse the existing `HeroControlPanel` as a compact three-row Prism-only
-   surface in the hero, while retaining its standalone showcase configuration.
-3. Remove the three-column variant and lab selector, leaving one semantic hero
-   tree ready for responsive composition.
+1. Add the smallest pure mapping needed to convert normalized discovery
+   progress and the responsive fitted-home distance into a camera distance.
+2. Extend `PrismStageHandle` additively with
+   `setDiscoveryProgress(progress)` and connect it to the existing
+   `PrismHomeCamera` owner.
+3. Disable OrbitControls zoom while retaining drag rotation, damping, target,
+   and sampled azimuth behavior.
 
-#### Checkpoint 1: Content and controls
+#### Checkpoint 1: Camera boundary
 
-- One `PrismState` drives scene, tagline, and description.
-- Work and Contact remain adjacent and semantically distinct.
-- The hero contains one Canvas and no duplicate CTA or narrative region.
-- Controls expose labeled playback/recenter actions, progress, and state
-  selection only.
+- Progress `0`, intermediate progress, `1`, out-of-range values, and non-finite
+  values resolve deterministically.
+- Progress changes camera distance without changing projection, FOV, target,
+  semantic state, or camera azimuth.
+- A home-frame or viewport resize reapplies the same normalized progress to the
+  newly fitted home distance.
+- Existing recenter behavior remains defined: recenter restores the current
+  scroll-derived distance and zero azimuth rather than fighting the next scroll
+  sample.
+- Focused Stage and Prism facade tests pass before route integration begins.
 
-### Phase 2: Make layout and Three.js cooperate
+### Phase 2: Demonstrate native scroll and overlay geometry
 
-4. Define and test normalized home-frame measurement from DOM geometry.
-5. Add stable scene bounds and Stage-owned optical fit/projection behavior, then
-   integrate the measured frame through the Prism facade.
-5A. Define the internal state-plus-view rotation target and normalize the
-    rotation channel onto the shortest angular path.
-5B. Sample and hold the OrbitControls azimuth at the Stage boundary, then pass
-    the internal presentation target to the Scene without changing public
-    `Prism` props.
+4. Replace the lab's current `PrismHeroLayout` consumer with one direct,
+   persistent `Prism` instance in the nested-sticky runway.
+5. Derive route-relative `0–1` zoom progress across the first rendered
+   `100dvh` and stream it to the semantic Prism handle without per-pixel React
+   state.
+6. Add one empty `100dvh` foreground `Surface` using the existing glass
+   material and local positive stacking layers.
+7. Apply the reactive reduced-motion path and preserve the existing
+   reduced-transparency behavior.
 
-#### Checkpoint 2: Framing proof
+#### Checkpoint 2: Lab acceptance
 
-- Portrait, landscape, tablet, and desktop frame rectangles produce stable
-  clamped values.
-- The Prism fits both width and height without nonuniform scaling.
-- State transitions do not shift the optical center.
-- A named state presents its intended face after manual orbiting without
-  resetting the camera or continuously counter-rotating during drag.
-- Drag rotation, zoom state, damping, and recenter remain coherent.
-
-### Phase 3: Compose every review breakpoint
-
-6. Implement the small-screen composition around the existing Prism stage.
-   Keep the state description visible and establish one full-Canvas overlay
-   composition across portrait and landscape.
-6A. Replace the fixed phone marker with an occlusion-aware home frame derived
-   from the rendered hero-content and Prism-control bounds. Preserve the current
-   normalized `PrismHomeFrame` boundary and Stage-owned camera fitting.
-7. Extend the full-Canvas overlay composition through tablet portrait, then
-   place content in the asymmetric grid at `md:landscape`, position the controls
-   independently below the Prism, and retain the full-hero Canvas behind both
-   columns.
-8. Derive the two-column Prism home frame from the measured content right edge,
-   and carry the same expanding composition through compact and wide desktop.
-9. Stop for human build and visual review, record corrections, and update the
-   durable breakpoint contract after approval.
-
-#### Checkpoint 3: Layout approval
-
-- The controller reviews every target viewport in light and dark mode.
-- The Prism remains above the fold and optically contained in its frame.
-- In two-column mode, the Prism initially begins after the measured editorial
-  boundary and can grow behind that content when zoomed.
-- Text, actions, and controls follow the breakpoint disclosure rules.
-- No horizontal scrolling, clipped focus, duplicate focusable subtree, or
-  control target below 44 px remains.
-- No motion or application-mode implementation begins without a new approval.
+- The route has one complete hero and one Canvas, no application content or
+  nested scroller, and no JavaScript transform on the glass panel.
+- The first viewport of travel controls only camera distance.
+- The second viewport of travel raises the glass over a camera held at its
+  discovery endpoint.
+- Reverse travel is continuous and deterministic.
+- Focused tests, TypeScript, ESLint, and `git diff --check` pass.
+- The human controller runs the production build and completes browser,
+  keyboard, touch, reduced-preference, and performance review.
 
 ## Verification strategy
 
-### Automated after each task
+### Automated checks
+
+Use test-first slices. Tests should assert semantic outputs and camera calls,
+not incidental Tailwind strings or subjective pixels.
 
 ```sh
-pnpm exec vitest run <affected-test-paths>
+pnpm exec vitest run src/components/prism-fiber/stage/PrismStage.test.tsx src/components/prism-fiber/Prism.test.tsx
+pnpm exec vitest run app/prism-fiber-lab/PrismHeroLayoutLab.test.tsx
 pnpm exec tsc --noEmit
 git ls-files --cached --others --exclude-standard -z -- '*.js' '*.jsx' '*.mjs' '*.ts' '*.tsx' | xargs -0 pnpm exec eslint --
 git diff --check
 ```
 
-Tests protect semantic ownership, one Canvas, responsive disclosure flags,
-normalized frame math, and Stage endpoints. They do not lock subjective pixel
-values or replace browser review.
+The implementation agent may run these permitted checks. Under
+`CONSTRAINTS.md`, the human controller owns `pnpm build`, application-server
+startup, real-browser inspection, accessibility review, and performance review
+unless explicitly delegated.
 
-### Human-controller verification
+### Test scope classification
 
-The controller runs `pnpm build` and reviews 375 px portrait, short phone
-landscape, 768 px portrait, tablet landscape, 1024 px, and 1440 px. Review
-checks content wrapping, above-fold Prism prominence, touch/keyboard behavior,
-light/dark contrast, and framing under every semantic state.
+Level 2 — required. The behavior combines scroll boundaries, reversible
+progress, reactive reduced-motion branching, mutable camera coordination, and
+responsive home-frame recalculation.
 
-The implementation agent does not start a server, run the production build, or
-perform browser inspection unless explicitly delegated.
+### Human-controller review
+
+Review at minimum:
+
+- desktop wheel and trackpad scrolling;
+- keyboard Page Down/Page Up and scrollbar dragging;
+- phone portrait vertical touch scrolling;
+- forward, reverse, and rapid direction reversal;
+- drag rotation before coverage;
+- pointer interception after coverage;
+- reduced motion and reduced transparency changed during the session;
+- narrow and wide viewport camera containment; and
+- visible jank or repeated scroll-linked tasks above 50 ms.
 
 ## Risks and mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| One-line title becomes generic | High | Evaluate concise copy for positioning clarity, not length alone |
-| State copy changes surrounding layout | High | Reserve description measure/height using the longest approved state |
-| Compact controls lose accessible target size | High | Separate visual density from a minimum 44 px hit area |
-| DOM measurement leaks camera implementation into UI | High | Pass only a normalized frame; Stage owns projection and fitting |
-| Framing fights OrbitControls | High | Use projection offset for placement and keep one camera/interaction owner |
-| Named states appear incorrect after manual orbit | High | Sample camera azimuth at the state-transition boundary and resolve one held presentation target |
-| Camera and Prism appear mechanically locked during drag | High | Never apply live counter-rotation; sample only when a semantic transition begins |
-| Azimuth wrap causes a long spin | High | Normalize the resolved target to the shortest angular delta before interpolation |
-| Animated assets exceed measured bounds | High | Capture conservative stable scene bounds once with explicit padding |
-| Phone Prism ignores the available live UI space | High | Derive the frame from the actual top-content and bottom-control boundaries |
-| UI boundaries leave no usable gap on short screens | High | Enforce a minimum physical frame, clamp it to the Canvas, and allow predictable natural overlap |
-| Side-by-side content incorrectly constrains the frame vertically | High | Once a viable right-side frame exists, use the content edge only as its horizontal boundary |
-| A hard-coded `41%` diverges from the rendered content edge | High | Normalize the measured content right edge against the full Canvas and retain only an outer inset/clearance as layout constants |
-| Two-column Canvas remains clipped to the stage column | High | Make the Canvas cover the hero and use the normalized home frame—not the DOM Canvas bounds—for initial placement |
-| Geometry selects a narrow side frame on small screens | High | Require a minimum useful physical width before selecting the right-side frame; otherwise retain stacked top/bottom framing |
-| Controls shift or resize the two-column Prism | High | Keep controls out of grid flow and ignore their rectangle once a viable side frame exists |
-| Content or controls resize after first render | Medium | Observe all three elements and deduplicate normalized frame updates |
-| Short landscape inherits width-only layout | High | Combine width, height, and orientation conditions |
-| Full-hero Canvas intercepts content interaction | High | Keep HTML above the Canvas and scope pointer interaction to the stage region |
-| Removing the selector remounts the current Prism | Medium | Rewrite in place with one persistent semantic subtree and regression test |
+| Nested sticky behavior differs across viewport/browser conditions | High | Preserve the exact minimal structure, avoid transformed ancestors, and require browser review before expanding scope |
+| Scroll updates fight responsive home-frame updates | High | Store normalized progress in the Stage and reapply it after every home-distance calculation |
+| Recenter and scroll progress define competing camera distances | Medium | Define recenter as azimuth/home-frame restoration while retaining the current scroll-derived distance |
+| OrbitControls captures wheel or touch scroll | High | Disable zoom, preserve page-owned scroll, and verify wheel plus vertical touch explicitly |
+| React rerenders on every scroll sample | Medium | Use the semantic imperative handle and mutable Stage owner rather than route state |
+| Discovery endpoint clips the Prism on narrow screens | High | Derive it from fitted distance and block visual acceptance until narrow-view review passes |
+| Empty glass appears invisible or too opaque | Medium | Tune existing semantic glass variables/geometry in browser without changing the motion contract |
+| Reduced-motion toggling leaves a stale camera position | Medium | Reactively write progress `0`, then recompute from current scroll when the preference is removed |
 
-## Boundaries
+## Explicitly deferred
 
-### Always
+- Hero copy, CTA, state controls, and autoplay UI.
+- Changes to the existing hero copy, state selection, autoplay, or controls.
+- Hero-content withdrawal or opacity animation.
+- Application content and natural scrolling beyond the empty panel.
+- Ambient Prism lighting, saturation, interaction, or render-loop changes.
+- NavigationPanel visibility.
+- Production-route integration.
+- Pinch-specific custom gesture handling.
 
-- Preserve one semantic hero subtree and one Canvas.
-- Keep `PrismState` literal: Idea, Iterate, Solution.
-- Keep canonical state angles independent from the sampled camera reference
-  frame.
-- Use semantic tokens and existing UI primitives.
-- Keep HTML content readable without relying on the Canvas.
-- Preserve native document scrolling.
+## Review decisions
 
-### Not in this plan
+The implementation can begin after approval of these decisions:
 
-- Scroll-driven discovery or hero/application modes.
-- Glass application surface and `NavigationPanel` timing.
-- Ambient/demand rendering.
-- Final portfolio copy or contact behavior.
-- Removing `HeroControlPanel` from its independent showcase.
-- Adding a layout, measurement, or animation dependency.
-- Enabling OrbitControls panning; the derived frame defines home/recenter
-  composition and is not a movement constraint.
-- Absolutely positioning the editorial content in two-column mode; it remains
-  in grid flow above the full-hero Canvas.
-
-### Ask first
-
-- Change the two action roles.
-- Expose raw camera values through the Prism API.
-- Replace OrbitControls.
-- Integrate the hero into the final portfolio route.
+1. Use the additive imperative `setDiscoveryProgress(number)` boundary to
+   avoid React scroll rerenders and Motion-type leakage.
+2. Define recentering as preserving the current scroll-derived distance while
+   restoring the home projection/target and zero azimuth.
+3. Reserve 10% of the responsive home frame and use
+   `homeDistance × 0.50` as the discovery endpoint without making either value
+   part of the public component contract.
+4. Keep the first visual review on the existing plum/dark lab theme; light-mode
+   comparison remains optional unless the glass cannot be judged confidently.

@@ -19,8 +19,8 @@ describe("calculatePrismHomeView", () => {
     const projectedWidth = 1.2 / (halfHeight * (9 / 16) * 2);
     const projectedHeight = 1.2 / (halfHeight * 2);
 
-    expect(projectedWidth).toBeLessThanOrEqual(frame.width);
-    expect(projectedHeight).toBeLessThanOrEqual(frame.height);
+    expect(projectedWidth).toBeLessThanOrEqual(frame.width * 0.9);
+    expect(projectedHeight).toBeLessThanOrEqual(frame.height * 0.9);
     expect(view.viewOffsetX).toBeCloseTo(0);
     expect(view.viewOffsetY).toBeCloseTo(-0.15);
   });

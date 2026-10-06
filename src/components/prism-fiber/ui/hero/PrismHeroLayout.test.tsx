@@ -1,5 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { forwardRef } from "react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import {
+  createRef,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type {
@@ -7,6 +11,8 @@ import type {
   PrismProps,
 } from "../../Prism";
 import type { HeroControlPanelProps } from "../../../ui/hero-control-panel";
+
+const prismSetDiscoveryProgress = vi.hoisted(() => vi.fn());
 
 vi.mock("motion/react", async (importOriginal) => {
   const motion = await importOriginal<typeof import("motion/react")>();
@@ -19,9 +25,22 @@ vi.mock("motion/react", async (importOriginal) => {
 });
 
 vi.mock("../../Prism", () => ({
-  Prism: forwardRef<PrismHandle, PrismProps>(function PrismMock({ state }, _ref) {
-    void _ref;
-    return <div data-prism-state={state} data-testid="prism-stage" />;
+  Prism: forwardRef<PrismHandle, PrismProps>(function PrismMock(
+    { allowsCameraZoom, state },
+    ref,
+  ) {
+    useImperativeHandle(ref, () => ({
+      recentreView: vi.fn(),
+      setDiscoveryProgress: prismSetDiscoveryProgress,
+    }));
+
+    return (
+      <div
+        data-allows-camera-zoom={String(allowsCameraZoom)}
+        data-prism-state={state}
+        data-testid="prism-stage"
+      />
+    );
   }),
 }));
 
@@ -33,7 +52,10 @@ vi.mock("../../../ui/hero-control-panel", () => ({
   ),
 }));
 
-import { PrismHeroLayout } from "./PrismHeroLayout";
+import {
+  PrismHeroLayout,
+  type PrismHeroLayoutHandle,
+} from "./PrismHeroLayout";
 
 describe("PrismHeroLayout", () => {
   it("renders one interactive prism with its editorial content and controls", () => {
@@ -75,5 +97,17 @@ describe("PrismHeroLayout", () => {
     expect(screen.getByTestId("prism-stage").getAttribute("data-prism-state")).toBe(
       "idea",
     );
+  });
+
+  it("forwards page-owned discovery progress to its persistent Prism", () => {
+    const ref = createRef<PrismHeroLayoutHandle>();
+    render(<PrismHeroLayout ref={ref} allowsCameraZoom={false} />);
+
+    expect(
+      screen.getByTestId("prism-stage").getAttribute("data-allows-camera-zoom"),
+    ).toBe("false");
+
+    act(() => ref.current?.setDiscoveryProgress(0.6));
+    expect(prismSetDiscoveryProgress).toHaveBeenCalledWith(0.6);
   });
 });
