@@ -28,12 +28,14 @@ import {
 } from "./prism-home-frame";
 import {
   calculatePrismDiscoveryDistance,
+  calculatePrismDiscoveryOffsetX,
   normalizePrismDiscoveryProgress,
 } from "./prism-discovery-view";
 
 export interface PrismStageProps {
   state: PrismState;
   homeFrame?: PrismHomeFrame;
+  centersDuringDiscovery?: boolean;
   allowsCameraZoom?: boolean;
   onInteractionStart?: () => void;
   className?: string;
@@ -47,6 +49,7 @@ export interface PrismStageHandle {
 const DEFAULT_CAMERA_DISTANCE = 3;
 
 interface PrismHomeCameraProps {
+  centersDuringDiscovery: boolean;
   controlsRef: MutableRefObject<ComponentRef<typeof OrbitControls> | null>;
   discoveryProgressRef: MutableRefObject<number>;
   discoveryViewRef: MutableRefObject<(() => void) | null>;
@@ -56,6 +59,7 @@ interface PrismHomeCameraProps {
 }
 
 function PrismHomeCamera({
+  centersDuringDiscovery,
   controlsRef,
   discoveryProgressRef,
   discoveryViewRef,
@@ -86,7 +90,9 @@ function PrismHomeCamera({
         perspectiveCamera.setViewOffset(
           size.width,
           size.height,
-          homeView.viewOffsetX * size.width,
+          (centersDuringDiscovery
+            ? calculatePrismDiscoveryOffsetX(homeView.viewOffsetX, discoveryProgressRef.current)
+            : homeView.viewOffsetX) * size.width,
           homeView.viewOffsetY * size.height,
           size.width,
           size.height,
@@ -97,6 +103,7 @@ function PrismHomeCamera({
     };
     const homeDistance = homeView?.distance ?? DEFAULT_CAMERA_DISTANCE;
     const applyDiscoveryView = () => {
+      applyProjection();
       perspectiveCamera.position.setLength(
         calculatePrismDiscoveryDistance(
           homeDistance,
@@ -137,6 +144,7 @@ function PrismHomeCamera({
       if (homeViewRef.current === applyHomeView) homeViewRef.current = null;
     };
   }, [
+    centersDuringDiscovery,
     camera,
     controlsRef,
     discoveryProgressRef,
@@ -156,6 +164,7 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
     {
       state,
       homeFrame,
+      centersDuringDiscovery = false,
       allowsCameraZoom = true,
       onInteractionStart,
       className = "",
@@ -265,6 +274,7 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
             target={[0, 0, 0]}
           />
           <PrismHomeCamera
+            centersDuringDiscovery={centersDuringDiscovery}
             controlsRef={controlsRef}
             discoveryProgressRef={discoveryProgressRef}
             discoveryViewRef={discoveryViewRef}

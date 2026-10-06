@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/prism-desktop-zoom-centering-spec.md`](context/prism-desktop-zoom-centering-spec.md):
+  desktop discovery projection, full-progress centering, and responsive verification contract.
+
 - [`context/prism-fiber-architecture.md`](context/prism-fiber-architecture.md):
   scene graph, architectural layers, utility responsibilities, state and
   transition ownership, and current deferred integration work.

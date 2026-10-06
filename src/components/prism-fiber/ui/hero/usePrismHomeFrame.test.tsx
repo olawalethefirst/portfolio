@@ -34,6 +34,7 @@ function HomeFrameHarness({ onRender }: { onRender?: () => void }) {
     bottomBoundaryRef,
     canvasRef,
     homeFrame,
+    centersDuringDiscovery,
     initialRegionRef,
     topBoundaryRef,
   } = usePrismHomeFrame();
@@ -45,11 +46,28 @@ function HomeFrameHarness({ onRender }: { onRender?: () => void }) {
       <div data-region="top" ref={topBoundaryRef} />
       <aside data-region="bottom" ref={bottomBoundaryRef} />
       <output>{JSON.stringify(homeFrame)}</output>
+      <output aria-label="Discovery centering">{String(centersDuringDiscovery)}</output>
     </>
   );
 }
 
 describe("usePrismHomeFrame", () => {
+  it("enables centering only while the desktop initial region is displayed", () => {
+    render(<HomeFrameHarness />);
+    const initialRegion = document.querySelector<HTMLElement>('[data-region="initial"]');
+    expect(initialRegion).toBeTruthy();
+    expect(screen.getByLabelText("Discovery centering").textContent).toBe("true");
+    act(() => {
+      initialRegion!.style.display = "none";
+      notifyResize?.();
+    });
+    expect(screen.getByLabelText("Discovery centering").textContent).toBe("false");
+    act(() => {
+      initialRegion!.style.display = "block";
+      notifyResize?.();
+    });
+    expect(screen.getByLabelText("Discovery centering").textContent).toBe("true");
+  });
   const regions = new Map([
     ["canvas", rect(0, 0, 400, 800)],
     ["initial", rect(0, 0, 0, 0)],

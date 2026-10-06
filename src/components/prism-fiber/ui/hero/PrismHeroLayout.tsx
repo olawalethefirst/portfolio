@@ -26,6 +26,7 @@ export const PrismHeroLayout = forwardRef<
     bottomBoundaryRef,
     canvasRef,
     homeFrame,
+    centersDuringDiscovery,
     initialRegionRef,
     topBoundaryRef,
   } = usePrismHomeFrame();
@@ -60,6 +61,7 @@ export const PrismHeroLayout = forwardRef<
           allowsCameraZoom={allowsCameraZoom}
           className="absolute inset-0"
           homeFrame={homeFrame}
+          centersDuringDiscovery={centersDuringDiscovery}
           onInteractionStart={pauseAutoplay}
           state={state}
         />

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { calculatePrismDiscoveryDistance } from "./prism-discovery-view";
+import { calculatePrismDiscoveryDistance, calculatePrismDiscoveryOffsetX } from "./prism-discovery-view";
+
+describe("calculatePrismDiscoveryOffsetX", () => {
+  it.each([
+    [0, -0.25], [0.25, -0.1875], [0.5, -0.125], [0.75, -0.0625], [1, 0],
+    [-1, -0.25], [2, 0], [Number.NaN, -0.25],
+    [Number.POSITIVE_INFINITY, -0.25],
+  ])("maps progress %s to horizontal offset %s", (progress, expected) => {
+    expect(calculatePrismDiscoveryOffsetX(-0.25, progress)).toBeCloseTo(expected);
+  });
+});
 
 describe("calculatePrismDiscoveryDistance", () => {
   it("maps normalized progress between the fitted home and discovery distances", () => {

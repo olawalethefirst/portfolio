@@ -12,6 +12,7 @@ import type { PrismState } from "./state/prism-state";
 export interface PrismProps {
   state: PrismState;
   homeFrame?: PrismHomeFrame;
+  centersDuringDiscovery?: boolean;
   allowsCameraZoom?: boolean;
   onInteractionStart?: () => void;
   className?: string;
@@ -20,7 +21,7 @@ export interface PrismProps {
 export type PrismHandle = PrismStageHandle;
 
 export const Prism = forwardRef<PrismHandle, PrismProps>(function Prism(
-  { state, homeFrame, allowsCameraZoom, onInteractionStart, className },
+  { state, homeFrame, centersDuringDiscovery, allowsCameraZoom, onInteractionStart, className },
   ref,
 ) {
   return (
@@ -29,6 +30,7 @@ export const Prism = forwardRef<PrismHandle, PrismProps>(function Prism(
       className={className}
       allowsCameraZoom={allowsCameraZoom}
       homeFrame={homeFrame}
+      centersDuringDiscovery={centersDuringDiscovery}
       onInteractionStart={onInteractionStart}
       state={state}
     />

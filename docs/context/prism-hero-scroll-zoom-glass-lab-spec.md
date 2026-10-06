@@ -2,6 +2,11 @@
 
 Status: Implemented on 2026-10-06; human browser review pending
 
+Desktop projection amendment: [Desktop Prism zoom centering](prism-desktop-zoom-centering-spec.md)
+supersedes this document's distance-only and fixed-view-offset requirements on
+the desktop two-column layout. Horizontal offset reaches zero at discovery
+progress 1. Mobile retains the distance-only contract; other requirements remain.
+
 ## Objective
 
 Modify the existing `/prism-fiber-lab` route to demonstrate the smallest

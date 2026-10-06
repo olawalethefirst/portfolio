@@ -38,6 +38,8 @@ export function usePrismHomeFrame() {
   const bottomBoundaryRef = useRef<HTMLElement>(null);
   const homeFrameRef = useRef<PrismHomeFrame | undefined>(undefined);
   const [homeFrame, setHomeFrame] = useState<PrismHomeFrame>();
+  const [centersDuringDiscovery, setCentersDuringDiscovery] = useState(false);
+  const centersDuringDiscoveryRef = useRef(false);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -49,6 +51,11 @@ export function usePrismHomeFrame() {
     const update = () => {
       const rootFontSize = getRootFontSize();
       const initialRegionRect = initialRegion.getBoundingClientRect();
+      const nextCentersDuringDiscovery = getComputedStyle(initialRegion).display !== "none";
+      if (centersDuringDiscoveryRef.current !== nextCentersDuringDiscovery) {
+        centersDuringDiscoveryRef.current = nextCentersDuringDiscovery;
+        setCentersDuringDiscovery(nextCentersDuringDiscovery);
+      }
       const nextFrame = measurePrismHomeFrame({
         bottomBoundaryRect: bottomBoundary.getBoundingClientRect(),
         canvasRect: canvas.getBoundingClientRect(),
@@ -79,6 +86,7 @@ export function usePrismHomeFrame() {
     bottomBoundaryRef,
     canvasRef,
     homeFrame,
+    centersDuringDiscovery,
     initialRegionRef,
     topBoundaryRef,
   };

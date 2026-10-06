@@ -96,6 +96,35 @@ vi.mock("../scene/PrismScene", () => ({
 import { PrismStage, type PrismStageHandle } from "./PrismStage";
 
 describe("PrismStage", () => {
+  it("centers desktop zoom across the full progress and restores mobile framing at current progress", () => {
+    const ref = createRef<PrismStageHandle>();
+    const homeFrame = { left: 0.5, top: 0.1, width: 0.5, height: 0.8 };
+    const { rerender } = render(
+      <PrismStage ref={ref} homeFrame={homeFrame} centersDuringDiscovery state="idea" />,
+    );
+    const expectOffset = (x: number) => {
+      expect(camera.setViewOffset).toHaveBeenLastCalledWith(
+        100, 200, expect.closeTo(x), expect.closeTo(0), 100, 200,
+      );
+    };
+    expectOffset(-25);
+    act(() => ref.current?.setDiscoveryProgress(0.25));
+    expectOffset(-18.75);
+    act(() => ref.current?.setDiscoveryProgress(0.5));
+    expectOffset(-12.5);
+    act(() => ref.current?.setDiscoveryProgress(1));
+    expectOffset(0);
+    act(() => ref.current?.recentreView());
+    expectOffset(0);
+    act(() => ref.current?.setDiscoveryProgress(0.25));
+    expectOffset(-18.75);
+    rerender(<PrismStage ref={ref} homeFrame={homeFrame} state="idea" />);
+    expectOffset(-25);
+    act(() => ref.current?.setDiscoveryProgress(0.5));
+    expectOffset(-25);
+    rerender(<PrismStage ref={ref} homeFrame={homeFrame} centersDuringDiscovery state="idea" />);
+    expectOffset(-12.5);
+  });
   beforeEach(() => {
     orbit.azimuth = 0;
     vi.clearAllMocks();
