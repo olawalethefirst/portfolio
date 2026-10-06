@@ -535,17 +535,17 @@ export function ContactConversationSection({
             role="status"
           >
             <h3
-              className="text-balance text-3xl text-center font-semibold tracking-tight sm:text-4xl"
+              className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl"
               ref={questionRef}
               tabIndex={-1}
             >
               Thanks, {submittedName}.
             </h3>
-            <p className="mt-4 max-w-lg text-center leading-7 text-muted">
+            <p className="mt-4 max-w-lg leading-7 text-muted">
               Your response is complete. Any follow-up will use the email you
               shared.
             </p>
-            <Button className="mt-8 mx-auto self-start" onPress={reset} variant="secondary">
+            <Button className="mt-8 self-end" onPress={reset} variant="outline">
               Submit another
             </Button>
           </div>
