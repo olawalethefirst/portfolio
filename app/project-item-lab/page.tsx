@@ -5,6 +5,7 @@ import {
   type ProjectItemProps,
 } from "@/src/components/project-item";
 
+import { LabThemeShell } from "../LabThemeShell";
 import { ProjectItemLabPreloads } from "./ProjectItemLabPreloads";
 
 export const metadata: Metadata = {
@@ -48,19 +49,17 @@ export default function ProjectItemLabPage() {
   return (
     <>
       <ProjectItemLabPreloads />
-      <main
-        className="bg-background font-sans text-foreground"
-        data-mode="dark"
-        data-theme="forest"
-      >
-        {projects.map((project, index) => (
-          <ProjectItem
-            {...project}
-            key={project.id}
-            stackIndex={index + 1}
-          />
-        ))}
-      </main>
+      <LabThemeShell initialMode="dark" initialTheme="forest">
+        <main>
+          {projects.map((project, index) => (
+            <ProjectItem
+              {...project}
+              key={project.id}
+              stackIndex={index + 1}
+            />
+          ))}
+        </main>
+      </LabThemeShell>
     </>
   );
 }
