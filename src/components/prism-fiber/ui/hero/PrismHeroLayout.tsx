@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useImperativeHandle, useRef } from "react";
+import { BriefcaseBusiness, Mail } from "lucide-react";
 
 import { HeroControlPanel } from "../../../ui/hero-control-panel";
 import { Button } from "../../../ui/Button";
@@ -94,13 +95,19 @@ export const PrismHeroLayout = forwardRef<
             {content.description}
           </p>
           <div className="pointer-events-auto mt-4 flex flex-nowrap gap-3 sm:mt-6">
-            <Button className="w-[70px]" href="#work" size="sm">
+            <Button
+              className="min-w-24 gap-2"
+              href="#work"
+              size="sm"
+              startContent={<BriefcaseBusiness aria-hidden="true" className="size-4 shrink-0" />}
+            >
               Work
             </Button>
             <Button
-              className="w-[70px]"
+              className="min-w-24 gap-2"
               href="#contact"
               size="sm"
+              startContent={<Mail aria-hidden="true" className="size-4 shrink-0" />}
               variant="outline"
             >
               Hire
