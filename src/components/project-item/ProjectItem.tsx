@@ -96,7 +96,7 @@ export function ProjectItem({
         <div className="container mx-auto grid grid-cols-2 items-end gap-4 px-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8 sm:px-6 lg:px-8">
           <ul
             aria-label={`${name} solutions`}
-            className="flex max-w-[28rem] flex-wrap content-end gap-2"
+            className="flex max-w-[28rem] flex-wrap content-end gap-1"
           >
             {solutions.map((solution) => (
               <li key={solution}>
