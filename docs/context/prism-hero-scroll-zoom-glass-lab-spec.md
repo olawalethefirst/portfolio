@@ -2,6 +2,42 @@
 
 Status: Implemented on 2026-10-06; human browser review pending
 
+## Project-content amendment
+
+The foreground glass Surface now contains the shared `project-item-lab`
+projects, Field Notes followed by Relay. This supersedes the empty,
+decorative-panel requirements below: the Surface is content-bearing, permits
+pointer input, is exposed to assistive technology, and grows with its project
+stack instead of being fixed to one viewport. Each project retains its solid
+`bg-surface` background and sticky top-aligned layout. The destination retains
+its dark/plum theme; the standalone project lab retains dark/forest.
+
+The native discovery runway and camera-progress mapping remain unchanged.
+Project previews add their existing device Canvases alongside the persistent
+hero Prism Canvas. Human review should check sticky stacking, accessible live
+links, and scroll performance with all three renderers present. No nested
+scroll container or additional glass-filter owner is introduced.
+
+Navigation placement belongs to consumers: `NavigationPanel` keeps only local
+relative positioning to anchor its expanded card above the launcher. Existing
+lab/showcase consumers supply fixed bottom wrappers. The Prism glass content
+places the shell-controlled navigation through a `LabThemeShell` children
+render function: an overlapping grid lane
+reserves the first viewport minus the 0.5rem bottom inset, followed by a
+zero-height sticky anchor at that same viewport position. Its bottom-aligned
+navigation rises with the glass, then remains at the viewport bottom while
+projects scroll. Geometry does not assume a launcher height and uses no
+JavaScript scroll animation. Reverse scrolling restores the entrance.
+The shell wraps the complete lab and owns theme/mode/font settings for the
+hero, glass and projects together. No nested hardcoded theme overrides remain.
+The route main uses `bg-surface` to match the solid project backgrounds; the
+Three.js scene keeps its independently authored materials and lighting.
+Browser review must cover viewport/font changes,
+expanded-card stacking and focus, and the forward/reverse sticky geometry.
+
+The remaining sections describe the original empty-panel prototype wherever
+they conflict with this amendment.
+
 Desktop projection amendment: [Desktop Prism zoom centering](prism-desktop-zoom-centering-spec.md)
 supersedes this document's distance-only and fixed-view-offset requirements on
 the desktop two-column layout. Horizontal offset reaches zero at discovery

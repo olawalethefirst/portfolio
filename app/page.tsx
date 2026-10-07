@@ -18,11 +18,11 @@ import { Switch } from "@/src/components/ui/Switch";
 import { Tabs } from "@/src/components/ui/Tabs";
 import { NavigationPanel } from "@/src/components/ui/navigation-panel";
 import { HeroControlPanelPreview } from "@/src/components/ui/hero-control-panel";
-import type { ThemeMode } from "@/src/components/ui/navigation-panel";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
 import type { ThemeName } from "./theme-accents";
+import type { ThemeMode } from "@/src/components/ui/navigation-panel";
 
 const buttonVariants = [
   "primary",
@@ -123,8 +123,8 @@ export default function Home() {
   return (
     <main
       className={`${selectedMode} relative min-h-screen overflow-hidden bg-background text-foreground`}
-      data-mode={selectedMode}
       data-theme={selectedTheme}
+      data-mode={selectedMode}
     >
       <div
         aria-hidden="true"
@@ -433,25 +433,27 @@ export default function Home() {
         </div>
       </ShowcaseShell>
 
-      <NavigationPanel
-        fontScale={fontScale}
-        navigationItems={navigationPanelItems}
-        onFontScaleChange={setFontScale}
-        onModeChange={setSelectedMode}
-        onThemeColorChange={(hex) => {
-          if (!accents) return;
+      <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20">
+        <NavigationPanel
+          fontScale={fontScale}
+          navigationItems={navigationPanelItems}
+          onFontScaleChange={setFontScale}
+          onModeChange={setSelectedMode}
+          onThemeColorChange={(hex) => {
+            if (!accents) return;
 
-          const theme = themeForAccent(accents, hex);
+            const theme = themeForAccent(accents, hex);
 
-          if (theme) setSelectedTheme(theme);
-        }}
-        selectedMode={selectedMode}
-        selectedThemeColor={accents?.[selectedTheme]}
-        themeOptions={themes.map((theme) => ({
-          color: accents?.[theme],
-          label: formatOptionLabel(theme),
-        }))}
-      />
+            if (theme) setSelectedTheme(theme);
+          }}
+          selectedMode={selectedMode}
+          selectedThemeColor={accents?.[selectedTheme]}
+          themeOptions={themes.map((theme) => ({
+            color: accents?.[theme],
+            label: formatOptionLabel(theme),
+          }))}
+        />
+      </div>
     </main>
   );
 }

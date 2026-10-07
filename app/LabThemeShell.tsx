@@ -3,10 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import {
-  NavigationPanel,
-  type ThemeMode,
-} from "@/src/components/ui/navigation-panel";
+import { NavigationPanel, type ThemeMode } from "@/src/components/ui/navigation-panel";
 
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
 import type { ThemeName } from "./theme-accents";
@@ -22,15 +19,15 @@ function formatThemeLabel(theme: ThemeName) {
 }
 
 export interface LabThemeShellProps {
-  children: ReactNode;
-  initialMode?: ThemeMode;
+  children: ReactNode | ((navigation: ReactNode) => ReactNode);
   initialTheme?: ThemeName;
+  initialMode?: ThemeMode;
 }
 
 export function LabThemeShell({
   children,
-  initialMode = "light",
   initialTheme = "chartreuse",
+  initialMode = "light",
 }: LabThemeShellProps) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeName>(initialTheme);
   const [selectedMode, setSelectedMode] = useState<ThemeMode>(initialMode);
@@ -47,32 +44,46 @@ export function LabThemeShell({
     };
   }, [fontScale]);
 
+  const hasCustomNavigationPlacement = typeof children === "function";
+
+  const navigation = (
+    <NavigationPanel
+      fontScale={fontScale}
+      navigationItems={navigationItems}
+      onFontScaleChange={setFontScale}
+      onModeChange={setSelectedMode}
+      onThemeColorChange={(color) => {
+        if (!accents) return;
+
+        const theme = themeForAccent(accents, color);
+
+        if (theme) setSelectedTheme(theme);
+      }}
+      selectedMode={selectedMode}
+      selectedThemeColor={accents?.[selectedTheme]}
+      themeOptions={themes.map((theme) => ({
+        color: accents?.[theme],
+        label: formatThemeLabel(theme),
+      }))}
+    />
+  );
+
   return (
     <div
       className={`${selectedMode} min-h-screen bg-background font-sans text-foreground`}
-      data-mode={selectedMode}
       data-theme={selectedTheme}
+      data-mode={selectedMode}
     >
-      {children}
-      <NavigationPanel
-        fontScale={fontScale}
-        navigationItems={navigationItems}
-        onFontScaleChange={setFontScale}
-        onModeChange={setSelectedMode}
-        onThemeColorChange={(color) => {
-          if (!accents) return;
-
-          const theme = themeForAccent(accents, color);
-
-          if (theme) setSelectedTheme(theme);
-        }}
-        selectedMode={selectedMode}
-        selectedThemeColor={accents?.[selectedTheme]}
-        themeOptions={themes.map((theme) => ({
-          color: accents?.[theme],
-          label: formatThemeLabel(theme),
-        }))}
-      />
+      {hasCustomNavigationPlacement ? (
+        children(navigation)
+      ) : (
+        <>
+          {children}
+          <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20">
+            {navigation}
+          </div>
+        </>
+      )}
     </div>
   );
 }
