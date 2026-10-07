@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { cssColorToHex } from "./browser-color";
 
 import { themes, type ThemeName } from "./theme";
 
@@ -8,28 +9,6 @@ export { themes } from "./theme";
 export type { ThemeName } from "./theme";
 
 export type ThemeAccents = Record<ThemeName, string>;
-
-/**
- * Converts a CSS colour string to hex by letting the browser do the conversion.
- *
- * The tokens are authored in `oklch()`, which React Aria cannot parse: its
- * colour model covers only hex, rgb, hsl and hsb. Painting the colour onto a
- * canvas and reading the pixel back hands the conversion to the browser's own
- * CSS colour engine, so gamut mapping and rounding match what the page renders,
- * and nothing has to be reimplemented here.
- */
-function toHex(color: string): string {
-  const context = document.createElement("canvas").getContext("2d");
-
-  if (!context) throw new Error("Canvas 2D context unavailable");
-
-  context.fillStyle = color;
-  context.fillRect(0, 0, 1, 1);
-
-  const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
-
-  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
-}
 
 /**
  * Reads every theme's accent colour from the live stylesheet as hex.
@@ -48,7 +27,7 @@ export function readThemeAccents(): ThemeAccents {
   return Object.fromEntries(
     themes.map((theme) => [
       theme,
-      toHex(root.getPropertyValue(`--accent-${theme}`)),
+      cssColorToHex(root.getPropertyValue(`--accent-${theme}`)),
     ]),
   ) as ThemeAccents;
 }

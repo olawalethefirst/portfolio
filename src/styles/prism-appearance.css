@@ -1,0 +1,12 @@
+html {
+  --prism-note-light: color-mix(in srgb, var(--accent) 75%, white);
+  --prism-note-base: var(--accent);
+  --prism-note-dark: color-mix(in srgb, var(--accent) 75%, black);
+}
+
+@supports (color: oklch(from red l c h)) {
+  html {
+    --prism-note-light: oklch(from var(--accent) clamp(0, calc(l + 0.15), 1) calc(c * 1.2) h);
+    --prism-note-dark: oklch(from var(--accent) clamp(0, calc(l - 0.15), 1) c h);
+  }
+}
