@@ -10,7 +10,8 @@ decorative-panel requirements below: the Surface is content-bearing, permits
 pointer input, is exposed to assistive technology, and grows with its project
 stack instead of being fixed to one viewport. Each project retains its solid
 `bg-surface` background and sticky top-aligned layout. The destination retains
-its dark/plum theme; the standalone project lab retains dark/forest.
+the global HTML theme. Route-specific theme defaults have been superseded by
+[global theme ownership](global-theme-and-prism-appearance.md).
 
 The native discovery runway and camera-progress mapping remain unchanged.
 Project previews add their existing device Canvases alongside the persistent
@@ -28,10 +29,12 @@ zero-height sticky anchor at that same viewport position. Its bottom-aligned
 navigation rises with the glass, then remains at the viewport bottom while
 projects scroll. Geometry does not assume a launcher height and uses no
 JavaScript scroll animation. Reverse scrolling restores the entrance.
-The shell wraps the complete lab and owns theme/mode/font settings for the
-hero, glass and projects together. No nested hardcoded theme overrides remain.
+The shell wraps the complete lab and consumes global theme/mode settings for the
+hero, glass and projects together; it retains local font-scale control. No
+nested hardcoded theme overrides remain.
 The route main uses `bg-surface` to match the solid project backgrounds; the
-Three.js scene keeps its independently authored materials and lighting.
+Three.js scene adapts backing tint and figure lighting to the global mode;
+other materials and lighting retain their authored appearance.
 Browser review must cover viewport/font changes,
 expanded-card stacking and focus, and the forward/reverse sticky geometry.
 

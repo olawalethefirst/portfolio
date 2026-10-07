@@ -9,6 +9,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/global-theme-and-prism-appearance.md`](context/global-theme-and-prism-appearance.md):
+  HTML-owned theme state, global setters/reading hook, and mode-adaptive Prism
+  backing and figure lighting.
+
 - [`context/prism-portrait-spread-spec.md`](context/prism-portrait-spread-spec.md):
   centered portrait hero with vertical spread capped from square Prism home height.
 

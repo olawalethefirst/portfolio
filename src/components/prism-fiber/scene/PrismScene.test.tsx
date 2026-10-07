@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const scene = vi.hoisted(() => {
@@ -12,6 +12,7 @@ const scene = vi.hoisted(() => {
   };
   const built = {
     channels: {},
+    applyAppearance: vi.fn(),
     dispose: vi.fn(),
     root: {},
   };
@@ -49,10 +50,29 @@ vi.mock("./PrismStructure", () => ({
 
 import { buildPrismStructure } from "./PrismStructure";
 import { PrismScene } from "./PrismScene";
+import { setGlobalMode } from "@/src/theme/active-theme";
 
 describe("PrismScene", () => {
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("adapts modes without rebuilding or restarting the active semantic transition", () => {
+    document.documentElement.dataset.mode = "dark";
+    const { rerender } = render(<PrismScene state="idea" />);
+    rerender(<PrismScene state="solution" />);
+    act(() => setGlobalMode("light"));
+    expect(scene.built.applyAppearance).toHaveBeenLastCalledWith({
+      backingColor: 0x000000, backingOpacity: 0.1, figureLightIntensity: 2,
+    });
+    expect(buildPrismStructure).toHaveBeenCalledTimes(1);
+    expect(scene.controller.snap).toHaveBeenCalledTimes(1);
+    expect(scene.controller.transitionTo).toHaveBeenCalledTimes(1);
+    expect(scene.built.dispose).not.toHaveBeenCalled();
+    act(() => setGlobalMode("dark"));
+    expect(scene.built.applyAppearance).toHaveBeenLastCalledWith({
+      backingColor: 0xffffff, backingOpacity: 0.1, figureLightIntensity: 1,
+    });
   });
 
   it("transitions one persistent scene with the sampled presentation target", () => {

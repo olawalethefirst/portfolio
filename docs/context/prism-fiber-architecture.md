@@ -2,6 +2,11 @@
 
 ## Purpose and current status
 
+Theme adaptation: [Global theme and Prism appearance](global-theme-and-prism-appearance.md)
+defines the HTML-owned theme hook and the Scene's mode-dependent backing and
+figure spotlight updates. It supersedes fixed-mode appearance assumptions in
+the original parity baseline below.
+
 This guide explains how the React Three Fiber prism works, with emphasis on
 what each layer and utility contributes to the rendered result. It assumes
 basic React familiarity but no previous Three.js implementation experience.

@@ -17,6 +17,7 @@ import { buildFigureObject } from "./objects/FigureObject";
 import { buildOfficeObject } from "./objects/OfficeObject";
 import { buildProjectorObject } from "./objects/ProjectorObject";
 import { createOwnedResources } from "./scene-utils";
+import { applyPrismAppearance, type PrismAppearance } from "./prism-appearance";
 
 const FACE_WIDTH = 1;
 const FACE_HEIGHT = 1.15;
@@ -39,6 +40,7 @@ export interface PrismStructureTextures {
 export interface BuiltPrismStructure {
   root: Group;
   channels: PrismMotionChannels;
+  applyAppearance(appearance: PrismAppearance): void;
   dispose(): void;
 }
 
@@ -124,6 +126,9 @@ export function buildPrismStructure(
 
   return {
     root,
+    applyAppearance(appearance) {
+      applyPrismAppearance(backingMaterial, figure.light, appearance);
+    },
     channels: {
       prismRotation: createRotationChannel(prism),
       figurePose: figure.pose,

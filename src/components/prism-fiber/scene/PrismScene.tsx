@@ -7,6 +7,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { createPrismTransitionController } from "../motion/prism-transition";
 import type { PrismState } from "../state/prism-state";
 import { buildPrismStructure } from "./PrismStructure";
+import { useActiveTheme } from "@/src/theme/active-theme";
+import { resolvePrismAppearance } from "./prism-appearance";
 
 const ASSET_ROOT = "/prism-assets";
 const TRANSITION_DURATION_MS = 700;
@@ -17,6 +19,7 @@ export interface PrismSceneProps {
 }
 
 export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
+  const { mode } = useActiveTheme();
   const board = useGLTF(`${ASSET_ROOT}/board.glb`).scene;
   const figure = useGLTF(`${ASSET_ROOT}/figure.glb`).scene;
   const notes = useGLTF(`${ASSET_ROOT}/notes.glb`).scene;
@@ -56,6 +59,10 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
     [built],
   );
   const initializedController = useRef<typeof transition | null>(null);
+
+  useLayoutEffect(() => {
+    built.applyAppearance(resolvePrismAppearance(mode));
+  }, [built, mode]);
 
   useLayoutEffect(() => {
     const target = { state, viewAzimuthYRad };
