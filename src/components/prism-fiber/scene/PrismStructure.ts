@@ -41,6 +41,8 @@ export interface BuiltPrismStructure {
   root: Group;
   channels: PrismMotionChannels;
   applyAppearance(appearance: PrismAppearance): void;
+  applyNotePalette(colors: readonly [string, string, string]): void;
+  applyMonitorTexture(texture: Texture): void;
   dispose(): void;
 }
 
@@ -76,70 +78,80 @@ export function buildPrismStructure(
   textures: PrismStructureTextures,
 ): BuiltPrismStructure {
   const resources = createOwnedResources();
-  const root = new Group();
-  const prism = new Group();
-  const backingGeometry = new PlaneGeometry(FACE_WIDTH, FACE_HEIGHT);
-  const backingMaterial = new MeshPhysicalMaterial({
-    color: 0xffffff,
-    transparent: true,
-    opacity: 0.1,
-    roughness: 0.3,
-    metalness: 0,
-    clearcoat: 1,
-    clearcoatRoughness: 0.15,
-    side: DoubleSide,
-  });
-  resources.geometries.add(backingGeometry);
-  resources.materials.add(backingMaterial);
+  const disposers: (() => void)[] = [];
+  try {
+    const root = new Group();
+    const prism = new Group();
+    const backingGeometry = new PlaneGeometry(FACE_WIDTH, FACE_HEIGHT);
+    const backingMaterial = new MeshPhysicalMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.1,
+      roughness: 0.3,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.15,
+      side: DoubleSide,
+    });
+    resources.geometries.add(backingGeometry);
+    resources.materials.add(backingMaterial);
 
-  const apothem = FACE_WIDTH / (2 * Math.tan(Math.PI / 3));
-  const faces = [new Group(), new Group(), new Group()];
-  faces.forEach((face, index) => {
-    const angle = index * ((2 * Math.PI) / 3);
-    const backing = new Mesh(backingGeometry, backingMaterial);
-    backing.position.set(
-      Math.sin(angle) * (apothem - 0.01),
-      0,
-      Math.cos(angle) * (apothem - 0.01),
-    );
-    backing.rotation.y = angle;
-    prism.add(backing);
+    const apothem = FACE_WIDTH / (2 * Math.tan(Math.PI / 3));
+    const faces = [new Group(), new Group(), new Group()];
+    faces.forEach((face, index) => {
+      const angle = index * ((2 * Math.PI) / 3);
+      const backing = new Mesh(backingGeometry, backingMaterial);
+      backing.position.set(
+        Math.sin(angle) * (apothem - 0.01),
+        0,
+        Math.cos(angle) * (apothem - 0.01),
+      );
+      backing.rotation.y = angle;
+      prism.add(backing);
 
-    face.position.set(
-      Math.sin(angle) * apothem,
-      -(FACE_HEIGHT - CONTENT_HEIGHT) / 2,
-      Math.cos(angle) * apothem,
-    );
-    face.rotation.y = angle;
-    prism.add(face);
-  });
+      face.position.set(
+        Math.sin(angle) * apothem,
+        -(FACE_HEIGHT - CONTENT_HEIGHT) / 2,
+        Math.cos(angle) * apothem,
+      );
+      face.rotation.y = angle;
+      prism.add(face);
+    });
 
-  const board = buildBoardObject(assets.board, assets.notes);
-  const projector = buildProjectorObject(assets.projector, textures.wireframe);
-  const office = buildOfficeObject(assets.office, textures.monitor);
-  const figure = buildFigureObject(assets.figure, textures.figure);
+    const board = buildBoardObject(assets.board, assets.notes);
+    disposers.push(board.dispose);
+    const projector = buildProjectorObject(assets.projector, textures.wireframe);
+    disposers.push(projector.dispose);
+    const office = buildOfficeObject(assets.office, textures.monitor);
+    disposers.push(office.dispose);
+    const figure = buildFigureObject(assets.figure, textures.figure);
+    disposers.push(figure.dispose);
 
-  faces[0].add(board.group);
-  faces[1].add(projector.group);
-  faces[2].add(office.group, figure.group);
-  root.add(figure.light, prism);
+    faces[0].add(board.group);
+    faces[1].add(projector.group);
+    faces[2].add(office.group, figure.group);
+    root.add(figure.light, prism);
 
-  return {
-    root,
-    applyAppearance(appearance) {
-      applyPrismAppearance(backingMaterial, figure.light, appearance);
-    },
-    channels: {
-      prismRotation: createRotationChannel(prism),
-      figurePose: figure.pose,
-      monitorOpacity: office.monitorOpacity,
-    },
-    dispose() {
-      board.dispose();
-      projector.dispose();
-      office.dispose();
-      figure.dispose();
-      resources.dispose();
-    },
-  };
+    return {
+      root,
+      applyAppearance(appearance) {
+        applyPrismAppearance(backingMaterial, figure.light, appearance);
+      },
+      applyNotePalette: board.applyNotePalette,
+      applyMonitorTexture: office.applyMonitorTexture,
+      channels: {
+        prismRotation: createRotationChannel(prism),
+        figurePose: figure.pose,
+        monitorOpacity: office.monitorOpacity,
+      },
+      dispose() {
+        disposers.forEach(dispose => dispose());
+        resources.dispose();
+      },
+    };
+  } catch (error) {
+    disposers.forEach(dispose => dispose());
+    resources.dispose();
+    throw error;
+  }
 }

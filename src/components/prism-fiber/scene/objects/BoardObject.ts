@@ -1,4 +1,4 @@
-import { Box3, Group, Mesh, Quaternion, Vector3 } from "three";
+import { Box3, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
 
 import {
   cloneMaterials,
@@ -102,92 +102,111 @@ function buildNoteSlot(
   assembly.add(hinge);
 }
 
+export interface BuiltBoardObject extends BuiltSceneObject {
+  applyNotePalette(colors: readonly [string, string, string]): void;
+}
+
 export function buildBoardObject(
   boardSource: Group,
   notesSource: Group,
-): BuiltSceneObject {
+): BuiltBoardObject {
   const resources = createOwnedResources();
-  const assembly = new Group();
-  const board = boardSource.clone(true);
-  cloneMaterials(board, resources);
-  setDoubleSided(board);
+  try {
+    const assembly = new Group();
+    const board = boardSource.clone(true);
+    cloneMaterials(board, resources);
+    setDoubleSided(board);
 
-  const boardBox = new Box3().setFromObject(board);
-  const boardCenter = boardBox.getCenter(new Vector3());
-  const boardSize = boardBox.getSize(new Vector3());
-  board.position.sub(boardCenter);
-  board.position.y += boardSize.y / 2;
-  assembly.add(board);
-  board.updateMatrixWorld(true);
+    const boardBox = new Box3().setFromObject(board);
+    const boardCenter = boardBox.getCenter(new Vector3());
+    const boardSize = boardBox.getSize(new Vector3());
+    board.position.sub(boardCenter);
+    board.position.y += boardSize.y / 2;
+    assembly.add(board);
+    board.updateMatrixWorld(true);
 
-  const faceBox = new Box3().setFromObject(requireMesh(board, /boardFace/i));
-  const notes = notesSource.clone(true);
-  cloneMaterials(notes, resources);
-  setDoubleSided(notes);
-  notes.updateMatrixWorld(true);
-  let sample: Mesh | null = null;
-  notes.traverse((object) => {
-    if (!sample && isMesh(object)) sample = object;
-  });
-  if (!sample) throw new Error("The prism notes asset contains no mesh.");
-  notes.quaternion.setFromUnitVectors(
-    surfaceDetails(sample).normal,
-    new Vector3(0, 0, 1),
-  );
-  notes.updateMatrixWorld(true);
+    const faceBox = new Box3().setFromObject(requireMesh(board, /boardFace/i));
+    const notes = notesSource.clone(true);
+    cloneMaterials(notes, resources);
+    setDoubleSided(notes);
+    notes.updateMatrixWorld(true);
+    let sample: Mesh | null = null;
+    notes.traverse((object) => {
+      if (!sample && isMesh(object)) sample = object;
+    });
+    if (!sample) throw new Error("The prism notes asset contains no mesh.");
+    notes.quaternion.setFromUnitVectors(
+      surfaceDetails(sample).normal,
+      new Vector3(0, 0, 1),
+    );
+    notes.updateMatrixWorld(true);
 
-  const notesSize = new Box3().setFromObject(notes).getSize(new Vector3());
-  notes.scale.setScalar((boardSize.x * 0.16) / notesSize.x);
-  notes.updateMatrixWorld(true);
-  const positionedBox = new Box3().setFromObject(notes);
-  const positionedCenter = positionedBox.getCenter(new Vector3());
-  notes.position.x += -positionedCenter.x - boardSize.x * 0.18;
-  notes.position.y +=
-    -positionedCenter.y +
-    (faceBox.min.y + faceBox.max.y) * 0.5 +
-    boardSize.y * 0.18;
-  notes.position.z += faceBox.max.z + 0.004 - positionedBox.min.z;
-  notes.updateMatrixWorld(true);
+    const notesSize = new Box3().setFromObject(notes).getSize(new Vector3());
+    notes.scale.setScalar((boardSize.x * 0.16) / notesSize.x);
+    notes.updateMatrixWorld(true);
+    const positionedBox = new Box3().setFromObject(notes);
+    const positionedCenter = positionedBox.getCenter(new Vector3());
+    notes.position.x += -positionedCenter.x - boardSize.x * 0.18;
+    notes.position.y +=
+      -positionedCenter.y +
+      (faceBox.min.y + faceBox.max.y) * 0.5 +
+      boardSize.y * 0.18;
+    notes.position.z += faceBox.max.z + 0.004 - positionedBox.min.z;
+    notes.updateMatrixWorld(true);
 
-  const sources = [
-    decomposeNote(requireMesh(notes, /^pPlane4_lambert28_0$/)),
-    decomposeNote(requireMesh(notes, /^pPlane3_lambert29_0$/)),
-    decomposeNote(requireMesh(notes, /^pPlane5_lambert30_0$/)),
-  ];
-  buildNoteSlot(
-    assembly,
-    sources[0],
-    sources[0],
-    NOTE_CONTROLS[0],
-    faceBox,
-    boardSize.x,
-    true,
-  );
-  for (let index = 1; index < 7; index += 1) {
+    const sources = [
+      decomposeNote(requireMesh(notes, /^pPlane4_lambert28_0$/)),
+      decomposeNote(requireMesh(notes, /^pPlane3_lambert29_0$/)),
+      decomposeNote(requireMesh(notes, /^pPlane5_lambert30_0$/)),
+    ];
+    const noteMaterials = sources.map(({ mesh }) => {
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      return materials.map(material => {
+        if (!(material instanceof MeshStandardMaterial)) throw new Error("Unsupported Prism note material");
+        return material;
+      });
+    });
     buildNoteSlot(
       assembly,
-      sources[1],
-      sources[(index - 1) % 3],
-      NOTE_CONTROLS[index],
+      sources[0],
+      sources[0],
+      NOTE_CONTROLS[0],
       faceBox,
       boardSize.x,
-      false,
+      true,
     );
-  }
-  for (let index = 7; index < 12; index += 1) {
-    buildNoteSlot(
-      assembly,
-      sources[2],
-      sources[(index - 1) % 3],
-      NOTE_CONTROLS[index],
-      faceBox,
-      boardSize.x,
-      false,
-    );
-  }
+    for (let index = 1; index < 7; index += 1) {
+      buildNoteSlot(
+        assembly,
+        sources[1],
+        sources[(index - 1) % 3],
+        NOTE_CONTROLS[index],
+        faceBox,
+        boardSize.x,
+        false,
+      );
+    }
+    for (let index = 7; index < 12; index += 1) {
+      buildNoteSlot(
+        assembly,
+        sources[2],
+        sources[(index - 1) % 3],
+        NOTE_CONTROLS[index],
+        faceBox,
+        boardSize.x,
+        false,
+      );
+    }
 
-  return {
-    group: fitAssembly(assembly, 0.95 * 0.6, "x", BOARD_TRANSFORM),
-    dispose: resources.dispose,
-  };
+    return {
+      group: fitAssembly(assembly, 0.95 * 0.6, "x", BOARD_TRANSFORM),
+      applyNotePalette(colors) {
+        noteMaterials.forEach((materials, index) => materials.forEach(material => material.color.set(colors[index])));
+      },
+      dispose: resources.dispose,
+    };
+  } catch (error) {
+    resources.dispose();
+    throw error;
+  }
 }

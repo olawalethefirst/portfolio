@@ -2,12 +2,14 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useGLTF, useTexture } from "@react-three/drei";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { createPrismTransitionController } from "../motion/prism-transition";
 import type { PrismState } from "../state/prism-state";
 import { buildPrismStructure } from "./PrismStructure";
 import { useActiveTheme } from "@/src/theme/active-theme";
+import { Group } from "three";
+import { createPrismAccents } from "./prism-accents";
 import { resolvePrismAppearance } from "./prism-appearance";
 
 const ASSET_ROOT = "/prism-assets";
@@ -19,7 +21,7 @@ export interface PrismSceneProps {
 }
 
 export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
-  const { mode } = useActiveTheme();
+  const { mode, theme } = useActiveTheme();
   const board = useGLTF(`${ASSET_ROOT}/board.glb`).scene;
   const figure = useGLTF(`${ASSET_ROOT}/figure.glb`).scene;
   const notes = useGLTF(`${ASSET_ROOT}/notes.glb`).scene;
@@ -29,66 +31,60 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
   const monitorTexture = useTexture(`${ASSET_ROOT}/monitor-ui.svg`);
   const wireframeTexture = useTexture(`${ASSET_ROOT}/wireframe.svg`);
 
-  const built = useMemo(
-    () =>
-      buildPrismStructure(
-        { board, figure, notes, office, projector },
-        {
-          figure: figureTexture,
-          monitor: monitorTexture,
-          wireframe: wireframeTexture,
-        },
-      ),
-    [
-      board,
-      figure,
-      figureTexture,
-      monitorTexture,
-      notes,
-      office,
-      projector,
-      wireframeTexture,
-    ],
-  );
-  const transition = useMemo(
-    () =>
-      createPrismTransitionController(
-        built.channels,
-        TRANSITION_DURATION_MS,
-      ),
-    [built],
-  );
-  const initializedController = useRef<typeof transition | null>(null);
+  // The host owns no GPU resources; graph construction happens only on commit.
+  const [host] = useState(() => new Group());
+  const live = useRef<{
+    built: ReturnType<typeof buildPrismStructure>;
+    transition: ReturnType<typeof createPrismTransitionController>;
+    accents: ReturnType<typeof createPrismAccents>;
+    target?: { state: PrismState; viewAzimuthYRad: number };
+    mode?: typeof mode;
+  } | null>(null);
 
   useLayoutEffect(() => {
-    built.applyAppearance(resolvePrismAppearance(mode));
-  }, [built, mode]);
-
-  useLayoutEffect(() => {
-    const target = { state, viewAzimuthYRad };
-    if (initializedController.current !== transition) {
-      transition.snap(target);
-      initializedController.current = transition;
-      return;
-    }
-    transition.transitionTo(target);
-  }, [state, transition, viewAzimuthYRad]);
-
-  useEffect(
-    () => () => {
-      if (initializedController.current === transition) {
-        initializedController.current = null;
-      }
+    const built = buildPrismStructure(
+      { board, figure, notes, office, projector },
+      { figure: figureTexture, monitor: monitorTexture, wireframe: wireframeTexture },
+    );
+    try {
+      const transition = createPrismTransitionController(built.channels, TRANSITION_DURATION_MS);
+      const accents = createPrismAccents(built);
+      live.current = { built, transition, accents };
+      host.add(built.root);
+      return () => {
+        live.current = null;
+        host.remove(built.root);
+        accents.dispose();
+        built.dispose();
+      };
+    } catch (error) {
       built.dispose();
-    },
-    [built, transition],
-  );
+      throw error;
+    }
+  }, [host, board, figure, notes, office, projector, figureTexture, monitorTexture, wireframeTexture]);
 
-  useFrame((_, delta) => {
-    transition.advance(delta * 1000);
+  // Runs after graph setup on every commit; equality checks preserve active motion.
+  useLayoutEffect(() => {
+    const scene = live.current;
+    if (!scene) throw new Error("Prism scene was not initialized");
+    const target = { state, viewAzimuthYRad };
+    if (!scene.target) scene.transition.snap(target);
+    else if (scene.target.state !== state || scene.target.viewAzimuthYRad !== viewAzimuthYRad) {
+      scene.transition.transitionTo(target);
+    }
+    scene.target = target;
+    if (scene.mode !== mode) {
+      scene.built.applyAppearance(resolvePrismAppearance(mode));
+      scene.mode = mode;
+    }
+    scene.accents.update(theme);
   });
 
-  return <primitive object={built.root} dispose={null} />;
+  useFrame((_, delta) => {
+    live.current?.transition.advance(delta * 1000);
+  });
+
+  return <primitive object={host} dispose={null} />;
 }
 
 useGLTF.preload(`${ASSET_ROOT}/board.glb`);

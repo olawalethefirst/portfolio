@@ -1,7 +1,10 @@
+import { StrictMode, Suspense } from "react";
+import { Group, MeshBasicMaterial, Texture } from "three";
 import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const scene = vi.hoisted(() => {
+const scene = await vi.hoisted(async () => {
+  const { Group } = await import("three");
   const assets = new Map<string, object>();
   const textures = new Map<string, object>();
   const controller = {
@@ -11,10 +14,16 @@ const scene = vi.hoisted(() => {
     transitionTo: vi.fn(),
   };
   const built = {
-    channels: {},
+    channels: {
+      prismRotation: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
+      figurePose: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
+      monitorOpacity: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
+    },
     applyAppearance: vi.fn(),
+    applyNotePalette: vi.fn(),
+    applyMonitorTexture: vi.fn(),
     dispose: vi.fn(),
-    root: {},
+    root: new Group(),
   };
 
   return { assets, built, controller, textures };
@@ -48,11 +57,56 @@ vi.mock("./PrismStructure", () => ({
   buildPrismStructure: vi.fn(() => scene.built),
 }));
 
+vi.mock("./prism-accent-palette", () => ({ readPrismAccentPalette: () => ({ accent: "#123456", notes: ["#aaaaaa", "#123456", "#111111"] }) }));
+vi.mock("./monitor-accent", async importOriginal => {
+  const actual = await importOriginal<typeof import("./monitor-accent")>();
+  return { ...actual, loadMonitorAccent: vi.fn(async () => new Texture()) };
+});
+
+import { loadMonitorAccent } from "./monitor-accent";
 import { buildPrismStructure } from "./PrismStructure";
 import { PrismScene } from "./PrismScene";
-import { setGlobalMode } from "@/src/theme/active-theme";
+import { setGlobalTheme, setGlobalMode } from "@/src/theme/active-theme";
 
 describe("PrismScene", () => {
+  it("does not build GPU resources for a render that cannot commit", () => {
+    const pending = new Promise<void>(() => {});
+    function PendingSibling(): never { throw pending; }
+    const { unmount } = render(<Suspense fallback={<span>Loading</span>}><PrismScene state="idea" /><PendingSibling /></Suspense>);
+    expect(buildPrismStructure).not.toHaveBeenCalled();
+    unmount();
+  });
+  it("attaches a fresh live graph after Strict Mode replay and disposes each once", () => {
+    const graphs: { root: Group; disposed: boolean; releases: number }[] = [];
+    vi.mocked(buildPrismStructure).mockImplementation(() => {
+      const material = new MeshBasicMaterial();
+      const graph = { root: new Group(), disposed: false, releases: 0 };
+      material.addEventListener("dispose", () => { graph.disposed = true; graph.releases++; });
+      graphs.push(graph);
+      return { ...scene.built, root: graph.root, dispose: () => material.dispose() };
+    });
+    const { unmount } = render(<StrictMode><PrismScene state="idea" /></StrictMode>);
+    const attached = graphs.filter(graph => graph.root.parent !== null);
+    expect(attached).toHaveLength(1);
+    expect(attached[0].disposed).toBe(false);
+    expect(graphs.filter(graph => graph.disposed)).toHaveLength(1);
+    unmount();
+    expect(graphs.every(graph => graph.root.parent === null && graph.releases === 1)).toBe(true);
+    vi.mocked(buildPrismStructure).mockImplementation(() => scene.built);
+  });
+  it("updates accents without rebuilding or replaying motion, and ignores mode-only changes", async () => {
+    const { rerender } = render(<PrismScene state="idea" />);
+    rerender(<PrismScene state="solution" />);
+    await act(async () => { setGlobalTheme("copper"); });
+    expect(scene.built.applyNotePalette).toHaveBeenCalled();
+    expect(scene.built.applyMonitorTexture).toHaveBeenCalled();
+    const loads = vi.mocked(loadMonitorAccent).mock.calls.length;
+    act(() => setGlobalMode("dark"));
+    expect(loadMonitorAccent).toHaveBeenCalledTimes(loads);
+    expect(buildPrismStructure).toHaveBeenCalledTimes(1);
+    expect(scene.controller.snap).toHaveBeenCalledTimes(1);
+    expect(scene.controller.transitionTo).toHaveBeenCalledTimes(1);
+  });
   afterEach(() => {
     vi.clearAllMocks();
   });

@@ -146,60 +146,65 @@ export function buildFigureObject(
   textureSource: Texture,
 ): BuiltFigureObject {
   const resources = createOwnedResources();
-  const assembly = new Group();
-  const clonedFigure = clone(source);
-  if (!(clonedFigure instanceof Group)) {
-    throw new Error("The cloned prism figure root is not a Group.");
+  try {
+    const assembly = new Group();
+    const clonedFigure = clone(source);
+    if (!(clonedFigure instanceof Group)) {
+      throw new Error("The cloned prism figure root is not a Group.");
+    }
+    const figure = clonedFigure;
+    cloneMaterials(figure, resources);
+    const texture = cloneTexture(textureSource, resources, true);
+    texture.flipY = false;
+    const armBoneCandidates = new Map<ArmBoneName, Bone>();
+    const headBoneCandidates = new Map<HeadBoneName, Bone>();
+
+    figure.traverse((object) => {
+      if (isSkinnedMesh(object)) {
+        object.frustumCulled = false;
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        materials.forEach((material) => {
+          material.side = DoubleSide;
+          if (material instanceof MeshStandardMaterial) {
+            material.map = texture;
+            material.emissive = new Color(0x000000);
+            material.needsUpdate = true;
+          }
+        });
+      }
+      if (!isBone(object)) return;
+      if (includesName(ARM_BONE_NAMES, object.name)) {
+        armBoneCandidates.set(object.name, object);
+      }
+      if (includesName(HEAD_BONE_NAMES, object.name)) {
+        headBoneCandidates.set(object.name, object);
+      }
+    });
+
+    const armBindings = requireBoneBindings(armBoneCandidates, ARM_BONE_NAMES);
+    const headBindings = requireBoneBindings(headBoneCandidates, HEAD_BONE_NAMES);
+
+    assembly.add(figure);
+    const rawBox = new Box3().setFromObject(assembly);
+    const rawSize = rawBox.getSize(new Vector3());
+    const target = new Object3D();
+    target.position.set(0, rawBox.min.y + rawSize.y * 0.6, rawBox.max.z);
+    assembly.add(target);
+
+    const light = new SpotLight(0xfff0e0, 1, 0.75, 1.2, 0.6, 0);
+    light.position.set(0, 0.4, 2.3881);
+    light.target = target;
+
+    return {
+      group: fitAssembly(assembly, 0.65 / 3, "y", FIGURE_TRANSFORM),
+      light,
+      pose: createFigurePoseChannel(figure, armBindings, headBindings),
+      dispose: resources.dispose,
+    };
+  } catch (error) {
+    resources.dispose();
+    throw error;
   }
-  const figure = clonedFigure;
-  cloneMaterials(figure, resources);
-  const texture = cloneTexture(textureSource, resources, true);
-  texture.flipY = false;
-  const armBoneCandidates = new Map<ArmBoneName, Bone>();
-  const headBoneCandidates = new Map<HeadBoneName, Bone>();
-
-  figure.traverse((object) => {
-    if (isSkinnedMesh(object)) {
-      object.frustumCulled = false;
-      const materials = Array.isArray(object.material)
-        ? object.material
-        : [object.material];
-      materials.forEach((material) => {
-        material.side = DoubleSide;
-        if (material instanceof MeshStandardMaterial) {
-          material.map = texture;
-          material.emissive = new Color(0x000000);
-          material.needsUpdate = true;
-        }
-      });
-    }
-    if (!isBone(object)) return;
-    if (includesName(ARM_BONE_NAMES, object.name)) {
-      armBoneCandidates.set(object.name, object);
-    }
-    if (includesName(HEAD_BONE_NAMES, object.name)) {
-      headBoneCandidates.set(object.name, object);
-    }
-  });
-
-  const armBindings = requireBoneBindings(armBoneCandidates, ARM_BONE_NAMES);
-  const headBindings = requireBoneBindings(headBoneCandidates, HEAD_BONE_NAMES);
-
-  assembly.add(figure);
-  const rawBox = new Box3().setFromObject(assembly);
-  const rawSize = rawBox.getSize(new Vector3());
-  const target = new Object3D();
-  target.position.set(0, rawBox.min.y + rawSize.y * 0.6, rawBox.max.z);
-  assembly.add(target);
-
-  const light = new SpotLight(0xfff0e0, 1, 0.75, 1.2, 0.6, 0);
-  light.position.set(0, 0.4, 2.3881);
-  light.target = target;
-
-  return {
-    group: fitAssembly(assembly, 0.65 / 3, "y", FIGURE_TRANSFORM),
-    light,
-    pose: createFigurePoseChannel(figure, armBindings, headBindings),
-    dispose: resources.dispose,
-  };
 }

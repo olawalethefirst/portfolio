@@ -21,7 +21,7 @@ the palette through `src/theme/theme-accents.ts`; the existing application impor
 path re-exports that module.
 
 The Prism Scene reads the same global hook directly; no theme props or React
-context bridge cross the Canvas boundary. Its mode effect calls the built
+context bridge cross the Canvas boundary. Its committed update calls the built
 structure's `applyAppearance()` method, which changes only the owned backing
 material's color/opacity and the figure spotlight's intensity:
 
@@ -41,3 +41,41 @@ Browser review must assess the backing and figure against the actual semantic
 surface colors, including light mode. The lab uses `bg-surface`; the HTML
 prototype used different backdrop values, so matching the mappings alone does
 not establish visual parity.
+
+## Notes and monitor accents
+
+Prism notes derive three colors from the global `--accent` in
+`src/styles/prism-appearance.css`: relative OKLCH lightness +0.15/base/-0.15,
+with the light variant's chroma multiplied by 1.2. Browsers lacking relative
+OKLCH use 75% accent mixed with white/black in sRGB. Both modes share this
+palette. Browser computed styles and Canvas convert these values to sRGB hex
+before Three's material color conversion. The three owned note materials are
+updated without changing source assets or rebuilding the scene.
+
+The monitor replaces only the original SVG's exact `#6C63FF` accent tokens.
+Immutable same-origin SVG text is shared; generated textures belong to each
+scene effect. The latest request wins, pending image loads are cancelled,
+object URLs are released, and replaced/stale/current textures are disposed.
+The office material retains opacity, mirroring and the original texture's
+color-space setting. Mode-only updates do not regenerate textures.
+Recoverable palette/load errors are reported to the console and retain
+last-good rendering; later theme selections retry. Browser visual review is
+still needed for actual CSS gamut handling and note separation.
+
+
+## Committed scene ownership
+
+PrismScene keeps a stable resource-free Group host. A layout-effect setup builds
+and attaches the owned graph and controller; cleanup detaches the graph,
+cancels appearance work and disposes it. Strict Mode replay builds a fresh graph.
+Uncommitted renders allocate no GPU resources. Builders release partial owned
+resources before propagating construction failures.
+
+A scene-local appearance owner reads three note colors per theme selection;
+the monitor reuses the base color. The shared converter uses one temporary CSS
+probe and one Canvas per batch, preserving CSS/Canvas validation. Appearance
+updates and mode changes preserve the live graph and transition controller.
+Generated monitor textures belong solely to the monitor request owner; the
+original fallback clone belongs to the office builder. Finished requests clear
+their cancellation bookkeeping. Previous-texture cleanup errors are reported
+without disposing the newly installed replacement.

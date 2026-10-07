@@ -1,0 +1,52 @@
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Texture } from "three";
+import { expect, it, vi } from "vitest";
+import { buildBoardObject } from "./BoardObject";
+import { buildOfficeObject } from "./OfficeObject";
+
+it("recolors repeated notes without changing cached assets or board materials", () => {
+  const board = new Group(), notes = new Group();
+  const face = new Mesh(new BoxGeometry(3, 2, 0.1), new MeshStandardMaterial({ color: "#ffffff" }));
+  face.name = "boardFace"; board.add(face);
+  for (const name of ["pPlane4_lambert28_0", "pPlane3_lambert29_0", "pPlane5_lambert30_0"]) {
+    const note = new Mesh(new BoxGeometry(0.2, 0.2, 0.01), new MeshStandardMaterial({ color: "#0000ff" }));
+    note.name = name; notes.add(note);
+  }
+  const built = buildBoardObject(board, notes);
+  built.applyNotePalette(["#ff0000", "#00ff00", "#0000ff"]);
+  const colors: string[] = [];
+  built.group.traverse(object => { if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) colors.push(object.material.color.getHexString()); });
+  expect(colors).toHaveLength(13);
+  expect(new Set(colors)).toEqual(new Set(["ffffff", "ff0000", "00ff00", "0000ff"]));
+  expect(face.material.color.getHexString()).toBe("ffffff");
+  notes.children.forEach(object => { expect((object as Mesh<BoxGeometry, MeshStandardMaterial>).material.color.getHexString()).toBe("0000ff"); });
+  built.dispose();
+});
+
+it("replaces the monitor while preserving current fade and source texture", () => {
+  const office = new Group();
+  const screen = new Mesh(new BoxGeometry(0.01, 2, 1), new MeshStandardMaterial());
+  screen.name = "screen_desktop"; office.add(screen);
+  const source = new Texture(), replacement = new Texture();
+  const built = buildOfficeObject(office, source);
+  built.monitorOpacity.snap(0.4);
+  built.applyMonitorTexture(replacement);
+  let opacity = 0;
+  built.group.traverse(object => { if (object instanceof Mesh && "map" in object.material && object.material.map === replacement) opacity = object.material.opacity; });
+  expect(opacity).toBe(0.4);
+  expect(replacement.repeat.x).toBe(-1); expect(replacement.offset.x).toBe(1);
+  expect(source.repeat.x).toBe(1);
+  built.dispose(); replacement.dispose();
+});
+
+
+it("releases cloned materials when an asset cannot finish construction", () => {
+  const source = new Group();
+  const material = new MeshStandardMaterial();
+  source.add(new Mesh(new BoxGeometry(1, 1, 1), material));
+  const dispose = vi.spyOn(MeshStandardMaterial.prototype, "dispose");
+  try {
+    expect(() => buildBoardObject(source, new Group())).toThrow("Required prism mesh");
+    expect(dispose).toHaveBeenCalledTimes(1);
+    expect(dispose.mock.contexts[0]).not.toBe(material);
+  } finally { dispose.mockRestore(); }
+});
