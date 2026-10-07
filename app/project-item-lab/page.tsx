@@ -14,7 +14,7 @@ export default function ProjectItemLabPage() {
   return (
     <>
       <ProjectItemLabPreloads />
-      <LabThemeShell initialTheme="forest" initialMode="dark">
+      <LabThemeShell>
         <main>
           {labProjects.map((project, index) => (
             <ProjectItem

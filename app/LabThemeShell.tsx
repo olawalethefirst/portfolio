@@ -3,10 +3,15 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-import { NavigationPanel, type ThemeMode } from "@/src/components/ui/navigation-panel";
+import { NavigationPanel } from "@/src/components/ui/navigation-panel";
 
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
-import type { ThemeName } from "./theme-accents";
+import type { ThemeName } from "@/src/theme/theme";
+import {
+  setGlobalMode,
+  setGlobalTheme,
+  useActiveTheme,
+} from "@/src/theme/active-theme";
 
 const navigationItems = [
   { href: "/", label: "Component lab" },
@@ -20,17 +25,10 @@ function formatThemeLabel(theme: ThemeName) {
 
 export interface LabThemeShellProps {
   children: ReactNode | ((navigation: ReactNode) => ReactNode);
-  initialTheme?: ThemeName;
-  initialMode?: ThemeMode;
 }
 
-export function LabThemeShell({
-  children,
-  initialTheme = "chartreuse",
-  initialMode = "light",
-}: LabThemeShellProps) {
-  const [selectedTheme, setSelectedTheme] = useState<ThemeName>(initialTheme);
-  const [selectedMode, setSelectedMode] = useState<ThemeMode>(initialMode);
+export function LabThemeShell({ children }: LabThemeShellProps) {
+  const { theme: selectedTheme, mode: selectedMode } = useActiveTheme();
   const [fontScale, setFontScale] = useState(1);
   const accents = useThemeAccents();
 
@@ -51,13 +49,13 @@ export function LabThemeShell({
       fontScale={fontScale}
       navigationItems={navigationItems}
       onFontScaleChange={setFontScale}
-      onModeChange={setSelectedMode}
+      onModeChange={setGlobalMode}
       onThemeColorChange={(color) => {
         if (!accents) return;
 
         const theme = themeForAccent(accents, color);
 
-        if (theme) setSelectedTheme(theme);
+        if (theme) setGlobalTheme(theme);
       }}
       selectedMode={selectedMode}
       selectedThemeColor={accents?.[selectedTheme]}
@@ -70,9 +68,7 @@ export function LabThemeShell({
 
   return (
     <div
-      className={`${selectedMode} min-h-screen bg-background font-sans text-foreground`}
-      data-theme={selectedTheme}
-      data-mode={selectedMode}
+      className="min-h-screen bg-background font-sans text-foreground"
     >
       {hasCustomNavigationPlacement ? (
         children(navigation)

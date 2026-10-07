@@ -19,7 +19,7 @@ export function PrismHeroLayoutLab() {
   const scrollOriginRef = usePrismDiscoveryScroll(heroRef);
 
   return (
-    <LabThemeShell initialTheme="plum" initialMode="dark">
+    <LabThemeShell>
       {(navigation) => (
         <main
           className="relative isolate min-h-dvh bg-surface font-sans text-foreground"

@@ -10,7 +10,8 @@ import { NavigationItem } from "./NavigationItem";
 import { SettingsItem } from "./SettingsItem";
 import type { NavigationPanelView } from "./state";
 
-export type ThemeMode = "light" | "dark";
+import type { ThemeMode } from "@/src/theme/theme";
+export type { ThemeMode } from "@/src/theme/theme";
 
 export interface NavigationPanelLink {
   href: string;

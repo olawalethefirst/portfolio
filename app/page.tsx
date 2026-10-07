@@ -21,8 +21,11 @@ import { HeroControlPanelPreview } from "@/src/components/ui/hero-control-panel"
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
-import type { ThemeName } from "./theme-accents";
-import type { ThemeMode } from "@/src/components/ui/navigation-panel";
+import {
+  setGlobalMode,
+  setGlobalTheme,
+  useActiveTheme,
+} from "@/src/theme/active-theme";
 
 const buttonVariants = [
   "primary",
@@ -102,8 +105,7 @@ function ShowcaseShell({
 }
 
 export default function Home() {
-  const [selectedTheme, setSelectedTheme] = useState<ThemeName>("chartreuse");
-  const [selectedMode, setSelectedMode] = useState<ThemeMode>("light");
+  const { theme: selectedTheme, mode: selectedMode } = useActiveTheme();
   const [isViewportGlass, setIsViewportGlass] = useState(false);
   const [fontScale, setFontScale] = useState(1);
   // Null until a document exists, so the first render shows a placeholder of
@@ -122,9 +124,7 @@ export default function Home() {
 
   return (
     <main
-      className={`${selectedMode} relative min-h-screen overflow-hidden bg-background text-foreground`}
-      data-theme={selectedTheme}
-      data-mode={selectedMode}
+      className="relative min-h-screen overflow-hidden bg-background text-foreground"
     >
       <div
         aria-hidden="true"
@@ -159,7 +159,7 @@ export default function Home() {
                 onValueChange={(hex) => {
                   const theme = themeForAccent(accents, hex);
 
-                  if (theme) setSelectedTheme(theme);
+                  if (theme) setGlobalTheme(theme);
                 }}
                 value={accents[selectedTheme]}
               />
@@ -174,7 +174,7 @@ export default function Home() {
             <Switch
               isSelected={selectedMode === "dark"}
               onValueChange={(isDark) =>
-                setSelectedMode(isDark ? "dark" : "light")
+                setGlobalMode(isDark ? "dark" : "light")
               }
             >
               Dark mode
@@ -438,13 +438,13 @@ export default function Home() {
           fontScale={fontScale}
           navigationItems={navigationPanelItems}
           onFontScaleChange={setFontScale}
-          onModeChange={setSelectedMode}
+          onModeChange={setGlobalMode}
           onThemeColorChange={(hex) => {
             if (!accents) return;
 
             const theme = themeForAccent(accents, hex);
 
-            if (theme) setSelectedTheme(theme);
+            if (theme) setGlobalTheme(theme);
           }}
           selectedMode={selectedMode}
           selectedThemeColor={accents?.[selectedTheme]}

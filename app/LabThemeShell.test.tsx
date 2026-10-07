@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { LabThemeShell } from "./LabThemeShell";
 
@@ -30,23 +30,27 @@ afterAll(() => {
 });
 
 describe("LabThemeShell", () => {
-  it("provides the shared navigation pill with the requested initial theme", () => {
-    const { container } = render(
-      <LabThemeShell initialMode="dark" initialTheme="forest">
+  beforeEach(() => {
+    document.documentElement.dataset.theme = "forest";
+    document.documentElement.dataset.mode = "dark";
+  });
+  it("provides shared navigation using the existing global theme", () => {
+    render(
+      <LabThemeShell>
         <main>Lab preview</main>
       </LabThemeShell>,
     );
 
     expect(
-      container.querySelector('[data-mode="dark"][data-theme="forest"]'),
+      document.documentElement.matches('[data-mode="dark"][data-theme="forest"]'),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Menu" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
   });
 
   it("applies display settings to the full lab preview", () => {
-    const { container } = render(
-      <LabThemeShell initialMode="dark" initialTheme="forest">
+    render(
+      <LabThemeShell>
         <main>Lab preview</main>
       </LabThemeShell>,
     );
@@ -55,7 +59,17 @@ describe("LabThemeShell", () => {
     fireEvent.click(screen.getByRole("switch", { name: "Dark mode" }));
 
     expect(
-      container.querySelector('[data-mode="light"][data-theme="forest"]'),
+      document.documentElement.matches('[data-mode="light"][data-theme="forest"]'),
     ).toBeTruthy();
+  });
+
+  it("writes theme color selection globally without resetting mode", () => {
+    render(
+      <LabThemeShell><main>Lab preview</main></LabThemeShell>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    fireEvent.click(screen.getByRole("option", { name: /Chartreuse/i }));
+    expect(document.documentElement.dataset.theme).toBe("chartreuse");
+    expect(document.documentElement.dataset.mode).toBe("dark");
   });
 });

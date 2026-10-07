@@ -3,6 +3,8 @@
 @import "../src/styles/design-tokens.css";
 @import "../src/styles/glass-material.css";
 
+@custom-variant dark (&:where(html[data-mode="dark"], html[data-mode="dark"] *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
