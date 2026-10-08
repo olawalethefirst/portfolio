@@ -181,6 +181,6 @@ performance checks unless explicitly delegated, per `CONSTRAINTS.md`.
 
 ## Implementation status
 
-The initial factor is resolved as 1.2. Application implementation and rendered
-visual evaluation remain pending; selecting the factor does not establish that
-the layout has passed its fit checks.
+The initial factor is resolved as 1.2. Remaining implementation and visual-review
+follow-ups were closed by owner direction on 2026-10-07. This closure does not
+establish that the layout has passed its fit checks.
