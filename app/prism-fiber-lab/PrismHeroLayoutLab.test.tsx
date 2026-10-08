@@ -118,7 +118,10 @@ describe("PrismHeroLayoutLab", () => {
     expect(panel.getAttribute("data-material")).toBe("glass");
     expect(panel.style.transform).toBe("");
 
-    const projects = within(panel).getAllByRole("article");
+    const projects = [
+      within(panel).getByRole("article", { name: "Field Notes" }),
+      within(panel).getByRole("article", { name: "Relay" }),
+    ];
     expect(projects).toHaveLength(2);
     expect(
       within(projects[0]).getByRole("heading", { name: "Field Notes" }),

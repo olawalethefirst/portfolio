@@ -47,7 +47,7 @@ export function ProjectItem({
 }: ProjectItemProps) {
   const titleId = `${id}-title`;
   const articleRef = useRef<HTMLElement>(null);
-  const isVisible = useInView(articleRef, { amount: 0.9, once: false });
+  const isVisible = useInView(articleRef, { amount: 0.7, once: false });
   const reduceMotion = useReducedMotion() ?? false;
 
   return (

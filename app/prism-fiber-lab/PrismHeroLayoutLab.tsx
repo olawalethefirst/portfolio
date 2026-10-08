@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import { ProjectItem } from "@/src/components/project-item";
 import { labProjects } from "@/src/components/project-item/lab-projects";
+import { PublicationCard } from "@/src/components/publication-card";
 import {
   PrismHeroLayout,
   type PrismHeroLayoutHandle,
@@ -13,6 +14,7 @@ import { Surface } from "@/src/components/ui/Surface";
 import { LabThemeShell } from "../LabThemeShell";
 
 import { usePrismDiscoveryScroll } from "./usePrismDiscoveryScroll";
+import { labPublications } from "./lab-publications";
 
 export function PrismHeroLayoutLab() {
   const heroRef = useRef<PrismHeroLayoutHandle>(null);
@@ -48,13 +50,33 @@ export function PrismHeroLayoutLab() {
           >
             <div className="grid">
               <div className="min-w-0 [grid-area:1/1]">
-                {labProjects.map((project, index) => (
-                  <ProjectItem
-                    {...project}
-                    key={project.id}
-                    stackIndex={index + 1}
-                  />
-                ))}
+                <div className="relative isolate">
+                  {labProjects.map((project, index) => (
+                    <ProjectItem
+                      {...project}
+                      key={project.id}
+                      stackIndex={index + 1}
+                    />
+                  ))}
+                </div>
+                <section
+                  aria-label="Publications"
+                  className="relative py-20 text-foreground sm:py-24"
+                >
+                  <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <p className="mb-8 text-sm font-medium tracking-[0.14em] text-muted uppercase">
+                      Publications
+                    </p>
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+                      {labPublications.map((publication) => (
+                        <PublicationCard
+                          {...publication}
+                          key={publication.href}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </section>
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">
                 <div aria-hidden="true" className="h-[calc(100dvh-0.5rem)]" />
