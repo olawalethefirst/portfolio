@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 
+import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
 import { ProjectItem } from "@/src/components/project-item";
 import { labProjects } from "@/src/components/project-item/lab-projects";
 import { PublicationCard } from "@/src/components/publication-card";
@@ -78,6 +79,7 @@ export function PrismHeroLayoutLab() {
                     </div>
                   </SectionContainer>
                 </section>
+                <AboutCtaSection />
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">
                 <div aria-hidden="true" className="h-[calc(100dvh-0.5rem)]" />

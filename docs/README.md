@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/section-container-contract.md`](context/section-container-contract.md):
+  shared responsive content widths, horizontal gutters, and hero safe-area handling.
+
 - [`context/global-theme-and-prism-appearance.md`](context/global-theme-and-prism-appearance.md):
   HTML-owned theme state, global setters/reading hook, and mode-adaptive Prism
   backing and figure lighting.
