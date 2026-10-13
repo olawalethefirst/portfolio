@@ -1,6 +1,6 @@
 "use client";
 
-import { Center, useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Suspense,
@@ -13,15 +13,20 @@ import {
 } from "react";
 import {
   Float32BufferAttribute,
+  Box3,
   Group,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
   SRGBColorSpace,
+  Sphere,
+  PerspectiveCamera,
+  Vector3,
   type Object3D,
 } from "three";
 
 import { cn } from "../ui/utils";
+import { getRotationSafeScale } from "./device-framing";
 
 export type ProjectPlatform = "mobile" | "web";
 export type ModelRotation = readonly [x: number, y: number, z: number];
@@ -74,12 +79,33 @@ function ResponsiveDevicePresentation({
   platform,
 }: PropsWithChildren<{ platform: ProjectPlatform }>) {
   const width = useThree((state) => state.size.width);
+  const height = useThree((state) => state.size.height);
+  const camera = useThree((state) => state.camera);
+  const model = useGLTF(deviceProfiles[platform].assetPath);
+  const { radius, center } = useMemo(
+    () => {
+      const bounds = new Box3().setFromObject(model.scene, true);
+      return {
+        radius: bounds.getBoundingSphere(new Sphere()).radius,
+        center: bounds.getCenter(new Vector3()).negate(),
+      };
+    },
+    [model.scene],
+  );
   const responsiveMultiplier =
     width >= 1280 ? 1.1 : width >= 768 ? 0.95 : 0.6;
 
+  const scale = getRotationSafeScale({
+    radius,
+    distance: camera.position.length(),
+    fov: camera instanceof PerspectiveCamera ? camera.getEffectiveFOV() : 35,
+    aspect: height > 0 ? width / height : 0,
+    preferredScale: deviceProfiles[platform].baseScale * responsiveMultiplier,
+  });
+
   return (
-    <group scale={deviceProfiles[platform].baseScale * responsiveMultiplier}>
-      <Center precise>{children}</Center>
+    <group scale={scale}>
+      <group position={center}>{children}</group>
     </group>
   );
 }

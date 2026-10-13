@@ -83,15 +83,19 @@ export function ProjectItem({
         </SectionContainer>
       </div>
 
-      <ProjectDeviceStage
-        className="pointer-events-none absolute inset-0 z-0"
-        isVisible={isVisible}
-        modelEntryRotation={modelEntryRotation}
-        name={name}
-        platform={platform}
-        reduceMotion={reduceMotion}
-        screenTextureSrc={screenTextureSrc}
-      />
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <SectionContainer className="h-full">
+          <ProjectDeviceStage
+            className="h-full w-full"
+            isVisible={isVisible}
+            modelEntryRotation={modelEntryRotation}
+            name={name}
+            platform={platform}
+            reduceMotion={reduceMotion}
+            screenTextureSrc={screenTextureSrc}
+          />
+        </SectionContainer>
+      </div>
 
       <div className="absolute inset-x-0 bottom-0 z-10">
         <SectionContainer className="grid grid-cols-2 items-end gap-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8">
