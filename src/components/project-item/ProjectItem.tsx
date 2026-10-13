@@ -6,6 +6,7 @@ import { useRef } from "react";
 
 import { Button } from "../ui/Button";
 import { Chip } from "../ui/Chip";
+import { SectionContainer } from "../ui/SectionContainer";
 import { cn } from "../ui/utils";
 import {
   ProjectDeviceStage,
@@ -61,7 +62,7 @@ export function ProjectItem({
       style={{ zIndex: stackIndex }}
     >
       <div className="absolute inset-x-0 top-0 z-10">
-        <div className="container mx-auto grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-4 px-4 pt-[calc(var(--project-edge-clearance)+env(safe-area-inset-top))] sm:gap-8 sm:px-6 lg:px-8">
+        <SectionContainer className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-4 pt-[calc(var(--project-edge-clearance)+env(safe-area-inset-top))] sm:gap-8">
           <header className="max-w-[32rem]">
             <h2
               className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl"
@@ -79,7 +80,7 @@ export function ProjectItem({
               {platformLabels[platform]}
             </Chip>
           </div>
-        </div>
+        </SectionContainer>
       </div>
 
       <ProjectDeviceStage
@@ -93,7 +94,7 @@ export function ProjectItem({
       />
 
       <div className="absolute inset-x-0 bottom-0 z-10">
-        <div className="container mx-auto grid grid-cols-2 items-end gap-4 px-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8 sm:px-6 lg:px-8">
+        <SectionContainer className="grid grid-cols-2 items-end gap-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8">
           <ul
             aria-label={`${name} solutions`}
             className="flex max-w-[28rem] flex-wrap content-end gap-1"
@@ -119,7 +120,7 @@ export function ProjectItem({
           >
             View project
           </Button>
-        </div>
+        </SectionContainer>
       </div>
     </article>
   );

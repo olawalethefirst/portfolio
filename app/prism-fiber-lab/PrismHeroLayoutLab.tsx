@@ -9,6 +9,7 @@ import {
   PrismHeroLayout,
   type PrismHeroLayoutHandle,
 } from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { LabThemeShell } from "../LabThemeShell";
@@ -63,7 +64,7 @@ export function PrismHeroLayoutLab() {
                   aria-label="Publications"
                   className="relative py-20 text-foreground sm:py-24"
                 >
-                  <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                  <SectionContainer>
                     <p className="mb-8 text-sm font-medium tracking-[0.14em] text-muted uppercase">
                       Publications
                     </p>
@@ -75,7 +76,7 @@ export function PrismHeroLayoutLab() {
                         />
                       ))}
                     </div>
-                  </div>
+                  </SectionContainer>
                 </section>
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">

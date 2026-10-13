@@ -61,15 +61,14 @@ export function usePrismHomeFrame() {
       const canvasRect = canvas.getBoundingClientRect();
       if (canvasRect.width <= 0 || canvasRect.height <= 0) return;
       if (isPortrait && composition && compositionStyle) {
-        const left = Number.parseFloat(compositionStyle.left);
-        const right = Number.parseFloat(compositionStyle.right);
+        const compositionRect = composition.getBoundingClientRect();
         const top = Number.parseFloat(compositionStyle.top);
         const bottom = Number.parseFloat(compositionStyle.bottom);
         const input = {
           availableRect: {
-            left: canvasRect.left + left,
+            left: compositionRect.left,
             top: canvasRect.top + top,
-            width: canvasRect.width - left - right,
+            width: compositionRect.width,
             height: canvasRect.height - top - bottom,
           },
           editorialHeight: topBoundary.getBoundingClientRect().height,
