@@ -62,7 +62,7 @@ export function ProjectItem({
       style={{ zIndex: stackIndex }}
     >
       <div className="absolute inset-x-0 top-0 z-10">
-        <SectionContainer className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-4 pt-[calc(var(--project-edge-clearance)+env(safe-area-inset-top))] sm:gap-8">
+        <SectionContainer className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start gap-4 pt-[calc(1.5rem+env(safe-area-inset-top))] sm:gap-8">
           <header className="max-w-[32rem]">
             <h2
               className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl"
