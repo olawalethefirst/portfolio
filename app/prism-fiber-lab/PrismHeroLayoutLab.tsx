@@ -11,6 +11,7 @@ import {
   type PrismHeroLayoutHandle,
 } from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
 import { SectionContainer } from "@/src/components/ui/SectionContainer";
+import { SectionHeading } from "@/src/components/ui/SectionHeading";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { LabThemeShell } from "../LabThemeShell";
@@ -52,7 +53,10 @@ export function PrismHeroLayoutLab() {
           >
             <div className="grid">
               <div className="min-w-0 [grid-area:1/1]">
-                <div className="relative isolate">
+                <section aria-labelledby="projects-heading" className="relative isolate bg-surface text-foreground">
+                  <SectionContainer>
+                    <SectionHeading id="projects-heading">Projects</SectionHeading>
+                  </SectionContainer>
                   {labProjects.map((project, index) => (
                     <ProjectItem
                       {...project}
@@ -60,15 +64,14 @@ export function PrismHeroLayoutLab() {
                       stackIndex={index + 1}
                     />
                   ))}
-                </div>
+                  <div aria-hidden="true" className="h-[25dvh]" />
+                </section>
                 <section
-                  aria-label="Publications"
-                  className="relative py-20 text-foreground sm:py-24"
+                  aria-labelledby="publications-heading"
+                  className="relative pb-20 text-foreground sm:pb-24"
                 >
                   <SectionContainer>
-                    <p className="mb-8 text-sm font-medium tracking-[0.14em] text-muted uppercase">
-                      Publications
-                    </p>
+                    <SectionHeading id="publications-heading">Publications</SectionHeading>
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
                       {labPublications.map((publication) => (
                         <PublicationCard

@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/section-heading-spec.md`](context/section-heading-spec.md):
+  shared outline section heading contract, adjustable defaults, and preview acceptance.
+
 - [`context/section-container-contract.md`](context/section-container-contract.md):
   shared responsive content widths, horizontal gutters, and hero safe-area handling.
 

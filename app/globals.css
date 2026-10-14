@@ -47,3 +47,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@supports (-webkit-text-stroke: 0.75px currentColor) {
+  .section-heading-outline {
+    -webkit-text-stroke: 0.75px currentColor;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+@media (forced-colors: active) {
+  .section-heading-outline {
+    -webkit-text-stroke: 0;
+    -webkit-text-fill-color: currentColor;
+  }
+}
