@@ -71,19 +71,19 @@ export function AboutCtaSection({
   }, { scope: sectionRef, dependencies: [animate, summary], revertOnUpdate: true });
 
   return (
-    <section ref={sectionRef} aria-labelledby={titleId} className="bg-surface py-16 lg:py-28">
+    <section ref={sectionRef} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface py-16 lg:py-28">
       <SectionContainer>
-        <h2 id={titleId} className="mb-8 text-center text-sm font-medium text-muted lg:mb-10">
+        <h2 id={titleId} className="mb-2 text-center text-sm font-medium text-muted lg:mb-3">
           About me
         </h2>
-        <div className="mx-auto max-w-[36ch] text-[clamp(1.25rem,2.5vw,2.25rem)]">
-          <p ref={summaryRef} className="text-center leading-[1.35] font-medium tracking-tight whitespace-pre-wrap [overflow-wrap:anywhere]">
+        <div className="mx-auto max-w-[36ch] text-[clamp(1.25rem,1.5vw,1.5rem)]">
+          <p ref={summaryRef} className="text-justify leading-[1.35] font-medium tracking-tight whitespace-pre-wrap [overflow-wrap:anywhere]">
             {summary}
           </p>
-          <div className="mt-8 flex justify-center lg:mt-12">
+          <div className="mt-5 flex justify-center">
             <Button
               startContent={<MailPen aria-hidden="true" className="size-5 shrink-0" />}
-              size="lg"
+              size="md"
               variant="outline"
             >
               Start a conversation

@@ -68,14 +68,15 @@ export function PrismHeroLayoutLab() {
                 </section>
                 <section
                   aria-labelledby="publications-heading"
-                  className="relative pb-20 text-foreground sm:pb-24"
+                  className="relative -mb-[100dvh] text-foreground"
                 >
                   <SectionContainer>
                     <SectionHeading id="publications-heading">Publications</SectionHeading>
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+                    <div className="grid auto-rows-fr grid-cols-1 gap-6 pb-[calc(100dvh+5rem)] lg:grid-cols-2 lg:gap-8 sm:pb-[calc(100dvh+6rem)]">
                       {labPublications.map((publication) => (
                         <PublicationCard
                           {...publication}
+                          className="sticky top-5"
                           key={publication.href}
                         />
                       ))}

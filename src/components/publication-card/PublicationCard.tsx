@@ -4,8 +4,10 @@ import Link from "next/link";
 
 import { Chip } from "@/src/components/ui/Chip";
 import { Surface } from "@/src/components/ui/Surface";
+import { cn } from "@/src/components/ui/utils";
 
 export interface PublicationCardProps {
+  className?: string;
   cover: {
     alt: string;
     src: string;
@@ -25,6 +27,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 });
 
 export function PublicationCard({
+  className,
   cover,
   date,
   href,
@@ -35,7 +38,7 @@ export function PublicationCard({
   const formattedDate = dateFormatter.format(new Date(`${date}T00:00:00Z`));
 
   return (
-    <article aria-label={title} className="@container/publication h-full min-w-0">
+    <article aria-label={title} className={cn("@container/publication h-full min-w-0", className)}>
       <Surface
         className="group h-full overflow-hidden rounded-2xl text-surface-foreground"
         variant="secondary"
