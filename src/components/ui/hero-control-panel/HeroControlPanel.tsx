@@ -81,7 +81,7 @@ export function HeroControlPanel({
     <Surface
       aria-label="Hero controls"
       className={cn(
-        "flex w-full max-w-xs flex-col gap-1 rounded-3xl p-3 sm:max-w-sm",
+        "flex w-full max-w-[300px] flex-col gap-1 rounded-3xl p-3 ",
         className,
       )}
       data-testid="hero-controls"
@@ -94,7 +94,7 @@ export function HeroControlPanel({
           isDisabled={!canAutoplay}
           onPress={onAutoplayToggle}
           size="sm"
-          startContent={<AutoplayIcon aria-hidden="true" className="size-4" />}
+          startContent={<AutoplayIcon aria-hidden="true" className="size-3.5" />}
           variant="outline"
         >
           {autoplayVerb}
@@ -107,7 +107,7 @@ export function HeroControlPanel({
           startContent={
             <SquareCenterlineDashedHorizontal
               aria-hidden="true"
-              className="size-4"
+              className="size-3.5"
             />
           }
           variant="outline"
@@ -133,9 +133,9 @@ export function HeroControlPanel({
           variant="primary"
       >
           <Tabs.ListContainer className="w-full">
-            <Tabs.List aria-label="Hero phase" className="w-full">
+            <Tabs.List aria-label="Hero phase" className="w-full p-0.5">
               {PRISM_STATES.map((segment, index) => (
-                <Tabs.Tab className="capitalize" id={segment} key={segment}>
+                <Tabs.Tab className="h-7 px-3 text-xs capitalize" id={segment} key={segment}>
                   {index > 0 ? <Tabs.Separator /> : null}
                   <Tabs.Indicator />
                   {segment}
