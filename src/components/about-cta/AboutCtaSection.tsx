@@ -7,6 +7,7 @@ import { MailPen } from "lucide-react";
 import { useId, useRef, useSyncExternalStore } from "react";
 
 import { Button } from "@/src/components/ui/Button";
+import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
 import { SectionContainer } from "@/src/components/ui/SectionContainer";
 
 import { createSummaryReveal } from "./reveal";
@@ -71,7 +72,7 @@ export function AboutCtaSection({
   }, { scope: sectionRef, dependencies: [animate, summary], revertOnUpdate: true });
 
   return (
-    <section ref={sectionRef} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface py-16 lg:py-28">
+    <PerspectiveGridSection ref={sectionRef} gridOpacity={0.2} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface py-16 lg:py-28">
       <SectionContainer>
         <h2 id={titleId} className="mb-2 text-center text-sm font-medium text-muted lg:mb-3">
           About me
@@ -91,6 +92,6 @@ export function AboutCtaSection({
           </div>
         </div>
       </SectionContainer>
-    </section>
+    </PerspectiveGridSection>
   );
 }

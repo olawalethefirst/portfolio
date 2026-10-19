@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/perspective-grid-section.md`](context/perspective-grid-section.md):
+  shared decorative background, opacity defaults, and consumer layout ownership.
+
 - [`context/section-heading-spec.md`](context/section-heading-spec.md):
   shared outline section heading contract, adjustable defaults, and preview acceptance.
 

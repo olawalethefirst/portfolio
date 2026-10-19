@@ -23,6 +23,7 @@ import {
 } from "react";
 
 import { Button } from "@/src/components/ui/Button";
+import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
 import { Progress } from "@/src/components/ui/Progress";
 import { cn } from "@/src/components/ui/utils";
 
@@ -496,31 +497,14 @@ export function ContactConversationSection({
   }
 
   return (
-    <section
+    <PerspectiveGridSection
+      gridOpacity={0.2}
       className={cn(
         "relative left-1/2 isolate flex min-h-dvh w-dvw -translate-x-1/2 items-center overflow-hidden bg-background",
         className,
       )}
       id={id}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 text-accent opacity-20"
-      >
-        <svg
-          className="absolute inset-0 size-full [mask-image:linear-gradient(to_top,black_0%,rgb(0_0_0/0.7)_18%,transparent_30%)]"
-          fill="none"
-          preserveAspectRatio="xMidYMax slice"
-          viewBox="0 0 1600 900"
-        >
-          <g opacity="0.65" stroke="currentColor" strokeWidth="1.5">
-            <path d="M0 615H1600" />
-            <path d="M0 635H1600M0 662H1600M0 700H1600M0 755H1600M0 835H1600" />
-            <path d="M800 615L-240 900M800 615L100 900M800 615L430 900M800 615L670 900M800 615L930 900M800 615L1170 900M800 615L1500 900M800 615L1840 900" />
-          </g>
-        </svg>
-      </div>
-
       <div className="mx-auto grid min-h-dvh w-full max-w-6xl content-center gap-16 px-5 py-12 pb-32 sm:px-8 lg:h-[min(100dvh,56rem)] lg:min-h-0 lg:grid-cols-2 lg:content-normal lg:py-16 lg:pb-32">
         <div className="flex flex-col items-center gap-6 lg:items-start lg:justify-between">
           <h2 className="max-w-md text-center text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-left">
@@ -642,6 +626,6 @@ export function ContactConversationSection({
           </Form>
         )}
       </div>
-    </section>
+    </PerspectiveGridSection>
   );
 }
