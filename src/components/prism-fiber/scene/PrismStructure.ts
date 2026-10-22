@@ -136,6 +136,7 @@ export function buildPrismStructure(
       root,
       applyAppearance(appearance) {
         applyPrismAppearance(backingMaterial, figure.light, appearance);
+        board.applyAppearance(appearance.board);
       },
       applyNotePalette: board.applyNotePalette,
       applyMonitorTexture: office.applyMonitorTexture,

@@ -485,3 +485,12 @@ there is not yet an automated WebGL screenshot regression test.
 - production hero integration;
 - new visual tuning beyond the approved parity baseline;
 - browser-level and pixel-diff tests.
+
+## Sticky-note board appearance
+
+The board uses separate writing-surface, frame/support, and rear colors from
+`resolvePrismAppearance(mode).board`. `buildBoardObject` applies these only to
+its owned material clones, using the asset's `boardFace` and `boardBack` mesh
+names; remaining board meshes receive the frame color. Notes keep their
+independent accent palette. Mode updates recolor the existing scene rather
+than rebuilding geometry or modifying cached GLTF materials.

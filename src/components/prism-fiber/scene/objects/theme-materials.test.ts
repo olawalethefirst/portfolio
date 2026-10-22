@@ -2,11 +2,17 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Texture } from "three";
 import { expect, it, vi } from "vitest";
 import { buildBoardObject } from "./BoardObject";
 import { buildOfficeObject } from "./OfficeObject";
+import { resolvePrismAppearance } from "../prism-appearance";
 
 it("recolors repeated notes without changing cached assets or board materials", () => {
   const board = new Group(), notes = new Group();
   const face = new Mesh(new BoxGeometry(3, 2, 0.1), new MeshStandardMaterial({ color: "#ffffff" }));
   face.name = "boardFace"; board.add(face);
+  for (const name of ["boardEdge", "boardBack"]) {
+    const part = new Mesh(face.geometry, face.material);
+    part.name = name;
+    board.add(part);
+  }
   for (const name of ["pPlane4_lambert28_0", "pPlane3_lambert29_0", "pPlane5_lambert30_0"]) {
     const note = new Mesh(new BoxGeometry(0.2, 0.2, 0.01), new MeshStandardMaterial({ color: "#0000ff" }));
     note.name = name; notes.add(note);
@@ -15,9 +21,22 @@ it("recolors repeated notes without changing cached assets or board materials", 
   built.applyNotePalette(["#ff0000", "#00ff00", "#0000ff"]);
   const colors: string[] = [];
   built.group.traverse(object => { if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) colors.push(object.material.color.getHexString()); });
-  expect(colors).toHaveLength(13);
+  expect(colors).toHaveLength(15);
   expect(new Set(colors)).toEqual(new Set(["ffffff", "ff0000", "00ff00", "0000ff"]));
   expect(face.material.color.getHexString()).toBe("ffffff");
+  for (const mode of ["light", "dark", "light"] as const) {
+    const appearance = resolvePrismAppearance(mode).board;
+    built.applyAppearance(appearance);
+    for (const [name, color] of [
+      ["boardFace", appearance.faceColor],
+      ["boardEdge", appearance.frameColor],
+      ["boardBack", appearance.backColor],
+    ] as const) {
+      const part = built.group.getObjectByName(name) as Mesh<BoxGeometry, MeshStandardMaterial>;
+      expect(part.material.color.getHex()).toBe(color);
+    }
+    expect(face.material.color.getHexString()).toBe("ffffff");
+  }
   notes.children.forEach(object => { expect((object as Mesh<BoxGeometry, MeshStandardMaterial>).material.color.getHexString()).toBe("0000ff"); });
   built.dispose();
 });

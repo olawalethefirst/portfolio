@@ -1,4 +1,5 @@
 import { Box3, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from "three";
+import type { BoardAppearance } from "../prism-appearance";
 
 import {
   cloneMaterials,
@@ -103,6 +104,7 @@ function buildNoteSlot(
 }
 
 export interface BuiltBoardObject extends BuiltSceneObject {
+  applyAppearance(appearance: BoardAppearance): void;
   applyNotePalette(colors: readonly [string, string, string]): void;
 }
 
@@ -200,6 +202,21 @@ export function buildBoardObject(
 
     return {
       group: fitAssembly(assembly, 0.95 * 0.6, "x", BOARD_TRANSFORM),
+      applyAppearance(appearance) {
+        board.traverse((object) => {
+          if (!isMesh(object)) return;
+          const color = /boardFace/i.test(object.name) ? appearance.faceColor
+            : /boardBack/i.test(object.name) ? appearance.backColor
+              : appearance.frameColor;
+          const materials = Array.isArray(object.material) ? object.material : [object.material];
+          materials.forEach((material) => {
+            if (!(material instanceof MeshStandardMaterial)) {
+              throw new Error("Unsupported Prism board material");
+            }
+            material.color.setHex(color);
+          });
+        });
+      },
       applyNotePalette(colors) {
         noteMaterials.forEach((materials, index) => materials.forEach(material => material.color.set(colors[index])));
       },
