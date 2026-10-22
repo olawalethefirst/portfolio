@@ -4,6 +4,7 @@ import { Menu, Settings2 } from "lucide-react";
 import type { Ref } from "react";
 
 import { Button } from "../Button";
+import { BrandMark } from "../BrandMark";
 import { Surface } from "../Surface";
 import { cn } from "../utils";
 
@@ -57,6 +58,7 @@ export function NavPill({
       >
         <Menu aria-hidden="true" />
       </Button>
+      <BrandMark />
       <Button
         ref={settingsButtonRef}
         aria-controls={panelId}

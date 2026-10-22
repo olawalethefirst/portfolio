@@ -393,6 +393,11 @@ when `panelId` is present, supplies the matching `aria-expanded` value to both
 launchers. The consumer still owns expanded state, dismissal, and focus
 movement.
 
+`NavPill` displays a theme-responsive `BrandMark` between its Menu and Settings
+buttons. The expanded panel has no brand mark and retains the existing
+launcher-to-close-button swap.
+The mark is a non-interactive SVG mask using the `foreground` token.
+
 `NavPill` does not position itself. Fixed or absolute placement is page-level
 layout glue supplied by the consumer through `className`, so the same component
 can be used anywhere rather than only as a viewport-fixed element.
