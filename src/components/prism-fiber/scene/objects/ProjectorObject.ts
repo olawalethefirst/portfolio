@@ -21,7 +21,8 @@ import {
 } from "../scene-utils";
 
 const PROJECTOR_TRANSFORM: PropTransform = {
-  position: [0, -0.05, -0.01],
+  // Keep the assembly inside the prism, clear of the glass at local z = -0.01.
+  position: [0, -0.05, -0.02],
   rotation: [0, 90, 0],
   scale: 0.04,
 };
