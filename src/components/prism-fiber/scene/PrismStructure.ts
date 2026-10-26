@@ -28,6 +28,7 @@ export interface PrismStructureAssets {
   figure: Group;
   notes: Group;
   office: Group;
+  keyboard: Group;
   projector: Group;
 }
 
@@ -122,7 +123,7 @@ export function buildPrismStructure(
     disposers.push(board.dispose);
     const projector = buildProjectorObject(assets.projector, textures.wireframe);
     disposers.push(projector.dispose);
-    const office = buildOfficeObject(assets.office, textures.monitor);
+    const office = buildOfficeObject(assets.office, textures.monitor, assets.keyboard);
     disposers.push(office.dispose);
     const figure = buildFigureObject(assets.figure, textures.figure);
     disposers.push(figure.dispose);

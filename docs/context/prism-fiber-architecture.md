@@ -494,3 +494,18 @@ its owned material clones, using the asset's `boardFace` and `boardBack` mesh
 names; remaining board meshes receive the frame color. Notes keep their
 independent accent palette. Mode updates recolor the existing scene rather
 than rebuilding geometry or modifying cached GLTF materials.
+
+## Replacement keyboard
+
+The office loads `/keyboard.glb` separately. `KeyboardObject.ts` replaces
+`keyboard_keyboard_0` in the owned scene clone, preserving the cached office
+asset. The replacement retains its supplied materials. Its X axis spans the
+keys, Y points up, and +Z contains the spacebar (`Object_80`). Rotating +90°
+around Y puts the spacebar toward the user (+X in office coordinates) and the
+opposite row toward the monitor (-X). Placement matches the original width and
+horizontal center, with its base 0.005 office units above the desktop.
+
+The asset-based placement test protects sizing, desktop clearance, and facing
+direction. Replacing the GLB with a differently oriented model requires reviewing
+this axis convention and its key landmarks. The mouse color is copied from the
+monitor frame independently of the replacement keyboard's materials.

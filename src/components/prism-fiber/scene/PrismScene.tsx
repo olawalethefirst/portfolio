@@ -26,6 +26,7 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
   const figure = useGLTF(`${ASSET_ROOT}/figure.glb`).scene;
   const notes = useGLTF(`${ASSET_ROOT}/notes.glb`).scene;
   const office = useGLTF(`${ASSET_ROOT}/office.glb`).scene;
+  const keyboard = useGLTF("/keyboard.glb").scene;
   const projector = useGLTF(`${ASSET_ROOT}/projector.glb`).scene;
   const figureTexture = useTexture(`${ASSET_ROOT}/figure-texture.jpg`);
   const monitorTexture = useTexture(`${ASSET_ROOT}/monitor-ui.svg`);
@@ -43,7 +44,7 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
 
   useLayoutEffect(() => {
     const built = buildPrismStructure(
-      { board, figure, notes, office, projector },
+      { board, figure, notes, office, keyboard, projector },
       { figure: figureTexture, monitor: monitorTexture, wireframe: wireframeTexture },
     );
     try {
@@ -61,7 +62,7 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
       built.dispose();
       throw error;
     }
-  }, [host, board, figure, notes, office, projector, figureTexture, monitorTexture, wireframeTexture]);
+  }, [host, board, figure, notes, office, keyboard, projector, figureTexture, monitorTexture, wireframeTexture]);
 
   // Runs after graph setup on every commit; equality checks preserve active motion.
   useLayoutEffect(() => {
@@ -91,4 +92,5 @@ useGLTF.preload(`${ASSET_ROOT}/board.glb`);
 useGLTF.preload(`${ASSET_ROOT}/figure.glb`);
 useGLTF.preload(`${ASSET_ROOT}/notes.glb`);
 useGLTF.preload(`${ASSET_ROOT}/office.glb`);
+useGLTF.preload("/keyboard.glb");
 useGLTF.preload(`${ASSET_ROOT}/projector.glb`);

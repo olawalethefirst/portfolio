@@ -4,6 +4,7 @@ import {
   MathUtils,
   Mesh,
   MeshBasicMaterial,
+  MeshStandardMaterial,
   PlaneGeometry,
   Quaternion,
   RepeatWrapping,
@@ -13,6 +14,7 @@ import {
 
 import type { MotionChannel } from "../../motion/motion-channel";
 import { easeOutCubic } from "../../motion/easing";
+import { buildKeyboardReplacement } from "./KeyboardObject";
 import {
   cloneMaterials,
   cloneTexture,
@@ -65,6 +67,7 @@ function createOpacityChannel(
 export function buildOfficeObject(
   source: Group,
   textureSource: Texture,
+  keyboardSource: Group,
 ): BuiltOfficeObject {
   const resources = createOwnedResources();
   try {
@@ -74,6 +77,27 @@ export function buildOfficeObject(
     setDoubleSided(office);
     assembly.add(office);
     office.updateMatrixWorld(true);
+
+    const frame = requireMesh(office, /^screen_screen/i);
+    const frameMaterial = Array.isArray(frame.material) ? frame.material[0] : frame.material;
+    if (!(frameMaterial instanceof MeshStandardMaterial)) {
+      throw new Error("Unsupported Prism monitor frame material");
+    }
+    for (const pattern of [/^mouse_mouse/i]) {
+      const accessory = requireMesh(office, pattern);
+      const materials = Array.isArray(accessory.material) ? accessory.material : [accessory.material];
+      materials.forEach((accessoryMaterial) => {
+        if (!(accessoryMaterial instanceof MeshStandardMaterial)) {
+          throw new Error("Unsupported Prism desk accessory material");
+        }
+        accessoryMaterial.color.copy(frameMaterial.color);
+      });
+    }
+
+    const oldKeyboard = requireMesh(office, /^keyboard_keyboard/i);
+    const desktop = requireMesh(office, /^table_table_top/i);
+    assembly.add(buildKeyboardReplacement(keyboardSource, oldKeyboard, desktop, resources));
+    oldKeyboard.removeFromParent();
 
     const screen = surfaceDetails(requireMesh(office, /screen_desktop/i));
     const aspect = 216 / 124;

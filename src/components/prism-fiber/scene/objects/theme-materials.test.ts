@@ -45,8 +45,30 @@ it("replaces the monitor while preserving current fade and source texture", () =
   const office = new Group();
   const screen = new Mesh(new BoxGeometry(0.01, 2, 1), new MeshStandardMaterial());
   screen.name = "screen_desktop"; office.add(screen);
+  const frameMaterial = new MeshStandardMaterial({ color: "#5c5c5c" });
+  for (const name of ["screen_screen_0", "keyboard_keyboard_0", "mouse_mouse_0"]) {
+    const part = new Mesh(screen.geometry, name.startsWith("screen_")
+      ? frameMaterial : new MeshStandardMaterial({ color: "#ffffff", roughness: 0.8 }));
+    part.name = name;
+    office.add(part);
+  }
   const source = new Texture(), replacement = new Texture();
-  const built = buildOfficeObject(office, source);
+  const desktop = new Mesh(new BoxGeometry(3, 0.1, 3), frameMaterial);
+  desktop.name = "table_table_top_0";
+  office.add(desktop);
+  const keyboard = new Group();
+  keyboard.add(new Mesh(new BoxGeometry(2, 0.2, 1), frameMaterial));
+  const built = buildOfficeObject(office, source, keyboard);
+  expect(built.group.getObjectByName("keyboard_keyboard_0")).toBeUndefined();
+  expect(office.getObjectByName("keyboard_keyboard_0")).toBeTruthy();
+  expect(built.group.getObjectByName("replacement-keyboard")).toBeTruthy();
+  for (const name of ["mouse_mouse_0"]) {
+    const accessory = built.group.getObjectByName(name) as Mesh<BoxGeometry, MeshStandardMaterial>;
+    expect(accessory.material.color.getHexString()).toBe(frameMaterial.color.getHexString());
+    expect(accessory.material.roughness).toBe(0.8);
+    const original = office.getObjectByName(name) as Mesh<BoxGeometry, MeshStandardMaterial>;
+    expect(original.material.color.getHexString()).toBe("ffffff");
+  }
   built.monitorOpacity.snap(0.4);
   built.applyMonitorTexture(replacement);
   let opacity = 0;
