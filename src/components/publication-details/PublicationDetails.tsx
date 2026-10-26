@@ -3,7 +3,6 @@ import Image from "next/image";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { PUBLICATION_COVER_ASPECT_CLASS } from "@/src/components/publication-cover";
 import { Chip } from "@/src/components/ui/Chip";
 import { Surface } from "@/src/components/ui/Surface";
 
@@ -40,36 +39,41 @@ export function PublicationDetails({ publication }: PublicationDetailsProps) {
   return (
     <article
       aria-labelledby="publication-title"
-      className="mx-auto w-full max-w-6xl"
+      className="w-full"
     >
       <ReadingProgress />
 
+      <div
+        className="relative h-[max(220px,30svh)] w-full overflow-hidden"
+      >
+        <Image
+          alt={publication.cover.alt}
+          className="object-cover"
+          fill
+          sizes="100vw"
+          src={publication.cover.src}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/95 via-black/35 to-transparent"
+        />
+        <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-6xl px-5 pb-8 sm:px-8 lg:px-16">
+          <h1
+            className="w-full text-balance text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl"
+            id="publication-title"
+          >
+            {publication.title}
+          </h1>
+        </div>
+      </div>
+
       <Surface
-        className="overflow-hidden rounded-2xl bg-transparent ring-1 ring-border"
+        className="mx-auto w-full max-w-6xl bg-transparent"
         variant="elevated"
       >
-        <div
-          className={`relative w-full ${PUBLICATION_COVER_ASPECT_CLASS} overflow-hidden`}
-        >
-          <Image
-            alt={publication.cover.alt}
-            className="object-cover"
-            fill
-            sizes="(max-width: 1023px) calc(100vw - 2.5rem), 72rem"
-            src={publication.cover.src}
-          />
-        </div>
-
         <div className="w-full px-5 pt-10 pb-12 sm:px-8 sm:pt-14 sm:pb-16 lg:px-16">
           <header className="w-full">
-            <h1
-              className="w-full text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl"
-              id="publication-title"
-            >
-              {publication.title}
-            </h1>
-
-            <ul aria-label="Topics" className="mt-6 flex flex-wrap gap-2">
+            <ul aria-label="Topics" className="flex flex-wrap gap-2">
               {publication.tags.map((tag) => (
                 <li key={tag}>
                   <Chip color="accent" variant="soft" size="sm">

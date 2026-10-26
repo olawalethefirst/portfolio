@@ -22,13 +22,12 @@ export function HeaderActionBar({
   className,
 }: HeaderActionBarProps) {
   return (
-    <header className={cn("flex min-h-11 items-center gap-3", className)}>
+    <header className={cn("flex min-h-24 items-center gap-3", className)}>
       <Button
         aria-label={backLabel}
-        className="min-h-11 min-w-11 shrink-0"
         isIconOnly
         onPress={onBack}
-        variant="secondary"
+        variant="tertiary"
       >
         <ArrowLeft aria-hidden="true" />
       </Button>

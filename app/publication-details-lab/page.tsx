@@ -112,8 +112,8 @@ const publication = {
 export default function PublicationDetailsLabPage() {
   return (
     <LabThemeShell>
-      <main className="min-h-screen px-5 pt-8 pb-32 sm:px-8 sm:pt-12 lg:px-12 lg:pt-16">
-        <div className="mx-auto mb-4 w-full max-w-6xl sm:mb-6">
+      <main className="relative min-h-screen pb-32">
+        <div className="absolute inset-x-0 top-0 z-10 mx-auto w-full max-w-6xl px-5  sm:px-8 lg:px-12">
           <PublicationDetailsLabActionBar />
         </div>
         <PublicationDetails publication={publication} />
