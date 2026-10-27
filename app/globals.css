@@ -3,6 +3,7 @@
 @import "../src/styles/design-tokens.css";
 @import "../src/styles/glass-material.css";
 @import "../src/styles/prism-appearance.css";
+@import "../src/styles/outlined-fields.css";
 
 @custom-variant dark (&:where(html[data-mode="dark"], html[data-mode="dark"] *));
 

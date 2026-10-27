@@ -4,12 +4,10 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
   Label,
   Link,
   Radio,
   RadioGroup,
-  TextArea,
   TextField,
 } from "@heroui/react";
 import { siGithub, siX, type SimpleIcon } from "simple-icons";
@@ -23,6 +21,8 @@ import {
 } from "react";
 
 import { Button } from "@/src/components/ui/Button";
+import { Input } from "@/src/components/ui/Input";
+import { TextArea } from "@/src/components/ui/TextArea";
 import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
 import { Progress } from "@/src/components/ui/Progress";
 import { cn } from "@/src/components/ui/utils";
@@ -100,9 +100,6 @@ const socialProfiles: ReadonlyArray<{
     label: "X",
   },
 ];
-
-const fieldClassName =
-  "w-full rounded-xl border border-field-border bg-field-background px-4 py-3 text-base text-field-foreground outline-none transition-colors placeholder:text-field-placeholder focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/35";
 
 type Step = 0 | 1 | 2;
 type FieldErrors = Partial<
@@ -277,7 +274,7 @@ function GoalStep({
       >
         <Label className="text-sm font-medium">Your goal</Label>
         <TextArea
-          className={cn(fieldClassName, "mt-2 min-h-40 resize-y")}
+          className="mt-2 h-40"
           maxLength={2000}
           ref={goalRef}
         />
@@ -339,7 +336,7 @@ function ContactStep({
           <Label className="text-sm font-medium">Name</Label>
           <Input
             autoComplete="name"
-            className={cn(fieldClassName, "mt-2")}
+            className="mt-2"
             maxLength={100}
             ref={nameRef}
           />
@@ -362,7 +359,7 @@ function ContactStep({
           <Label className="text-sm font-medium">Email</Label>
           <Input
             autoComplete="email"
-            className={cn(fieldClassName, "mt-2")}
+            className="mt-2"
             inputMode="email"
             maxLength={254}
             ref={emailRef}
