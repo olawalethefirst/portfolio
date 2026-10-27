@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PublicationComments } from "@/src/components/publication-comments/PublicationComments";
 
 import {
   PublicationDetails,
@@ -7,6 +8,7 @@ import {
 
 import { LabThemeShell } from "../LabThemeShell";
 import { PublicationDetailsLabActionBar } from "./PublicationDetailsLabActionBar";
+import { sampleComments } from "./sample-comments";
 
 export const metadata: Metadata = {
   description:
@@ -117,6 +119,7 @@ export default function PublicationDetailsLabPage() {
           <PublicationDetailsLabActionBar />
         </div>
         <PublicationDetails publication={publication} />
+        <PublicationComments initialThreads={sampleComments} />
       </main>
     </LabThemeShell>
   );

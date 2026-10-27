@@ -9,6 +9,12 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/markdown-field.md`](context/markdown-field.md):
+  reusable Markdown field, selection behavior, restricted rendering and comment integration.
+
+- [`context/field-and-button-icon-policy.md`](context/field-and-button-icon-policy.md):
+  planning comparisons for inputs and buttons, with icon-free defaults for textareas and ghost buttons.
+
 - [`context/perspective-grid-section.md`](context/perspective-grid-section.md):
   shared decorative background, opacity defaults, and consumer layout ownership.
 
