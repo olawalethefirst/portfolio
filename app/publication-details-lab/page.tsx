@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
 import { PublicationComments } from "@/src/components/publication-comments/PublicationComments";
 
 import {
@@ -114,13 +115,16 @@ const publication = {
 export default function PublicationDetailsLabPage() {
   return (
     <LabThemeShell>
-      <main className="relative min-h-screen pb-32">
+      <main className="relative min-h-screen bg-surface">
         <div className="pointer-events-none fixed inset-x-0 top-8 z-10 mx-auto w-full max-w-6xl px-5  sm:px-8 lg:px-12">
           <PublicationDetailsLabActionBar className="pointer-events-auto"/>
         </div>
         <PublicationDetails publication={publication} />
         <PublicationComments initialThreads={sampleComments} />
       </main>
+      <footer>
+        <AboutCtaSection />
+      </footer>
     </LabThemeShell>
   );
 }
