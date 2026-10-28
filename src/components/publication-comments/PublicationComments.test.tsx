@@ -41,8 +41,10 @@ describe("PublicationComments", () => {
     render(<PublicationComments initialThreads={threads} />);
     const form = screen.getByRole("form", { name: "New comment" });
     fillForm(form, "   ");
+    const textarea = within(form).getByRole("textbox", { name: "Comment" });
     fireEvent.submit(form);
     expect(screen.getByText("Enter a comment.")).toBeTruthy();
+    expect(within(form).getByRole("textbox", { name: "Comment" })).toBe(textarea);
     const trigger = screen.getByRole("button", { name: "Reply to Ada" });
     fireEvent.click(trigger);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));

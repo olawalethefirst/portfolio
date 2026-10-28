@@ -3,7 +3,7 @@ import { formatMarkdown } from "./markdown-formatting";
 
 describe("Markdown commands", () => {
   it("preserves surrounding text and the selected word", () => {
-    expect(formatMarkdown("hello world", { start: 6, end: 11 }, "bold")).toEqual({ text: "hello **world**", selection: { start: 8, end: 13 } });
+    expect(formatMarkdown("hello world", { start: 6, end: 11 }, "bold")).toEqual({ text: "hello **world**", selection: { start: 8, end: 13 }, edit: { start: 6, end: 11, text: "**world**" } });
     expect(formatMarkdown("word", { start: 0, end: 4 }, "italic")?.text).toBe("*word*");
   });
   it("inserts selected placeholders and selects the link URL", () => {

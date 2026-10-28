@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/src/components/ui/Button";
 import { Input } from "@/src/components/ui/Input";
-import { MarkdownField } from "@/src/components/markdown-field/MarkdownField";
+import { MarkdownField, type MarkdownFieldHandle } from "@/src/components/markdown-field/MarkdownField";
 import { Surface } from "../ui/Surface";
 
 interface CommentFormProps {
@@ -21,6 +21,7 @@ export function CommentForm({ name, onNameChange, onSubmit, recipient, onCancel 
   const [text, setText] = useState("");
   const [errors, setErrors] = useState<{ name?: string; text?: string }>({});
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const editor = useRef<MarkdownFieldHandle>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const [editorVersion, setEditorVersion] = useState(0);
 
@@ -47,8 +48,11 @@ export function CommentForm({ name, onNameChange, onSubmit, recipient, onCancel 
           text: text.trim() ? undefined : "Enter a comment.",
         };
         setErrors(nextErrors);
+        if (nextErrors.name || nextErrors.text) {
+          editor.current?.showWrite();
+          return;
+        }
         setEditorVersion((version) => version + 1);
-        if (nextErrors.name || nextErrors.text) return;
         onSubmit(text.trim());
         setText("");
       }}
@@ -69,6 +73,7 @@ export function CommentForm({ name, onNameChange, onSubmit, recipient, onCancel 
         isInvalid={Boolean(errors.text)}
         errorMessage={errors.text}
         textareaRef={textarea}
+        editorRef={editor}
         maxLength={5000}
         placeholder={recipient ? "Continue the conversation…" : "Share your perspective…"}
       />

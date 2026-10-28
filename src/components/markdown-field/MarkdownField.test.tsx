@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { Form } from "@heroui/react";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MarkdownField } from "./MarkdownField";
 import { CommentMarkdown } from "./CommentMarkdown";
 
@@ -11,6 +11,18 @@ function Editor({ onSubmit = () => {}, maxLength }: { onSubmit?: () => void; max
 }
 
 describe("MarkdownField", () => {
+  // jsdom has no editing engine or undo stack. Simulate command insertion only;
+  // native undo/redo must be verified in actual browsers.
+  beforeEach(() => {
+    Object.defineProperty(document, "execCommand", { configurable: true, value: vi.fn((_command, _ui, text: string) => {
+      const field = document.activeElement as HTMLTextAreaElement;
+      const value = field.value.slice(0, field.selectionStart) + text + field.value.slice(field.selectionEnd);
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(field, value);
+      return true;
+    }) });
+  });
+  afterEach(() => { Reflect.deleteProperty(document, "execCommand"); });
+
   it("formats the saved selection, restores focus and never submits", () => {
     const submit = vi.fn();
     render(<Editor onSubmit={submit} />);
@@ -23,21 +35,24 @@ describe("MarkdownField", () => {
     expect(document.activeElement).toBe(textarea);
     expect(textarea.selectionStart).toBe(8);
     expect(textarea.selectionEnd).toBe(13);
+    expect(document.execCommand).toHaveBeenCalledWith("insertText", false, "**world**");
     expect(submit).not.toHaveBeenCalled();
   });
 
   it("previews formatting and preserves draft and caret when returning to Write", () => {
     render(<Editor />);
-    let textarea = screen.getByRole("textbox", { name: "Comment" }) as HTMLTextAreaElement;
+    const textarea = screen.getByRole("textbox", { name: "Comment" }) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: "**A point**" } });
     textarea.setSelectionRange(2, 9);
     fireEvent.select(textarea);
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(textarea.isConnected).toBe(true);
+    expect(textarea.hidden).toBe(true);
     const preview = screen.getByRole("region", { name: "Comment preview" });
     expect(within(preview).getByText("A point").tagName).toBe("STRONG");
     expect((screen.getByRole("button", { name: "Bold" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Write" }));
-    textarea = screen.getByRole("textbox", { name: "Comment" }) as HTMLTextAreaElement;
+    expect(screen.getByRole("textbox", { name: "Comment" })).toBe(textarea);
     expect(textarea.value).toBe("**A point**");
     expect(textarea.selectionStart).toBe(2);
     expect(document.activeElement).toBe(textarea);
@@ -57,6 +72,39 @@ describe("MarkdownField", () => {
     const field = screen.getByRole("textbox", { name: "Reply" });
     expect(field.getAttribute("aria-invalid")).toBe("true");
     expect(document.getElementById(field.getAttribute("aria-describedby")!)?.textContent).toContain("Enter a reply.");
+  });
+
+  it.each(["missing", "false", "throws", "partial"])("falls back to state when native insertion is %s", (failure) => {
+    if (failure === "missing") Reflect.deleteProperty(document, "execCommand");
+    else vi.mocked(document.execCommand).mockImplementation(() => {
+      if (failure === "throws") throw new Error("Unavailable");
+      if (failure === "partial") {
+        const field = document.activeElement as HTMLTextAreaElement;
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(field, "hello **");
+      }
+      return false;
+    });
+    render(<Editor />);
+    const textarea = screen.getByRole("textbox", { name: "Comment" }) as HTMLTextAreaElement;
+    textarea.setSelectionRange(6, 11);
+    fireEvent.select(textarea);
+    fireEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(textarea.value).toBe("hello **world**");
+    expect(textarea.selectionStart).toBe(8);
+    expect(textarea.selectionEnd).toBe(13);
+    expect(document.activeElement).toBe(textarea);
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  it("allows explicit formatting even after composition starts", () => {
+    render(<Editor />);
+    const textarea = screen.getByRole("textbox", { name: "Comment" });
+    fireEvent.compositionStart(textarea);
+    fireEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(document.execCommand).toHaveBeenCalledWith("insertText", false, "**bold text**");
+    expect((textarea as HTMLTextAreaElement).value).toBe("**bold text**hello world");
+    expect(screen.getByRole("status").textContent).not.toContain("Finish composing");
+    fireEvent.compositionEnd(textarea);
   });
 });
 

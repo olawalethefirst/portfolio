@@ -27,5 +27,9 @@ export function formatMarkdown(value: string, selection: TextSelection, format: 
     nextSelection = { start: start + marker.length, end: start + marker.length + content.length };
   }
   const text = value.slice(0, start) + insertion + value.slice(end);
-  return text.length > maxLength ? null : { text, selection: nextSelection };
+  return text.length > maxLength ? null : {
+    text,
+    selection: nextSelection,
+    edit: { start, end, text: insertion },
+  };
 }
