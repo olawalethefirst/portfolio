@@ -12,6 +12,7 @@ export interface HeaderActionBarProps {
   children?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  buttonClassName?: string;
 }
 
 export function HeaderActionBar({
@@ -20,14 +21,16 @@ export function HeaderActionBar({
   children,
   actions,
   className,
+  buttonClassName
 }: HeaderActionBarProps) {
   return (
-    <header className={cn("flex min-h-24 items-center gap-3", className)}>
+    <header className={cn("flex items-center gap-3", className)}>
       <Button
         aria-label={backLabel}
         isIconOnly
         onPress={onBack}
         variant="tertiary"
+        className={buttonClassName}
       >
         <ArrowLeft aria-hidden="true" />
       </Button>
