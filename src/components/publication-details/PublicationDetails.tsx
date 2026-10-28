@@ -7,6 +7,8 @@ import { Chip } from "@/src/components/ui/Chip";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { ReadingProgress } from "./ReadingProgress";
+import { PublicationTableOfContents } from "./PublicationTableOfContents";
+import { getPublicationHeadings, remarkPublicationHeadings } from "./publication-headings";
 
 export interface PublicationDetailsData {
   bodyMarkdown: string;
@@ -32,6 +34,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 });
 
 export function PublicationDetails({ publication }: PublicationDetailsProps) {
+  const headings = getPublicationHeadings(publication.bodyMarkdown);
   const formattedDate = dateFormatter.format(
     new Date(`${publication.publishedAt}T00:00:00Z`),
   );
@@ -90,11 +93,14 @@ export function PublicationDetails({ publication }: PublicationDetailsProps) {
             </p>
           </header>
 
-          <Typography.Prose className="mt-14 flex w-full max-w-none flex-col gap-5 sm:mt-16">
-            <Markdown remarkPlugins={[remarkGfm]}>
-              {publication.bodyMarkdown}
-            </Markdown>
-          </Typography.Prose>
+          <div className={`mt-14 grid min-w-0 gap-10 sm:mt-16 ${headings.length ? "lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-12" : ""}`}>
+            <PublicationTableOfContents headings={headings} />
+            <Typography.Prose className="flex min-w-0 w-full max-w-none flex-col gap-5 [&_h2]:scroll-mt-8 [&_h3]:scroll-mt-8 lg:col-start-1 lg:row-start-1">
+              <Markdown remarkPlugins={[remarkGfm, remarkPublicationHeadings]}>
+                {publication.bodyMarkdown}
+              </Markdown>
+            </Typography.Prose>
+          </div>
         </div>
       </Surface>
     </article>
