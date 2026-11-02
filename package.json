@@ -25,7 +25,6 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
-    "simple-icons": "^16.33.0",
     "three": "0.159.0",
     "unified": "^11.0.5"
   },

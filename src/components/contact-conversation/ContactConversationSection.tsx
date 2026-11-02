@@ -10,7 +10,6 @@ import {
   RadioGroup,
   TextField,
 } from "@heroui/react";
-import { siGithub, siX, type SimpleIcon } from "simple-icons";
 import {
   useEffect,
   useId,
@@ -26,6 +25,8 @@ import { TextArea } from "@/src/components/ui/TextArea";
 import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
 import { Progress } from "@/src/components/ui/Progress";
 import { cn } from "@/src/components/ui/utils";
+
+import { socialIconPaths } from "./social-icons";
 
 export type ContactIntent = "hire" | "collaborate" | "contact";
 
@@ -81,12 +82,12 @@ const goalHelpers: Record<ContactIntent, string> = {
 
 const socialProfiles: ReadonlyArray<{
   href: string;
-  icon: SimpleIcon | "linkedin";
+  icon: keyof typeof socialIconPaths;
   label: string;
 }> = [
   {
     href: "https://github.com/olawalethefirst",
-    icon: siGithub,
+    icon: "github",
     label: "GitHub",
   },
   {
@@ -96,7 +97,7 @@ const socialProfiles: ReadonlyArray<{
   },
   {
     href: "https://x.com/olawalethefirst",
-    icon: siX,
+    icon: "twitter-x",
     label: "X",
   },
 ];
@@ -129,46 +130,21 @@ function StepHeading({ children, id, questionRef }: StepHeadingProps) {
   );
 }
 
-function SimpleIconMark({ icon }: { icon: SimpleIcon }) {
-  return (
-    <svg aria-hidden="true" className="size-5" viewBox="0 0 24 24">
-      <path d={icon.path} fill="currentColor" />
-    </svg>
-  );
-}
-
-function LinkedInMark() {
-  return (
-    <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24">
-      <path
-        d="M22.2 0H1.8C.8 0 0 .8 0 1.7v20.5c0 1 .8 1.7 1.8 1.7h20.5c1 0 1.8-.8 1.8-1.7V1.7C24 .8 23.2 0 22.2 0Z"
-        fill="#0077B5"
-      />
-      <path
-        d="M3.6 9h3.6v11.5H3.6V9ZM5.3 3.3c1.1 0 2.1.9 2.1 2.1s-.9 2.1-2.1 2.1c-1.1 0-2.1-.9-2.1-2.1s.9-2.1 2-2.1ZM9.4 9h3.4v1.6c.5-.9 1.6-1.8 3.4-1.8 3.6 0 4.3 2.4 4.3 5.5v6.3h-3.6V15c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9v5.7H9.4V9Z"
-        fill="#FFF"
-      />
-    </svg>
-  );
-}
-
 function SocialLinks() {
   return (
     <nav aria-label="Social links" className="flex items-center gap-3">
       {socialProfiles.map(({ href, icon, label }) => (
         <Link
           aria-label={`Visit ${label} profile (opens in a new tab)`}
-          className="inline-flex size-11 items-center justify-center rounded-full border border-border bg-surface/80 text-foreground transition-colors data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-focus/35 data-[hovered=true]:bg-surface-secondary"
+          className="inline-flex size-11 items-center justify-center rounded-full border border-border bg-surface/80 text-accent transition-colors data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-focus/35 data-[hovered=true]:bg-surface-secondary"
           href={href}
           key={label}
           rel="noopener noreferrer"
           target="_blank"
         >
-          {icon === "linkedin" ? (
-            <LinkedInMark />
-          ) : (
-            <SimpleIconMark icon={icon} />
-          )}
+          <svg aria-hidden="true" className="size-5" fill="currentColor" viewBox="0 0 16 16">
+            <path d={socialIconPaths[icon]} />
+          </svg>
         </Link>
       ))}
     </nav>

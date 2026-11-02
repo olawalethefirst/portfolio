@@ -51,3 +51,10 @@ This directory stores durable knowledge that future contributors cannot reliably
   camera zoom followed by a flow-driven decorative glass overlay.
 
 Create a directory only when its first real document is needed. Keep temporary plans, evidence, reviews, and handoffs in the root-level, locally ignored `local-workspace/`.
+
+## Third-party assets
+
+Contact social marks use local GitHub, LinkedIn, and Twitter X paths from
+[Bootstrap Icons](https://icons.getbootstrap.com/), with a shared 16×16 viewBox
+and inherited accent color. The [MIT license](licenses/bootstrap-icons.txt)
+is retained with the vendored paths in `src/components/contact-conversation/social-icons.ts`.
