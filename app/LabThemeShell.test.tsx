@@ -48,7 +48,7 @@ describe("LabThemeShell", () => {
     expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
   });
 
-  it("links to the home page and publication lab", () => {
+  it("links to the home page, contact form, and publication lab", () => {
     render(<LabThemeShell><main>Lab preview</main></LabThemeShell>);
 
     fireEvent.click(screen.getByRole("button", { name: "Menu" }));
@@ -57,6 +57,8 @@ describe("LabThemeShell", () => {
       .toBe("/");
     expect(screen.getByRole("link", { name: "Publication details lab" }).getAttribute("href"))
       .toBe("/publication-details-lab");
+    expect(screen.getByRole("link", { name: "Contact" }).getAttribute("href"))
+      .toBe("/contact");
     expect(screen.queryByRole("link", { name: "Component lab" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Project item lab" })).toBeNull();
   });

@@ -111,7 +111,7 @@ export const PrismHeroLayout = forwardRef<
                 </Button>
                 <Button
                   className="min-w-24 gap-2"
-                  href="#contact"
+                  href="/contact"
                   size="sm"
                   startContent={<Mail aria-hidden="true" className="size-4 shrink-0" />}
                   variant="outline"

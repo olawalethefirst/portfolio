@@ -12,6 +12,13 @@
  * TypeScript; app/theme-accents.ts reads them from the live stylesheet.
  */
 :root {
+  --navigation-pill-height: 3.5rem;
+  --navigation-bottom-offset: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  --navigation-content-gap: 0.75rem;
+  --navigation-bottom-clearance: calc(
+    var(--navigation-pill-height) + var(--navigation-bottom-offset) + var(--navigation-content-gap)
+  );
+
   --accent-chartreuse: oklch(64.76% 0.1512 122.26);
   --accent-copper: oklch(64.13% 0.1861 40.99);
   --accent-plum: oklch(55.87% 0.2184 343.85);

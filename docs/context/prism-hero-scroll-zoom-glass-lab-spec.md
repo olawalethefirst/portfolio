@@ -24,7 +24,8 @@ relative positioning to anchor its expanded card above the launcher. The publica
 lab supplies a fixed bottom wrapper. The Prism glass content
 places the shell-controlled navigation through a `LabThemeShell` children
 render function: an overlapping grid lane
-reserves the first viewport minus the 0.5rem bottom inset, followed by a
+reserves the first viewport minus the shared `--navigation-bottom-offset`
+(safe-area-aware, with a 0.5rem minimum), followed by a
 zero-height sticky anchor at that same viewport position. Its bottom-aligned
 navigation rises with the glass, then remains at the viewport bottom while
 projects scroll. Geometry does not assume a launcher height and uses no

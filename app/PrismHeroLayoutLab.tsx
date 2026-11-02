@@ -86,8 +86,8 @@ export function PrismHeroLayoutLab() {
                 <AboutCtaSection />
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">
-                <div aria-hidden="true" className="h-[calc(100dvh-0.5rem)]" />
-                <div className="sticky top-[calc(100dvh-0.5rem)] h-0">
+                <div aria-hidden="true" className="h-[calc(100dvh-var(--navigation-bottom-offset))]" />
+                <div className="sticky top-[calc(100dvh-var(--navigation-bottom-offset))] h-0">
                   <div className="absolute inset-x-0 bottom-0">{navigation}</div>
                 </div>
               </div>

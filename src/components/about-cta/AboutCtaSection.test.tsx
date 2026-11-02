@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 
@@ -39,16 +39,12 @@ describe("About CTA", () => {
     expect(paragraph.querySelector("[style*='opacity']")).not.toBeNull();
   });
 
-  it("keeps the CTA focusable without alignment toggle semantics", () => {
+  it("links the conversation CTA to the contact form", () => {
     reducedMotionPreference(true);
     render(<AboutCtaSection />);
-    const button = screen.getByRole("button", { name: "Start a conversation" });
-    button.focus();
-    expect(button.hasAttribute("aria-pressed")).toBe(false);
-    expect(button.hasAttribute("aria-describedby")).toBe(false);
-    fireEvent.click(button);
-    expect(document.activeElement).toBe(button);
-    expect(button.hasAttribute("aria-pressed")).toBe(false);
-    expect(button.getAttribute("type")).toBe("button");
+    const link = screen.getByRole("link", { name: "Start a conversation" });
+    link.focus();
+    expect(document.activeElement).toBe(link);
+    expect(link.getAttribute("href")).toBe("/contact");
   });
 });

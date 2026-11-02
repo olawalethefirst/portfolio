@@ -10,6 +10,7 @@ import {
   RadioGroup,
   TextField,
 } from "@heroui/react";
+import { ArrowLeft, ArrowRight, SendHorizontal } from "lucide-react";
 import {
   useEffect,
   useId,
@@ -24,6 +25,7 @@ import { Input } from "@/src/components/ui/Input";
 import { TextArea } from "@/src/components/ui/TextArea";
 import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
 import { Progress } from "@/src/components/ui/Progress";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { cn } from "@/src/components/ui/utils";
 
 import { socialIconPaths } from "./social-icons";
@@ -40,7 +42,7 @@ export interface ContactSubmission {
 export interface ContactConversationSectionProps {
   className?: string;
   id?: string;
-  onSubmit: (submission: ContactSubmission) => Promise<void> | void;
+  onSubmit?: (submission: ContactSubmission) => Promise<void> | void;
 }
 
 const intentOptions: ReadonlyArray<{
@@ -249,11 +251,7 @@ function GoalStep({
         variant="secondary"
       >
         <Label className="text-sm font-medium">Your goal</Label>
-        <TextArea
-          className="mt-2 h-40"
-          maxLength={2000}
-          ref={goalRef}
-        />
+        <TextArea className="mt-2 h-40" maxLength={2000} ref={goalRef} />
         {error ? (
           <FieldError className="mt-3 text-sm font-medium text-danger">
             {error}
@@ -385,6 +383,10 @@ export function ContactConversationSection({
     questionRef.current?.focus({ preventScroll: true });
   }, [step]);
 
+  useEffect(() => {
+    if (errors.goal) goalRef.current?.focus();
+  }, [errors]);
+
   function goBack() {
     setErrors({});
     setStep((current) => (current === 2 ? 1 : 0));
@@ -412,7 +414,6 @@ export function ContactConversationSection({
         setErrors({
           goal: "Share at least 10 characters so I have some context.",
         });
-        goalRef.current?.focus();
         return;
       }
       setErrors({});
@@ -443,7 +444,7 @@ export function ContactConversationSection({
     setIsSubmitting(true);
 
     try {
-      await onSubmit({
+      await onSubmit?.({
         email: normalizedEmail,
         goal: normalizedGoal,
         intent,
@@ -478,9 +479,9 @@ export function ContactConversationSection({
       )}
       id={id}
     >
-      <div className="mx-auto grid min-h-dvh w-full max-w-6xl content-center gap-16 px-5 py-12 pb-32 sm:px-8 lg:h-[min(100dvh,56rem)] lg:min-h-0 lg:grid-cols-2 lg:content-normal lg:py-16 lg:pb-32">
-        <div className="flex flex-col items-center gap-6 lg:items-start lg:justify-between">
-          <h2 className="max-w-md text-center text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-left">
+      <SectionContainer className="grid min-h-dvh w-full content-center gap-16 py-12 pb-[var(--navigation-bottom-clearance)] lg:h-[min(100dvh,56rem)] lg:min-h-0 lg:grid-cols-2 lg:content-normal lg:py-16 lg:pb-[var(--navigation-bottom-clearance)]">
+        <div className="flex flex-col items-start gap-6 lg:justify-between">
+          <h2 className="max-w-md text-start text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
             Let’s make something happen.
           </h2>
           <SocialLinks />
@@ -488,7 +489,7 @@ export function ContactConversationSection({
 
         {submittedName ? (
           <div
-            className="mx-auto flex w-full max-w-xl flex-col lg:col-start-2 lg:mx-0 lg:self-end"
+            className="flex w-full flex-col lg:col-start-2 lg:self-end"
             role="status"
           >
             <h3
@@ -509,7 +510,7 @@ export function ContactConversationSection({
         ) : (
           <Form
             aria-labelledby={questionId}
-            className="mx-auto flex w-full max-w-xl flex-col lg:col-start-2 lg:mx-0 lg:self-end"
+            className="flex w-full flex-col lg:col-start-2 lg:self-end"
             onSubmit={handleSubmit}
             validationBehavior="aria"
           >
@@ -582,23 +583,34 @@ export function ContactConversationSection({
 
             <div className="mt-8 flex min-h-10 items-center justify-between gap-4">
               {step > 0 ? (
-                <Button isDisabled={isSubmitting} onPress={goBack} variant="ghost">
+                <Button
+                  isDisabled={isSubmitting}
+                  onPress={goBack}
+                  startContent={<ArrowLeft aria-hidden="true" className="size-4 shrink-0" />}
+                  variant="ghost"
+                >
                   Back
                 </Button>
               ) : (
                 <span />
               )}
               <Button
+                className="w-32 shrink-0"
+                endContent={step === 2 ? (
+                  <SendHorizontal aria-hidden="true" className="size-4 shrink-0" />
+                ) : (
+                  <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+                )}
                 isDisabled={isSubmitting}
                 isLoading={isSubmitting}
                 type="submit"
               >
-                {step === 2 ? "Send inquiry" : "Continue"}
+                {step === 2 ? "Send" : "Continue"}
               </Button>
             </div>
           </Form>
         )}
-      </div>
+      </SectionContainer>
     </PerspectiveGridSection>
   );
 }

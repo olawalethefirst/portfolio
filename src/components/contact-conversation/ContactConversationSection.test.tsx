@@ -83,6 +83,19 @@ describe("ContactConversationSection", () => {
     ).toBe("Build a thoughtful portfolio experience.");
   });
 
+  it("keeps an invalid goal available for editing with focus", () => {
+    render(<ContactConversationSection onSubmit={vi.fn()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /^Hire/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Your goal" }), {
+      target: { value: "Short" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    const goal = screen.getByRole("textbox", { name: "Your goal" });
+    expect(document.activeElement).toBe(goal);
+    expect((goal as HTMLTextAreaElement).value).toBe("Short");
+  });
+
   it("selects the Contact path and advances with its relevant prompt", () => {
     render(<ContactConversationSection onSubmit={vi.fn()} />);
 
@@ -124,7 +137,7 @@ describe("ContactConversationSection", () => {
       target: { value: "Build a thoughtful portfolio experience." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
     expect(screen.getByText("Enter your name.")).toBeTruthy();
     expect(screen.getByText("Enter your email address.")).toBeTruthy();
@@ -135,7 +148,7 @@ describe("ContactConversationSection", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Email" }), {
       target: { value: "not-an-email" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
     expect(screen.getByText("Enter a valid email address.")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
@@ -164,7 +177,7 @@ describe("ContactConversationSection", () => {
       target: { value: "  ada@example.com  " },
     });
 
-    const sendButton = screen.getByRole("button", { name: "Send inquiry" });
+    const sendButton = screen.getByRole("button", { name: "Send" });
     fireEvent.click(sendButton);
     fireEvent.click(sendButton);
 
@@ -208,7 +221,7 @@ describe("ContactConversationSection", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Email" }), {
       target: { value: "ada@example.com" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
     expect(
       await screen.findByText(
@@ -220,7 +233,7 @@ describe("ContactConversationSection", () => {
     ).toBe("Ada Lovelace");
     expect(screen.queryByText("Private provider failure details")).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Send inquiry" }).hasAttribute("disabled"),
+      screen.getByRole("button", { name: "Send" }).hasAttribute("disabled"),
     ).toBe(false);
   });
 });

@@ -10,9 +10,10 @@ pnpm dev
 ```
 
 - `/` renders the portfolio preview with the Prism hero, projects, publications, and about section.
+- `/contact` previews the contact form; inquiries are not sent or stored.
 - `/publication-details-lab` previews a Markdown publication and its comment threads.
 
-Both labs share global theme and display controls. Their sample data and referenced assets are retained alongside reusable components.
+Pages share global theme and display controls. Their sample data and referenced assets are retained alongside reusable components.
 
 ## Checks
 

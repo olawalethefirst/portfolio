@@ -1,7 +1,7 @@
 # Section container contract
 
-The `/` hero, project headers and footers, publications, and
-About/CTA use `src/components/ui/SectionContainer.tsx` for a shared content
+The `/` hero, project headers and footers, publications,
+About/CTA, and the `/contact` form use `src/components/ui/SectionContainer.tsx` for a shared content
 boundary: Tailwind `container mx-auto px-4 sm:px-6`. Horizontal padding is
 16px below `sm` and 24px from `sm` upward at the default root font size.
 Vertical spacing remains section-specific. Backgrounds and immersive scenes
@@ -48,3 +48,19 @@ including short landscape and narrow portrait windows. Text overlap is a separat
 layout concern; this contract reserves canvas edge clearance rather than measuring
 header/footer content. Performance remains `none`: bounds are memoized per asset
 and the demand-driven animation loop is retained.
+
+## Bottom clearance for navigation
+
+Containers ending behind the navigation pill use
+`pb-[var(--navigation-bottom-clearance)]` on their inner content, rather than
+adding padding outside a viewport-height section. Contact form content, its
+thank-you state, and About/CTA use this shared clearance. Intermediate
+article/project/publication spacing remains owned by those layouts.
+
+The shared tokens in `src/styles/design-tokens.css` reserve the pill's 3.5rem
+height, a bottom offset of the greater of 0.5rem or the device safe-area inset,
+and a 0.75rem content gap. This totals 4.75rem (76px at the default font size)
+without a larger safe area. Both fixed navigation and the home page's sticky
+navigation lane use the same bottom offset. The pill enforces the shared
+minimum height; expanded navigation is an overlay and does not increase the
+content clearance.

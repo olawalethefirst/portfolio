@@ -41,7 +41,7 @@ export function NavPill({
 }: NavPillProps) {
   return (
     <Surface
-      className={cn("flex items-center gap-2 rounded-full p-2", className)}
+      className={cn("flex min-h-[var(--navigation-pill-height)] items-center gap-2 rounded-full p-2", className)}
       material="glass"
     >
       <Button

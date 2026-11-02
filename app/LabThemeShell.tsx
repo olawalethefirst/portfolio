@@ -15,6 +15,7 @@ import {
 
 const navigationItems = [
   { href: "/", label: "Home" },
+  { href: "/contact", label: "Contact" },
   { href: "/publication-details-lab", label: "Publication details lab" },
 ] as const;
 
@@ -74,7 +75,7 @@ export function LabThemeShell({ children }: LabThemeShellProps) {
       ) : (
         <>
           {children}
-          <div className="pointer-events-none fixed inset-x-0 bottom-2 z-20">
+          <div className="pointer-events-none fixed inset-x-0 bottom-[var(--navigation-bottom-offset)] z-20">
             {navigation}
           </div>
         </>

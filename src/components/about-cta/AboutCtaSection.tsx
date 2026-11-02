@@ -72,7 +72,7 @@ export function AboutCtaSection({
   }, { scope: sectionRef, dependencies: [animate, summary], revertOnUpdate: true });
 
   return (
-    <PerspectiveGridSection ref={sectionRef} gridOpacity={0.2} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface py-16 lg:py-28">
+    <PerspectiveGridSection ref={sectionRef} gridOpacity={0.2} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface pt-16 pb-[var(--navigation-bottom-clearance)] lg:pt-28">
       <SectionContainer>
         <h2 id={titleId} className="mb-2 text-center text-sm font-medium text-muted lg:mb-3">
           About me
@@ -83,6 +83,7 @@ export function AboutCtaSection({
           </p>
           <div className="mt-5 flex justify-center">
             <Button
+              href="/contact"
               startContent={<MailPen aria-hidden="true" className="size-5 shrink-0" />}
               size="md"
               variant="outline"
