@@ -48,6 +48,19 @@ describe("LabThemeShell", () => {
     expect(screen.getByRole("button", { name: "Settings" })).toBeTruthy();
   });
 
+  it("links to the home page and publication lab", () => {
+    render(<LabThemeShell><main>Lab preview</main></LabThemeShell>);
+
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+
+    expect(screen.getByRole("link", { name: "Home" }).getAttribute("href"))
+      .toBe("/");
+    expect(screen.getByRole("link", { name: "Publication details lab" }).getAttribute("href"))
+      .toBe("/publication-details-lab");
+    expect(screen.queryByRole("link", { name: "Component lab" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Project item lab" })).toBeNull();
+  });
+
   it("applies display settings to the full lab preview", () => {
     render(
       <LabThemeShell>

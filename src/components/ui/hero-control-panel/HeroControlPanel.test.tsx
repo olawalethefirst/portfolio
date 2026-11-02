@@ -3,7 +3,6 @@ import { motionValue } from "motion/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { HeroControlPanel } from "./HeroControlPanel";
-import { HeroControlPanelPreview } from "./HeroControlPanelPreview";
 
 class ResizeObserverMock {
   observe() {}
@@ -90,17 +89,5 @@ describe("HeroControlPanel", () => {
     expect(
       screen.getByRole("button", { name: "Play autoplay" }).hasAttribute("disabled"),
     ).toBe(true);
-  });
-});
-
-describe("HeroControlPanelPreview", () => {
-  it("begins from the canonical Solution state", () => {
-    render(<HeroControlPanelPreview />);
-
-    expect(
-      screen
-        .getByRole("tab", { name: /solution/i })
-        .getAttribute("aria-selected"),
-    ).toBe("true");
   });
 });

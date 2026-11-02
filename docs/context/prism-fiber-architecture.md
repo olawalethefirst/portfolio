@@ -22,7 +22,7 @@ The current implementation:
 - has no global `window.*` controls or public numeric-progress API;
 - preserves the approved models, composition, poses, camera, and lighting.
 
-The lab route is `/prism-fiber-lab`. It remains a development presentation,
+The lab route is `/`. It remains a development presentation,
 not the final portfolio integration.
 
 ## What is rendered
@@ -467,9 +467,9 @@ required-bone validation make an incompatible asset revision fail explicitly.
 - `stage/PrismStage.test.tsx` verifies the Stage boundary, named-state flow,
   sampled-and-held camera azimuth, semantic exploration events, discovery
   progress, responsive distance reapplication, and the recenter command.
-- `app/prism-fiber-lab/usePrismDiscoveryScroll.test.tsx` verifies route-relative
+- `app/usePrismDiscoveryScroll.test.tsx` verifies route-relative
   progress clamping and reactive reduced-motion behavior.
-- `app/prism-fiber-lab/PrismHeroLayoutLab.test.tsx` verifies the complete-hero,
+- `app/PrismHeroLayoutLab.test.tsx` verifies the complete-hero,
   single-Prism composition and foreground glass-panel contract.
 - `ui/usePrismAutoplay.test.tsx` verifies ordered looping, manual selection,
   progress reset, and pause behavior.

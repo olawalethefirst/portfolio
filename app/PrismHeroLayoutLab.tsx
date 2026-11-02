@@ -14,7 +14,7 @@ import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { SectionHeading } from "@/src/components/ui/SectionHeading";
 import { Surface } from "@/src/components/ui/Surface";
 
-import { LabThemeShell } from "../LabThemeShell";
+import { LabThemeShell } from "./LabThemeShell";
 
 import { usePrismDiscoveryScroll } from "./usePrismDiscoveryScroll";
 import { labPublications } from "./lab-publications";

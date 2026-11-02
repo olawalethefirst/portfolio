@@ -7,7 +7,7 @@ centred, uppercase, outline-only typography over each section's own background.
 Each section renders its own instance of the same component and visual rules.
 
 The first implementation applies the heading to the actual Projects
-and Publications sections in `/prism-fiber-lab`. Contact is deferred
+and Publications sections in `/`. Contact is deferred
 until a contact section exists in that lab. The hero identity and individual project/card titles are outside scope.
 
 ## Visual contract and adjustable defaults
@@ -50,7 +50,7 @@ conventions. Use Tailwind for layout and typography; the scoped
 `section-heading-outline` rule in `app/globals.css` owns outline support and
 forced-colours fallback, without a CSS module. Follow existing integration
 conventions. Integrate Projects and Publications in
-`app/prism-fiber-lab/PrismHeroLayoutLab.tsx` using the existing section
+`app/PrismHeroLayoutLab.tsx` using the existing section
 containers. Do not add a separate demonstration block.
 
 Render a semantic `h2`; allow a caller-provided `id` so the containing section

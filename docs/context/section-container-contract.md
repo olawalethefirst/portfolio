@@ -1,6 +1,6 @@
 # Section container contract
 
-The `/prism-fiber-lab` hero, project headers and footers, publications, and
+The `/` hero, project headers and footers, publications, and
 About/CTA use `src/components/ui/SectionContainer.tsx` for a shared content
 boundary: Tailwind `container mx-auto px-4 sm:px-6`. Horizontal padding is
 16px below `sm` and 24px from `sm` upward at the default root font size.

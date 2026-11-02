@@ -4,7 +4,7 @@ Status: Implemented on 2026-10-06; remaining review closed by owner direction on
 
 ## Project-content amendment
 
-The foreground glass Surface now contains the shared `project-item-lab`
+The foreground glass Surface now contains the shared `src/components/project-item/lab-projects.ts`
 projects, Field Notes followed by Relay. This supersedes the empty,
 decorative-panel requirements below: the Surface is content-bearing, permits
 pointer input, is exposed to assistive technology, and grows with its project
@@ -20,8 +20,8 @@ links, and scroll performance with all three renderers present. No nested
 scroll container or additional glass-filter owner is introduced.
 
 Navigation placement belongs to consumers: `NavigationPanel` keeps only local
-relative positioning to anchor its expanded card above the launcher. Existing
-lab/showcase consumers supply fixed bottom wrappers. The Prism glass content
+relative positioning to anchor its expanded card above the launcher. The publication details
+lab supplies a fixed bottom wrapper. The Prism glass content
 places the shell-controlled navigation through a `LabThemeShell` children
 render function: an overlapping grid lane
 reserves the first viewport minus the 0.5rem bottom inset, followed by a
@@ -48,7 +48,7 @@ progress 1. Mobile retains the distance-only contract; other requirements remain
 
 ## Objective
 
-Modify the existing `/prism-fiber-lab` route to demonstrate the smallest
+Modify the existing `/` route to demonstrate the smallest
 useful version of the Prism discovery transition around the complete existing
 hero:
 
@@ -206,7 +206,7 @@ The preference must be observed if it changes during the session.
 Likely ownership boundaries are:
 
 ```text
-app/prism-fiber-lab/
+app/
   PrismHeroLayoutLab.tsx           route-level runway and glass composition
 
 src/components/prism-fiber/
@@ -283,7 +283,7 @@ should not require React component rerenders for every pixel of travel.
 Permitted implementation checks:
 
 ```sh
-pnpm exec vitest run app/prism-fiber-lab/PrismHeroLayoutLab.test.tsx src/components/prism-fiber/Prism.test.tsx src/components/prism-fiber/stage/PrismStage.test.tsx
+pnpm exec vitest run app/PrismHeroLayoutLab.test.tsx src/components/prism-fiber/Prism.test.tsx src/components/prism-fiber/stage/PrismStage.test.tsx
 pnpm exec tsc --noEmit
 git ls-files --cached --others --exclude-standard -z -- '*.js' '*.jsx' '*.mjs' '*.ts' '*.tsx' | xargs -0 pnpm exec eslint --
 git diff --check
@@ -328,7 +328,7 @@ explicitly delegated.
 
 The draft is satisfied when:
 
-1. `/prism-fiber-lab` initially shows the complete existing hero with one
+1. `/` initially shows the complete existing hero with one
    persistent, full-viewport Prism Canvas.
 2. The first `100dvh` of native page travel moves only camera distance from the
    fitted home endpoint to the fixed discovery endpoint.

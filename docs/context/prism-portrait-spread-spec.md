@@ -170,7 +170,7 @@ scroll-linked main-thread task over 50ms or visible discontinuity.
 Agent checks:
 
 ```sh
-pnpm exec vitest run src/components/prism-fiber app/prism-fiber-lab
+pnpm exec vitest run src/components/prism-fiber app
 pnpm exec tsc --noEmit
 git ls-files --cached --others --exclude-standard -z -- '*.js' '*.jsx' '*.mjs' '*.ts' '*.tsx' | xargs -0 pnpm exec eslint --
 git diff --check

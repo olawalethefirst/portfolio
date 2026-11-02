@@ -14,8 +14,7 @@ import {
 } from "@/src/theme/active-theme";
 
 const navigationItems = [
-  { href: "/", label: "Component lab" },
-  { href: "/project-item-lab", label: "Project item lab" },
+  { href: "/", label: "Home" },
   { href: "/publication-details-lab", label: "Publication details lab" },
 ] as const;
 

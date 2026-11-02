@@ -646,7 +646,7 @@ Performance risk is **possible** because the design combines:
 ### Non-regression criterion
 
 On the same test device, browser, viewport, theme, and Prism state, record the
-current `/prism-fiber-lab` frame profile as the baseline before implementation.
+current `/` frame profile as the baseline before implementation.
 During the completed hero handoff:
 
 - 95th-percentile frame time must not regress by more than 25% relative to that
@@ -708,7 +708,7 @@ within these boundaries:
 
 ```text
 app/
-  prism-fiber-lab/                  comparison page and metadata
+  page.tsx                          portfolio home page
 src/components/
   prism-fiber/
     Prism.tsx                       stable reusable facade

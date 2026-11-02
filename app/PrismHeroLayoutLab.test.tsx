@@ -12,7 +12,7 @@ import type {
   PrismHeroLayoutProps,
 } from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
 
-vi.mock("../theme-accents", () => ({
+vi.mock("./theme-accents", () => ({
   themes: ["plum"],
   useThemeAccents: () => ({ plum: "#774477" }),
   themeForAccent: () => "plum",
