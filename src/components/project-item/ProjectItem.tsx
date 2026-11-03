@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { Chip } from "../ui/Chip";
 import { SectionContainer } from "../ui/SectionContainer";
 import { cn } from "../ui/utils";
+import { ProjectExplanation } from "./ProjectExplanation";
 import {
   ProjectDeviceStage,
   type ModelEntryRotation,
@@ -19,7 +20,8 @@ export interface ProjectItemProps {
   name: string;
   summary: string;
   platform: ProjectPlatform;
-  solutions: readonly string[];
+  what: string;
+  how: string;
   liveHref: string;
   screenTextureSrc?: string;
   modelEntryRotation?: ModelEntryRotation;
@@ -39,7 +41,8 @@ export function ProjectItem({
   name,
   summary,
   platform,
-  solutions,
+  what,
+  how,
   liveHref,
   screenTextureSrc,
   modelEntryRotation,
@@ -99,18 +102,11 @@ export function ProjectItem({
 
       <div className="absolute inset-x-0 bottom-0 z-10">
         <SectionContainer className="grid grid-cols-2 items-end gap-4 pb-[calc(var(--project-edge-clearance)+env(safe-area-inset-bottom))] sm:gap-8">
-          <ul
-            aria-label={`${name} solutions`}
-            className="flex max-w-[28rem] flex-wrap content-end gap-1"
-          >
-            {solutions.map((solution) => (
-              <li key={solution}>
-                <Chip size="sm" variant="soft">
-                  {solution}
-                </Chip>
-              </li>
-            ))}
-          </ul>
+          <ProjectExplanation
+            how={how}
+            name={name}
+            what={what}
+          />
 
           <Button
             aria-label={`View ${name} live`}

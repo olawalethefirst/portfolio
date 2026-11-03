@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/project-explanations-spec.md`](context/project-explanations-spec.md):
+  What/How project content, native HeroUI popovers and acceptance requirements.
+
 - [`context/publication-table-of-contents.md`](context/publication-table-of-contents.md):
   article heading IDs, responsive contents navigation and native fragment links.
 

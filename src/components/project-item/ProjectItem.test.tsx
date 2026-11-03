@@ -40,7 +40,8 @@ describe("ProjectItem", () => {
         liveHref="https://example.com/field-notes"
         name="Field Notes"
         platform="mobile"
-        solutions={["Product strategy", "Interaction design"]}
+        how="Shared services coordinate team decisions."
+        what="A shared decision journal for teams."
         stackIndex={2}
         summary="A calmer way for distributed teams to capture decisions in motion."
       />,
@@ -58,8 +59,8 @@ describe("ProjectItem", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByText("Mobile")).toBeTruthy();
-    expect(screen.getByText("Product strategy")).toBeTruthy();
-    expect(screen.getByText("Interaction design")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "What? About Field Notes" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "How? Field Notes works" })).toBeTruthy();
     expect(
       screen.getByRole("figure", {
         name: "Field Notes mobile project preview",
@@ -91,7 +92,8 @@ describe("ProjectItem", () => {
         modelEntryRotation={modelEntryRotation}
         name="Field Notes"
         platform="mobile"
-        solutions={["Product strategy"]}
+        how="Shared services coordinate team decisions."
+        what="A shared decision journal for teams."
         stackIndex={2}
         summary="A calmer way to capture decisions."
       />,
