@@ -10,11 +10,11 @@ describe("measurePrismHomeFrame", () => {
   it("normalizes a portrait allocation without minimum expansion or duplicate insets", () => {
     expect(measurePrismHomeFrame({
       canvasRect: { left: 10, top: 20, width: 400, height: 800 },
-      portraitCompositionRect: { left: 50, top: 100, width: 300, height: 400 },
+      portraitSlotRect: { left: 50, top: 100, width: 300, height: 400 },
       topBoundaryRect: { left: 50, top: 100, width: 300, height: 84 },
       bottomBoundaryRect: { left: 50, top: 304, width: 300, height: 100 },
       clearance: CLEARANCE, minimumHeight: MINIMUM_HEIGHT, minimumWidth: MINIMUM_WIDTH,
-    })).toEqual({ left: 55 / 400, top: 180 / 800, width: 270 / 400, height: 88 / 800 });
+    })).toEqual({ left: 40 / 400, top: 80 / 800, width: 300 / 400, height: 400 / 800 });
   });
   it("maps an explicit right-column region into the full Canvas", () => {
     const frame = measurePrismHomeFrame({

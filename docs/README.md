@@ -32,7 +32,7 @@ This directory stores durable knowledge that future contributors cannot reliably
   backing and figure lighting.
 
 - [`context/prism-portrait-spread-spec.md`](context/prism-portrait-spread-spec.md):
-  centered portrait hero with vertical spread capped from square Prism home height.
+  CSS-centered portrait hero with a shrinkable 25:27 Prism slot and measured camera framing.
 
 - [`context/prism-desktop-zoom-centering-spec.md`](context/prism-desktop-zoom-centering-spec.md):
   desktop discovery projection, full-progress centering, and responsive verification contract.

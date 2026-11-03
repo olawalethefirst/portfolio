@@ -1,5 +1,28 @@
 # Portrait hero vertical spread specification
 
+## CSS slot amendment
+
+Portrait layouts below `lg` now use a CSS flex composition in normal content
+order: editorial, Prism slot, controls. The centered group has a 1rem gap on
+both sides of a slot occupying 90% of the content width with preferred
+`aspect-ratio: 25 / 27`. The slot can shrink vertically when available height
+is constrained; extra height stays outside the group. Text and controls do not
+shrink. Safe-area-aware outer insets still apply.
+
+`usePrismHomeFrame` observes the slot bounds and normalizes them into the Canvas
+frame. It never writes a composition height. The earlier JavaScript spread
+calculation and its algorithm-specific tests are retired; framing tests now
+cover direct slot normalization, resize updates, and unchanged measurements.
+This amendment supersedes the measured-group-height algorithm below. Desktop
+and landscape framing remain unchanged. CSS establishes the composition before
+hydration, independently of Prism model loading. Changes in actual font metrics
+or editorial content can still resize the group naturally.
+
+Visual acceptance: check a tall phone, a short portrait viewport, tablet portrait,
+landscape and desktop; confirm no model-loading text jump and no clipped controls.
+Browser verification and production build remain controller-owned.
+
+
 ## Objective
 
 Keep the editorial block, Prism, and controls together on oblong portrait devices

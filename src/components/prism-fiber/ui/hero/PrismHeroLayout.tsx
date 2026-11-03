@@ -79,12 +79,6 @@ export const PrismHeroLayout = forwardRef<
             data-testid="prism-content-container"
           >
             <div
-              ref={initialRegionRef}
-              className="hidden self-stretch md:landscape:col-start-2 md:landscape:row-start-1 md:landscape:block lg:col-start-2 lg:row-start-1 lg:block"
-              data-testid="prism-initial-region"
-            />
-
-            <div
               ref={topBoundaryRef}
               className={`${styles.editorial} pointer-events-none absolute inset-x-0 top-4 z-10 mx-auto flex w-auto max-w-xl flex-col items-center text-center md:landscape:relative md:landscape:inset-auto md:landscape:col-start-1 md:landscape:row-span-2 md:landscape:row-start-1 md:landscape:w-full md:landscape:mx-0 md:landscape:items-start md:landscape:justify-self-start md:landscape:self-center md:landscape:text-left lg:relative lg:inset-auto lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:w-full lg:mx-0 lg:items-start lg:justify-self-start lg:self-center lg:text-left`}
             >
@@ -120,6 +114,12 @@ export const PrismHeroLayout = forwardRef<
                 </Button>
               </div>
             </div>
+
+            <div
+              ref={initialRegionRef}
+              className={`${styles.slot} hidden self-stretch md:landscape:col-start-2 md:landscape:row-start-1 md:landscape:block lg:col-start-2 lg:row-start-1 lg:block`}
+              data-testid="prism-initial-region"
+            />
 
             <aside
               ref={bottomBoundaryRef}
