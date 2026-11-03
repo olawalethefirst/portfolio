@@ -17,7 +17,7 @@ describe("calculatePrismDiscoveryDistance", () => {
     const discoveryDistance = calculatePrismDiscoveryDistance(3, 1);
 
     expect(calculatePrismDiscoveryDistance(3, 0)).toBe(3);
-    expect(discoveryDistance).toBeCloseTo(1.5);
+    expect(discoveryDistance).toBeCloseTo(1.2);
     expect(calculatePrismDiscoveryDistance(3, 0.5)).toBeCloseTo(
       (3 + discoveryDistance) / 2,
     );

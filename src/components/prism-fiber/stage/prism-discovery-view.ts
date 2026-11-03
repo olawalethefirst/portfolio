@@ -1,4 +1,4 @@
-const DISCOVERY_DISTANCE_RATIO = 0.5;
+const DISCOVERY_DISTANCE_RATIO = 0.4;
 
 export function calculatePrismDiscoveryOffsetX(homeOffset: number, progress: number) {
   const normalizedProgress = normalizePrismDiscoveryProgress(progress);

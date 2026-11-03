@@ -153,7 +153,7 @@ The Stage remains the camera owner. It converts progress into a perspective
 camera distance between:
 
 - the existing responsive fitted-home distance; and
-- a discovery distance equal to `homeDistance × 0.50`.
+- a discovery distance equal to `homeDistance × 0.40`.
 
 The Stage must preserve the existing view offset produced by
 `PrismHomeFrame`. Scroll zoom changes distance, not the home-frame projection,
