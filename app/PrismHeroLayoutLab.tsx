@@ -3,15 +3,13 @@
 import { useRef } from "react";
 
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
-import { ProjectItem } from "@/src/components/project-item";
+import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
 import { labProjects } from "@/src/components/project-item/lab-projects";
-import { PublicationCard } from "@/src/components/publication-card";
+import { PublicationsSection } from "@/src/components/home-sections/PublicationsSection";
 import {
   PrismHeroLayout,
   type PrismHeroLayoutHandle,
 } from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
-import { SectionContainer } from "@/src/components/ui/SectionContainer";
-import { SectionHeading } from "@/src/components/ui/SectionHeading";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { LabThemeShell } from "./LabThemeShell";
@@ -53,36 +51,8 @@ export function PrismHeroLayoutLab() {
           >
             <div className="grid">
               <div className="min-w-0 [grid-area:1/1]">
-                <section aria-labelledby="projects-heading" className="relative isolate bg-surface text-foreground">
-                  <SectionContainer>
-                    <SectionHeading id="projects-heading">Projects</SectionHeading>
-                  </SectionContainer>
-                  {labProjects.map((project, index) => (
-                    <ProjectItem
-                      {...project}
-                      key={project.id}
-                      stackIndex={index + 1}
-                    />
-                  ))}
-                  <div aria-hidden="true" className="h-[25dvh]" />
-                </section>
-                <section
-                  aria-labelledby="publications-heading"
-                  className="relative -mb-[100dvh] text-foreground"
-                >
-                  <SectionContainer>
-                    <SectionHeading id="publications-heading">Publications</SectionHeading>
-                    <div className="grid auto-rows-fr grid-cols-1 gap-6 pb-[calc(100dvh+5rem)] lg:grid-cols-2 lg:gap-8 sm:pb-[calc(100dvh+6rem)]">
-                      {labPublications.map((publication) => (
-                        <PublicationCard
-                          {...publication}
-                          className="sticky top-5"
-                          key={publication.href}
-                        />
-                      ))}
-                    </div>
-                  </SectionContainer>
-                </section>
+                <ProjectsSection projects={labProjects} />
+                <PublicationsSection publications={labPublications} />
                 <AboutCtaSection />
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">
