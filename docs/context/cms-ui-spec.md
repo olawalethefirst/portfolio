@@ -35,7 +35,7 @@ the UI “Demo — changes reset on reload” and use “Saved in demo” /
 | Homepage | Eyebrow, headline; tagline and description for idea, iterate, solution | PrismHeroLayout |
 | About | Heading and biography | AboutCtaSection |
 | Social profiles | Existing GitHub, LinkedIn, X destinations | Existing social-link rendering |
-| SEO | Default title/description; existing page and publication overrides | Plain metadata summary, explicitly not a search-engine rendering guarantee |
+| SEO | Default title/description; exact site-path override list and editors, including local articles | Plain metadata summary, explicitly not a search-engine rendering guarantee |
 
 Tags are managed in the publication editor through selection and creation of
 nonblank, case-insensitively unique labels. No separate tags page is required.
@@ -56,8 +56,8 @@ under `/admin/publications` and `/admin/projects`; singleton routes
 Use `/new` for creation and stable record IDs for editing. Separate preview routes are deferred. Route names are implementation proposals.
 
 CMS Content navigation follows the homepage section order: Hero →
-Projects → Publications → About → Social profiles, in both the desktop sidebar
-and mobile drawer.
+Projects → Publications → About → Social profiles → SEO, in both the desktop
+sidebar and mobile drawer.
 The Hero navigation item and editor use the short label “Hero”. Its leading
 PanelTop icon was chosen over Sparkles to identify the top page section rather
 than an effect. It uses the shared navigation icon sizing and decorative treatment,
@@ -361,6 +361,99 @@ follow the publication draft/publish distinction, with project-specific fields.
 Comment editing and moderation are excluded. Reusing Markdown input utilities
 never introduces CommentMarkdown into PublicationDetails or makes comments editable.
 
+### SEO defaults and path-level override collection
+
+SEO uses the same collection-to-editor structure as Publications and Projects.
+Global defaults are separate from a list of path-level override records; do not
+place every page's fields or a publication selector on one singleton form.
+
+| Screen | Responsibility |
+| --- | --- |
+| `/admin/seo` | Searchable override list; Edit defaults and New override header actions |
+| `/admin/seo/defaults` | Edit and demo-save the global title/description |
+| `/admin/seo/new` | Create an override with an exact site path and optional title/description |
+| `/admin/seo/[id]` | Edit a stable-ID override; show effective metadata, reset or delete it |
+
+A path record contains a stable demo ID, a unique site-relative path, and optional
+title/description overrides. Homepage (`/`), Contact (`/contact`) and local article
+paths use this same record type. Seed the current public paths `/`, `/contact`
+and `/publication-details-lab`; use their existing metadata as demo fixtures.
+Do not invent publication slug routes. External publication destinations are not
+site paths and do not receive local SEO override records. A custom path may be
+entered for demonstration; an override does not create a public page.
+
+Paths start with one `/` and identify an exact pathname. Reject full URLs,
+protocol-relative paths, query strings, fragments, backslashes, whitespace,
+dot-segment paths and duplicate normalized paths. Normalize a trailing slash
+except for `/`; preserve case. Equivalent percent-encoded unreserved characters
+share a normalized path; reject encoded separators and dot segments rather than
+letting URL parsing silently change their destination. Wildcards, route patterns and prefix matching are
+outside this iteration. Path validation must not silently change the intended
+destination. IDs remain stable when paths are edited.
+
+The list reuses CmsPageHeader, the shared collection search/filter treatment,
+CmsFeedback, CmsRecordRow/CmsRecordLink and CmsEmptyState. Search matches path and
+saved override text case-insensitively. Status filters are All paths / Custom /
+Inherited. A record is Custom when at least one saved override field is nonblank;
+Inherited means both fields use defaults. This status is not a publication state.
+Rows show the path, effective title, source/status and saved description summary.
+List changes do not edit records. Distinguish an empty collection from no matches;
+Clear filters resets search/status. There is no manual ordering, list-row Delete
+or artificial collection preview. Header actions use existing layout and wrapping.
+
+Both defaults and record editors follow Header → Toolbar → Feedback → Content →
+Footer → collapsed Demo controls. Saving actions belong in the toolbar; footer
+Discard is left and applicable Delete is right. Editors have Back navigation.
+Use the shared full-width single-column layout and field/control compositions.
+The record editor shows Path, SEO title override and description override, followed
+by a plain effective metadata summary. Default title and description are required;
+override fields are optional independently. Blank or whitespace-only overrides
+inherit the corresponding global default. Effective summaries show each value and
+Default/Override source. Missing working defaults show Not set in the summary only.
+No arbitrary text-length limits or exact search-rendering promises are included.
+
+Reset to defaults clears only the current record's title/description pair,
+retaining its ID/path. It is a local unsaved change, requires Save changes to
+commit, and does not change global defaults or other records. Disable it when
+already inherited or saving. Delete is available only for saved records in the
+editor's right footer group. Confirmation identifies the path and explains that
+the demo override is removed and defaults apply; it does not delete a public page.
+Cancel/failure preserve values, pending deletion blocks duplicates/dismissal, and
+success returns to the SEO list. Never-saved records have no Delete action.
+
+SeoProvider retains only demo-saved defaults and path records across CMS
+navigation. Each editor owns its working values and request feedback. Save changes
+captures the submitted values; later edits remain dirty. Failures retain edits for
+retry. New/unknown record IDs have clear recovery UI. Reload restores fixtures.
+All editors reuse CmsUnsavedChangesDialog/useCmsUnsavedChanges, including defaults
+validation and path/uniqueness validation for Save and leave. Lists need no dirty
+prompt. Saved values, reset, deletion and default changes never alter publication
+content drafts, published snapshots, external sites or live Next.js metadata.
+No backend, persistence or generic form/state framework is introduced.
+
+Defaults mirror the current root metadata. Contact and the local article fixture
+retain their current metadata as overrides; Homepage initially inherits defaults.
+Changing a global default immediately changes effective values for inherited
+fields, while explicit record overrides remain intact. The collection and summaries
+report demo working/saved values as appropriate, without claiming a live SEO result.
+SEO follows Social profiles in desktop/mobile Content navigation; every existing
+editor guards this destination.
+
+Title fields consider Type/TextCursorInput and omit icons because labels suffice;
+description textareas and ghost Reset/Discard follow the icon-free default. Path
+uses leading Route over Link to identify a site pathname; search retains Search.
+New override uses Plus over FilePlus2 and Save retains Save over Check. Defaults
+navigation uses Settings2 over SlidersHorizontal. Back reuses CmsBackButton.
+Delete reuses CmsLifecycleButton/CmsDialog and the existing footer/confirmation
+icon decisions. Status uses HeroUI Select with its built-in indicator. SEO navigation
+retains Search over FileSearch under the existing ghost-navigation exception.
+
+Risk level 2: exact-path validation/uniqueness, per-field inheritance/reset,
+record/default isolation, pending-save snapshots, failure/deletion recovery and
+dirty navigation. Performance none: static text and small local collections.
+Controller reviews build, list/editor consistency, keyboard/focus, path validation,
+reset/discard/delete, both themes, 320px/200% zoom and unchanged public metadata.
+
 ### Social profiles editor and preview
 
 `/admin/social` edits the three existing GitHub, LinkedIn and X destinations in
@@ -478,8 +571,8 @@ keep their existing in-preview behavior.
 
 Every editable CMS section uses `useCmsUnsavedChanges` and
 `CmsUnsavedChangesDialog` from `src/components/cms/CmsUnsavedChanges.tsx`.
-Publications, Projects, Hero, About and Social share this composition; SEO
-must reuse it when implemented. Collection lists have no unsaved form values
+Publications, Projects, Hero, About, Social and SEO share this composition.
+Collection lists have no unsaved form values
 and need no save-and-leave dialog.
 
 The hook owns the requested destination, dirty-navigation interception,
@@ -667,8 +760,8 @@ controlled demo review and is not authentication. The provider retains saved and
 published demo values across CMS navigation; reload resets them. New draft links
 cease to exist after reload and show a recovery message.
 
-Hero, Projects, Publications, About and Social profiles appear in navigation. Additional content areas are
-added when their editors are implemented, so the shell has no dead links.
+Hero, Projects, Publications, About, Social profiles and SEO appear in navigation.
+The shell has no dead links.
 Cover selection supports local files and existing fixture images. Full-screen
 preview stays in the same tab and uses native document scrolling.
 

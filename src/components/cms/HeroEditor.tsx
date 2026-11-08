@@ -49,7 +49,7 @@ export function HeroEditor() {
   const leave = navigation.leave;
   const update = (patch: Partial<HeroDraft>) => setValue((current) => ({ ...current, ...patch }));
   if (preview) return <CmsPreviewFrame label="Hero preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><HeroPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="hero" onHero={() => leave("/admin/hero")} onAbout={() => leave("/admin/about")} onSocial={() => leave("/admin/social")} onPublications={() => leave("/admin/publications")} onProjects={() => leave("/admin/projects")}>
+  return <CmsShell section="hero" onHero={() => leave("/admin/hero")} onAbout={() => leave("/admin/about")} onSocial={() => leave("/admin/social")} onSeo={() => leave("/admin/seo")} onPublications={() => leave("/admin/publications")} onProjects={() => leave("/admin/projects")}>
     <CmsPageHeader title="Hero" description="Edit the introduction and the copy shown for each fixed stage." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="hero-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("hero-preview-trigger"); setPreview(true); }}>Preview</Button>

@@ -59,7 +59,7 @@ export function SocialEditor() {
   const leave = navigation.leave;
 
   if (preview) return <CmsPreviewFrame label="Social profiles preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><SocialPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="social" onAbout={() => leave("/admin/about")} onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")} onPublications={() => leave("/admin/publications")} onSocial={() => leave("/admin/social")}>
+  return <CmsShell section="social" onAbout={() => leave("/admin/about")} onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")} onPublications={() => leave("/admin/publications")} onSocial={() => leave("/admin/social")} onSeo={() => leave("/admin/seo")}>
     <CmsPageHeader title="Social profiles" description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="social-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("social-preview-trigger"); setPreview(true); }}>Preview</Button>

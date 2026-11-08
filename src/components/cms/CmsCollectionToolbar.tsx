@@ -15,16 +15,19 @@ export function CmsCollectionToolbar({
   status,
   onStatusChange,
 }: {
-  collection: "publications" | "projects";
+  collection: "publications" | "projects" | "seo";
   search: string;
   onSearchChange: (value: string) => void;
   status: string;
   onStatusChange: (value: string) => void;
 }) {
+  const statuses = collection === "seo"
+    ? [{ value: "all", label: "All paths" }, { value: "custom", label: "Custom" }, { value: "inherited", label: "Inherited" }]
+    : [{ value: "all", label: `All ${collection}` }, { value: "published", label: "Published" }, { value: "draft", label: "Drafts" }];
   return (
     <CmsToolbar actions={
       <Select value={status} onChange={(next) => {
-        if (next === "all" || next === "published" || next === "draft") onStatusChange(next);
+        if (typeof next === "string" && statuses.some((option) => option.value === next)) onStatusChange(next);
       }} className="w-full sm:w-44">
         <Label className="text-sm font-medium">Status</Label>
         <Select.Trigger className={`${fieldClassName} h-12 sm:text-sm`}>
@@ -32,9 +35,7 @@ export function CmsCollectionToolbar({
         </Select.Trigger>
         <Select.Popover>
           <ListBox>
-            <ListBox.Item id="all" textValue={`All ${collection}`}>All {collection}<ListBox.ItemIndicator /></ListBox.Item>
-            <ListBox.Item id="published" textValue="Published">Published<ListBox.ItemIndicator /></ListBox.Item>
-            <ListBox.Item id="draft" textValue="Drafts">Drafts<ListBox.ItemIndicator /></ListBox.Item>
+            {statuses.map((option) => <ListBox.Item key={option.value} id={option.value} textValue={option.label}>{option.label}<ListBox.ItemIndicator /></ListBox.Item>)}
           </ListBox>
         </Select.Popover>
       </Select>
@@ -45,7 +46,7 @@ export function CmsCollectionToolbar({
         onChange={onSearchChange}
         className="flex w-full flex-col gap-1 sm:w-80"
       >
-        <Label className="text-sm font-medium">Search {collection}</Label>
+        <Label className="text-sm font-medium">Search {collection === "seo" ? "SEO paths" : collection}</Label>
         <Input type="search" className="h-12" startContent={<Search aria-hidden="true" />} />
       </TextField>
     </CmsToolbar>
