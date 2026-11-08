@@ -32,7 +32,7 @@ export function ProjectList() {
     (status === "all" || (status === "published" ? Boolean(published) : !published)),
   );
   if (preview) return <CmsPreviewFrame label="Project section preview" exitLabel="Exit project section preview" closeRef={closeRef} onExit={() => setPreview(false)}><CollectionPreview records={records} /></CmsPreviewFrame>;
-  return <CmsShell section="projects" onPublications={() => router.push("/admin/publications")}>
+  return <CmsShell section="projects">
     <CmsPageHeader title="Projects" description="The work you want to share." action={<CmsCollectionActions collection="project" pending={pending} onNew={() => router.push("/admin/projects/new")} onPreview={() => { capture("project-section-trigger"); setPreview(true); }} />} />
     <CmsCollectionToolbar collection="projects" search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} />
     <CmsFeedback>

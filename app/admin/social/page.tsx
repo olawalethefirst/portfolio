@@ -1,5 +1,3 @@
-import { SocialEditor } from "@/src/components/cms/SocialEditor";
+import { redirect } from "next/navigation";
 
-export default function SocialPage() {
-  return <SocialEditor />;
-}
+export default function SocialPage() { redirect("/admin/contact"); }

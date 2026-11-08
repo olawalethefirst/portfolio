@@ -1,18 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/src/components/ui/Button";
 
 const maxBytes = 10 * 1024 * 1024;
 
 /** Local demo images use data URLs so saved previews outlive the picker. */
-export function ImagePicker({ value, alt, onChange, error, name = "coverSrc" }: {
+export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children }: {
   value: string;
   alt: string;
   onChange: (source: string) => void;
   error?: string;
   name?: string;
+  children?: ReactNode;
 }) {
   const id = useId();
   const [pending, setPending] = useState(false);
@@ -69,7 +70,7 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc" }: 
   }
 
   return <div className="space-y-3">
-    {value ? <div className="relative aspect-[16/10] overflow-hidden border border-border">
+    {value ? children ?? <div className="relative aspect-[16/10] overflow-hidden border border-border">
       <Image src={value} alt={alt} fill sizes="(max-width: 1279px) 80vw, 288px" className="object-cover" />
     </div> : <p className="border border-dashed border-border p-6 text-sm text-muted">No image selected</p>}
     <label htmlFor={id} className="block text-sm font-medium">{value ? "Replace image" : "Choose image"}</label>

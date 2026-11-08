@@ -10,7 +10,7 @@ import { SocialProvider } from "@/src/cms/SocialProvider";
 import { SeoEditor } from "./SeoEditor";
 import { HeroEditor } from "./HeroEditor";
 import { AboutEditor } from "./AboutEditor";
-import { SocialEditor } from "./SocialEditor";
+import { ContactEditor } from "./ContactEditor";
 import { ProjectEditor } from "./ProjectEditor";
 import { PublicationEditor } from "./PublicationEditor";
 
@@ -177,9 +177,9 @@ it("offers recovery for missing IDs and keeps never-saved records free of deleti
   expect(screen.queryByRole("button", { name: "Delete override" })).toBeNull();
 });
 
-it.each(["Hero", "Projects", "Publications", "About", "Social profiles"])("guards navigation from %s to SEO", async (section) => {
-  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : section === "About" ? <AboutEditor /> : <SocialEditor />}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
-  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : section === "About" ? "Heading" : "GitHub URL";
+it.each(["Hero", "Projects", "Publications", "About", "Contact"])("guards navigation from %s to SEO", async (section) => {
+  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : section === "About" ? <AboutEditor /> : <ContactEditor id="github" />}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
+  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : section === "About" ? "Heading" : "Profile URL";
   fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Unsaved change" } });
   fireEvent.click(screen.getByRole("button", { name: "SEO" }));
   const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });

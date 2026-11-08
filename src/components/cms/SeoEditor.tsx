@@ -20,7 +20,7 @@ export function SeoEditor({ id }: { id: string }) {
   const { saved } = useSeo();
   const router = useRouter();
   const record = saved.records.find((item) => item.id === id);
-  if (id !== "defaults" && id !== "new" && !record) return <CmsShell section="seo" onPublications={() => router.push("/admin/publications")}>
+  if (id !== "defaults" && id !== "new" && !record) return <CmsShell section="seo">
     <CmsBackButton onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title="SEO override unavailable" description="Demo overrides reset on reload. Return to SEO to start again." />
   </CmsShell>;
@@ -76,7 +76,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
   }
   const navigation = useCmsUnsavedChanges({ dirty, pending, save: saveChanges, navigate: (path) => router.push(path) });
   const leave = navigation.leave;
-  return <CmsShell section="seo" onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")} onPublications={() => leave("/admin/publications")} onAbout={() => leave("/admin/about")} onSocial={() => leave("/admin/social")} onSeo={() => leave("/admin/seo")}>
+  return <CmsShell section="seo" onNavigate={leave}>
     <CmsBackButton disabled={pending} onPress={() => leave("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>{null}</CmsToolbar>

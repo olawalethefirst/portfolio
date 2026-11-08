@@ -12,7 +12,7 @@ type CmsCollectionToolbarProps = {
   search: string;
   onSearchChange: (value: string) => void;
 } & ({
-  collection: "seo";
+  collection: "seo" | "contact";
 } | {
   collection: "publications" | "projects";
   status: string;
@@ -23,7 +23,7 @@ export function CmsCollectionToolbar(props: CmsCollectionToolbarProps) {
   const { collection, search, onSearchChange } = props;
   const statuses = [{ value: "all", label: `All ${collection}` }, { value: "published", label: "Published" }, { value: "draft", label: "Drafts" }];
   return (
-    <CmsToolbar actions={props.collection === "seo" ? undefined :
+    <CmsToolbar actions={"status" in props ?
       <Select value={props.status} onChange={(next) => {
         if (typeof next === "string" && statuses.some((option) => option.value === next)) props.onStatusChange(next);
       }} className="w-full sm:w-44">
@@ -36,7 +36,7 @@ export function CmsCollectionToolbar(props: CmsCollectionToolbarProps) {
             {statuses.map((option) => <ListBox.Item key={option.value} id={option.value} textValue={option.label}>{option.label}<ListBox.ItemIndicator /></ListBox.Item>)}
           </ListBox>
         </Select.Popover>
-      </Select>
+      </Select> : undefined
     }>
       <TextField
         name="search"
@@ -44,7 +44,7 @@ export function CmsCollectionToolbar(props: CmsCollectionToolbarProps) {
         onChange={onSearchChange}
         className="flex w-full flex-col gap-1 sm:w-80"
       >
-        <Label className="text-sm font-medium">Search {collection === "seo" ? "SEO paths" : collection}</Label>
+        <Label className="text-sm font-medium">Search {collection === "seo" ? "SEO paths" : collection === "contact" ? "contact profiles" : collection}</Label>
         <Input type="search" className="h-12" startContent={<Search aria-hidden="true" />} />
       </TextField>
     </CmsToolbar>

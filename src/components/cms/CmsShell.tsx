@@ -1,64 +1,42 @@
 "use client";
 
 import { Drawer } from "@heroui/react/drawer";
-import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun, UserRound, Share2, Search } from "lucide-react";
+import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun, UserRound, MessagesSquare, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { setGlobalMode, useActiveTheme } from "@/src/theme/active-theme";
 import { Button } from "@/src/components/ui/Button";
 
-export function CmsShell({
-  children,
-  onPublications,
-  onProjects,
-  onHero,
-  onAbout,
-  onSocial,
-  onSeo,
-  section = "publications",
-}: {
+const navigationItems = [
+  { id: "hero", label: "Hero", path: "/admin/hero", Icon: PanelTop },
+  { id: "projects", label: "Projects", path: "/admin/projects", Icon: FolderKanban },
+  { id: "publications", label: "Publications", path: "/admin/publications", Icon: BookOpen },
+  { id: "about", label: "About", path: "/admin/about", Icon: UserRound },
+  { id: "contact", label: "Contact", path: "/admin/contact", Icon: MessagesSquare },
+  { id: "seo", label: "SEO", path: "/admin/seo", Icon: Search },
+] as const;
+
+export function CmsShell({ children, onNavigate, section = "publications" }: {
   children: ReactNode;
-  onPublications: () => void;
-  onProjects?: () => void;
-  onHero?: () => void;
-  onAbout?: () => void;
-  onSocial?: () => void;
-  onSeo?: () => void;
-  section?: "publications" | "projects" | "hero" | "about" | "social" | "seo";
+  onNavigate?: (path: string) => void;
+  section?: (typeof navigationItems)[number]["id"];
 }) {
   const router = useRouter();
+  const navigate = onNavigate ?? ((path: string) => router.push(path));
   const [menuOpen, setMenuOpen] = useState(false);
   const { mode } = useActiveTheme();
-  const navigationItems = [
-    { id: "hero", label: "Hero", Icon: PanelTop, onPress: () => {
-      if (onHero) onHero(); else router.push("/admin/hero");
-    } },
-    { id: "projects", label: "Projects", Icon: FolderKanban, onPress: () => {
-      if (onProjects) onProjects(); else router.push("/admin/projects");
-    } },
-    { id: "publications", label: "Publications", Icon: BookOpen, onPress: onPublications },
-    { id: "about", label: "About", Icon: UserRound, onPress: () => {
-      if (onAbout) onAbout(); else router.push("/admin/about");
-    } },
-    { id: "social", label: "Social profiles", Icon: Share2, onPress: () => {
-      if (onSocial) onSocial(); else router.push("/admin/social");
-    } },
-    { id: "seo", label: "SEO", Icon: Search, onPress: () => {
-      if (onSeo) onSeo(); else router.push("/admin/seo");
-    } },
-  ];
   const navigation = (
     <nav aria-label="Content navigation" className="mt-10">
       <p className="mb-3 px-3 text-xs font-medium uppercase tracking-widest text-muted">
         Content
       </p>
       <div className="space-y-2">
-        {navigationItems.map(({ id, label, Icon, onPress }) => (
+        {navigationItems.map(({ id, label, Icon, path }) => (
           <Button key={id} className="w-full justify-start"
             variant={section === id ? "secondary" : "ghost"}
             aria-current={section === id ? "page" : undefined}
             startContent={Icon ? <Icon aria-hidden="true" className="size-4" /> : undefined}
-            onPress={() => { setMenuOpen(false); onPress(); }}>
+            onPress={() => { setMenuOpen(false); navigate(path); }}>
             {label}
           </Button>
         ))}

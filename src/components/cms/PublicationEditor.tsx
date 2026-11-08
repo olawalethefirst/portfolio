@@ -32,7 +32,7 @@ export function PublicationEditor({ id }: { id: string }) {
   const record = records.find((item) => item.id === id);
   if (id !== "new" && !record)
     return (
-      <CmsShell onPublications={() => router.push("/admin/publications")}>
+      <CmsShell>
         <CmsBackButton onPress={() => router.push("/admin/publications")}>Back to publications</CmsBackButton>
         <CmsPageHeader title="Publication unavailable" description="Demo drafts reset on reload. Return to publications to start again." />
       </CmsShell>
@@ -114,7 +114,7 @@ function PublicationEditorForm({
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
-    <CmsShell onPublications={() => leave("/admin/publications")} onHero={() => leave("/admin/hero")} onAbout={() => leave("/admin/about")} onSocial={() => leave("/admin/social")} onSeo={() => leave("/admin/seo")} onProjects={() => leave("/admin/projects")}>
+    <CmsShell onNavigate={leave}>
       <CmsBackButton disabled={pending} onPress={() => leave("/admin/publications")}>Publications</CmsBackButton>
       <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
       <CmsToolbar actions={<>
