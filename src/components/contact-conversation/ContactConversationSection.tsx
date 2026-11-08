@@ -5,7 +5,6 @@ import {
   FieldError,
   Form,
   Label,
-  Link,
   Radio,
   RadioGroup,
   TextField,
@@ -28,7 +27,7 @@ import { Progress } from "@/src/components/ui/Progress";
 import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { cn } from "@/src/components/ui/utils";
 
-import { socialIconPaths } from "./social-icons";
+import { SocialLinks } from "./SocialLinks";
 
 export type ContactIntent = "hire" | "collaborate" | "contact";
 
@@ -82,28 +81,6 @@ const goalHelpers: Record<ContactIntent, string> = {
   contact: "Tell me what you’d like help with.",
 };
 
-const socialProfiles: ReadonlyArray<{
-  href: string;
-  icon: keyof typeof socialIconPaths;
-  label: string;
-}> = [
-  {
-    href: "https://github.com/olawalethefirst",
-    icon: "github",
-    label: "GitHub",
-  },
-  {
-    href: "https://www.linkedin.com/in/olawalethefirst",
-    icon: "linkedin",
-    label: "LinkedIn",
-  },
-  {
-    href: "https://x.com/olawalethefirst",
-    icon: "twitter-x",
-    label: "X",
-  },
-];
-
 type Step = 0 | 1 | 2;
 type FieldErrors = Partial<
   Record<"intent" | "goal" | "name" | "email" | "submit", string>
@@ -129,27 +106,6 @@ function StepHeading({ children, id, questionRef }: StepHeadingProps) {
     >
       {children}
     </h3>
-  );
-}
-
-function SocialLinks() {
-  return (
-    <nav aria-label="Social links" className="flex items-center gap-3">
-      {socialProfiles.map(({ href, icon, label }) => (
-        <Link
-          aria-label={`Visit ${label} profile (opens in a new tab)`}
-          className="inline-flex size-11 items-center justify-center rounded-full border border-border bg-surface/80 text-accent transition-colors data-[focus-visible=true]:ring-2 data-[focus-visible=true]:ring-focus/35 data-[hovered=true]:bg-surface-secondary"
-          href={href}
-          key={label}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <svg aria-hidden="true" className="size-5" fill="currentColor" viewBox="0 0 16 16">
-            <path d={socialIconPaths[icon]} />
-          </svg>
-        </Link>
-      ))}
-    </nav>
   );
 }
 
