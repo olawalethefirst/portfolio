@@ -282,18 +282,20 @@ describe("publication CMS", () => {
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Save and leave" }),
     );
-    await screen.findByText("Save failed");
+    await within(dialog).findByText("Save failed");
     expect(push).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(
       (screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement)
         .value,
     ).toBe("Keep my changes");
-    fireEvent.click(screen.getAllByRole("button", { name: "Publications" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
     fireEvent.click(
       await screen.findByRole("button", { name: "Save and leave" }),
     );
     await waitFor(() =>
-      expect(push).toHaveBeenCalledWith("/admin/publications"),
+      expect(push).toHaveBeenCalledWith("/admin/projects"),
     );
   });
 

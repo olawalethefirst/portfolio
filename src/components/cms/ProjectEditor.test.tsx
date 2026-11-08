@@ -281,3 +281,22 @@ it("shows an empty project section when every record is unpublished", async () =
   expect(screen.queryByRole("article")).toBeNull();
   expect(screen.queryByText("mobile device preview")).toBeNull();
 });
+
+it("retries save-and-leave without losing project edits or changing the published version", async () => {
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
+  render(<ProjectProvider request={request}><ProjectEditor id="field-notes" /><Published /></ProjectProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Keep project changes" } });
+  fireEvent.click(screen.getByRole("button", { name: "Hero" }));
+  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
+  expect(await within(dialog).findByText("Save failed")).toBeTruthy();
+  expect(push).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Keep project changes");
+  expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
+  fireEvent.click(screen.getByRole("button", { name: "Hero" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Save and leave" }));
+  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/hero"));
+  expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
+});

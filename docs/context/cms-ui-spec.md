@@ -360,6 +360,31 @@ follow the publication draft/publish distinction, with project-specific fields.
 Comment editing and moderation are excluded. Reusing Markdown input utilities
 never introduces CommentMarkdown into PublicationDetails or makes comments editable.
 
+### Shared unsaved-navigation guard
+
+Every editable CMS section uses `useCmsUnsavedChanges` and
+`CmsUnsavedChangesDialog` from `src/components/cms/CmsUnsavedChanges.tsx`.
+Publications, Projects and Hero share this composition; About, Social and SEO
+must reuse it when implemented. Collection lists have no unsaved form values
+and need no save-and-leave dialog.
+
+The hook owns the requested destination, dirty-navigation interception,
+best-effort beforeunload warning and save-and-leave request lock. The dialog
+composes CmsDialog with Stay / Discard / Save and leave. Stay and Discard are
+icon-free ghost actions; Save and leave retains its leading Save icon (rather
+than Check, because it submits a save). These controls belong only to the
+navigation dialog; toolbar Save and footer Discard placement remain unchanged.
+
+Editors supply dirty/pending flags, their existing save callback and controlled
+CMS navigation callback. Saving returns true only after a successful commit;
+validation or request failure returns false and supplies editor-owned error
+feedback. A failed save keeps the dialog, destination and working values for
+retry. While saving, duplicate requests, dismissal, discard and replacement of
+the destination are blocked. A successful save navigates to the requested
+section without publishing. The guard does not own content, validation rules,
+providers, persistence or backend requests, and preview opening/closing never
+uses it. Browser history interception remains best-effort as described above.
+
 ## Reuse and preview architecture
 
 Use typed content props and adapters to map editor values to existing component

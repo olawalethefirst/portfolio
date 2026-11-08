@@ -2,7 +2,7 @@
 
 import { Maximize2, Save, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useCms } from "@/src/cms/CmsProvider";
 import {
   emptyPublication,
@@ -22,6 +22,7 @@ import { CmsBackButton } from "./CmsBackButton";
 import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
+import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
 
@@ -56,32 +57,17 @@ function PublicationEditorForm({
   const [errors, setErrors] = useState<PublicationErrors>({});
   const [message, setMessage] = useState("");
   const [requestError, setRequestError] = useState("");
-  const [dialog, setDialog] = useState<"leave" | "unpublish" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
   const { closeRef, capture } = useCmsPreview(Boolean(previewMode), () => setPreviewMode(null));
   const record = records.find((item) => item.id === id);
   const dirty = !samePublication(value, record?.draft ?? emptyPublication());
-
-  useEffect(() => {
-    if (!dirty) return;
-    function warn(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = "";
-    }
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
 
   function openPreview(mode: "card" | "detail") {
     capture(`publication-${mode}-trigger`);
     setPreviewMode(mode);
   }
-  const destination = useRef("/admin/publications");
-  function leave(path = "/admin/publications") {
-    destination.current = path;
-    if (pending) return;
-    if (dirty) setDialog("leave");
-    else router.push(destination.current);
-  }
+  const navigation = useCmsUnsavedChanges({ dirty, pending, save: () => act("save"), navigate: (path) => router.push(path) });
+  const leave = navigation.leave;
 
   async function act(action: PublicationAction | "delete"): Promise<boolean> {
     if (pending) return false;
@@ -128,8 +114,8 @@ function PublicationEditorForm({
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
-    <CmsShell onPublications={() => leave()} onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")}>
-      <CmsBackButton disabled={pending} onPress={() => leave()}>Publications</CmsBackButton>
+    <CmsShell onPublications={() => leave("/admin/publications")} onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")}>
+      <CmsBackButton disabled={pending} onPress={() => leave("/admin/publications")}>Publications</CmsBackButton>
       <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
       <CmsToolbar actions={<>
         <Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button>
@@ -138,7 +124,7 @@ function PublicationEditorForm({
         <Button id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
         <Button id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
-      <CmsFeedback label="Publication save status" error={dialog === "delete" ? undefined : requestError}>
+      <CmsFeedback label="Publication save status" error={dialog === "delete" || navigation.dialog.open ? undefined : requestError}>
         <span>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
       </CmsFeedback>
       <PublicationFields value={value} errors={errors} onChange={setValue} />
@@ -157,41 +143,7 @@ function PublicationEditorForm({
         <CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail the next publication request</CmsCheckbox>
         <p>Use this to review error recovery. No changes reach the website.</p>
       </CmsDemoControls>
-      <CmsDialog
-        open={dialog === "leave"}
-        onClose={() => setDialog(null)}
-        title="Keep your changes?"
-        actions={
-          <>
-            <Button
-              variant="ghost"
-              isDisabled={pending}
-              onPress={() => setDialog(null)}
-            >
-              Stay
-            </Button>
-            <Button
-              variant="outline"
-              isDisabled={pending}
-              onPress={() => router.push(destination.current)}
-            >
-              Discard
-            </Button>
-            <Button
-              isLoading={pending}
-              startContent={<Save aria-hidden="true" className="size-4" />}
-              onPress={async () => {
-                if (await act("save")) router.push(destination.current);
-              }}
-            >
-              Save and leave
-            </Button>
-          </>
-        }
-      >
-        You have unsaved edits. Save a draft before returning to publications,
-        or discard these changes.
-      </CmsDialog>
+      <CmsUnsavedChangesDialog {...navigation.dialog} error={requestError} />
       <CmsDialog
         open={dialog === "delete"}
         onClose={() => { if (!pending) setDialog(null); }}

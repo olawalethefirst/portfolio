@@ -2,7 +2,7 @@
 import { Maximize2, Save, Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useProjects } from "@/src/cms/ProjectProvider";
 import { emptyProject, projectStatus, sameProject, validateProject, type ProjectAction, type ProjectErrors, type ProjectRecord } from "@/src/cms/projects";
 import { Button } from "@/src/components/ui/Button";
@@ -13,6 +13,7 @@ import { CmsBackButton } from "./CmsBackButton";
 import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
+import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
 import { ProjectFields } from "./ProjectFields";
 
 const ProjectPreview = dynamic(() => import("./ProjectPreview").then((module) => module.ProjectPreview), {
@@ -35,23 +36,15 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
   const [errors, setErrors] = useState<ProjectErrors>({});
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [dialog, setDialog] = useState<"leave" | "unpublish" | "delete" | null>(null);
+  const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
-  const destination = useRef("/admin/projects");
   const record = records.find((item) => item.id === id);
   const dirty = !sameProject(value, record?.draft ?? emptyProject());
-  useEffect(() => {
-    if (!dirty) return;
-    function warn(event: BeforeUnloadEvent) { event.preventDefault(); event.returnValue = ""; }
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
-  function leave(path: string) {
-    if (pending) return;
-    destination.current = path;
-    if (dirty) setDialog("leave"); else router.push(path);
-  }
+
+  const navigation = useCmsUnsavedChanges({ dirty, pending, save: () => act("save"), navigate: (path) => router.push(path) });
+  const leave = navigation.leave;
+
   async function act(action: ProjectAction) {
     if (pending) return false;
     setError(""); setMessage("");
@@ -77,7 +70,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
     <CmsToolbar actions={<><Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button><Button startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending} onPress={() => void act("publish")}>{record?.published ? "Update published" : "Publish"}</Button></>}>
       <Button id="project-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("project-preview-trigger"); setPreview(true); }}>Preview project</Button>
     </CmsToolbar>
-    <CmsFeedback label="Project save status" error={!dialog ? error : undefined}>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"} {message}</CmsFeedback>
+    <CmsFeedback label="Project save status" error={!dialog && !navigation.dialog.open ? error : undefined}>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"} {message}</CmsFeedback>
     <ProjectFields value={value} errors={errors} onChange={setValue} />
     <CmsFooter actions={<>
       {record?.published ? <CmsLifecycleButton action="unpublish" disabled={pending} onPress={() => { setError(""); setDialog("unpublish"); }}>Unpublish</CmsLifecycleButton> : null}
@@ -91,11 +84,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
       }}>Discard changes</Button>
     </CmsFooter>
     <CmsDemoControls><CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail the next project request</CmsCheckbox></CmsDemoControls>
-    <CmsDialog open={dialog === "leave"} onClose={() => { if (!pending) setDialog(null); }} title="Keep your changes?" error={error} actions={<>
-      <Button variant="ghost" isDisabled={pending} onPress={() => setDialog(null)}>Stay</Button>
-      <Button variant="outline" isDisabled={pending} onPress={() => router.push(destination.current)}>Discard</Button>
-      <Button isLoading={pending} startContent={<Save aria-hidden="true" className="size-4" />} onPress={async () => { if (await act("save")) router.push(destination.current); }}>Save and leave</Button>
-    </>}>Save your draft before leaving, or discard current edits.</CmsDialog>
+    <CmsUnsavedChangesDialog {...navigation.dialog} error={error} />
     <CmsDialog open={dialog === "unpublish" || dialog === "delete"} onClose={() => { if (!pending) setDialog(null); }} title={dialog === "delete" ? "Delete this project?" : "Unpublish this project?"} error={error} actions={<>
       <Button variant="ghost" isDisabled={pending} onPress={() => setDialog(null)}>Cancel</Button>
       <CmsLifecycleButton action={dialog === "delete" ? "delete" : "unpublish"} confirmation pending={pending} onPress={() => void act(dialog === "delete" ? "delete" : "unpublish")}>{dialog === "delete" ? "Delete in demo" : "Unpublish in demo"}</CmsLifecycleButton>

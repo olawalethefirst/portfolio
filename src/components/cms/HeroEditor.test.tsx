@@ -1,16 +1,18 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { HeroProvider } from "@/src/cms/HeroProvider";
 import type { HeroDraft } from "@/src/cms/hero";
 import { HeroEditor } from "./HeroEditor";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 // Keep the real HeroPreview adapter, replacing only the expensive public scene.
 vi.mock("@/src/components/prism-fiber/ui/hero/PrismHeroLayout", () => ({
   PrismHeroLayout: ({ content }: { content: HeroDraft }) => <h1>{content.headline}</h1>,
 }));
 
 beforeEach(() => {
+  push.mockReset();
   vi.stubGlobal("matchMedia", vi.fn(() => ({
     matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn(),
     addListener: vi.fn(), removeListener: vi.fn(),
@@ -76,4 +78,26 @@ it("retains the demo failure setting through collapse and preserves edits for sa
   await waitFor(() => expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("No unsaved changes"));
   expect(screen.queryByRole("alert")).toBeNull();
   expect(headline.value).toBe("Keep through failed save");
+});
+
+it("saves before leaving Hero and retains edits and destination through a failed save", async () => {
+  render(<HeroProvider><HeroEditor /></HeroProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "Headline" }), { target: { value: "Keep before leaving" } });
+  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next save" }));
+  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
+  expect(within(dialog).getByRole("button", { name: "Stay" }).hasAttribute("disabled")).toBe(true);
+  expect(within(dialog).getByRole("button", { name: "Discard" }).hasAttribute("disabled")).toBe(true);
+  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  expect(await within(dialog).findByRole("alert")).toBeTruthy();
+  expect(push).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement).value).toBe("Keep before leaving");
+  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Save and leave" }));
+  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/projects"));
 });
