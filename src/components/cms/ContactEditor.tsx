@@ -2,7 +2,6 @@
 
 import { Link, Maximize2, Save } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SOCIAL_PROFILES } from "@/src/components/contact-conversation/social-profiles";
 import { useSocial } from "@/src/cms/SocialProvider";
@@ -12,7 +11,7 @@ import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsShell } from "./CmsShell";
-import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
+import { useWorkingDraft } from "@/src/cms/working-drafts";
 
 const ContactPreview = dynamic(() => import("./ContactPreview").then((module) => module.ContactPreview), {
   ssr: false,
@@ -20,9 +19,8 @@ const ContactPreview = dynamic(() => import("./ContactPreview").then((module) =>
 });
 
 export function ContactEditor() {
-  const router = useRouter();
-  const { saved, save, pending } = useSocial();
-  const [value, setValue] = useState(saved);
+  const { saved, save, pending, working } = useSocial();
+  const { value, setValue } = useWorkingDraft(working, "contact", () => saved);
   const [errors, setErrors] = useState<SocialErrors>({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -41,8 +39,7 @@ export function ContactEditor() {
     const nextErrors = validateSocial(value);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
-      if (navigation.dialog.open) setError("Correct the social profile URLs before saving. Choose Stay to correct them.");
-      else focusFirstError(nextErrors);
+      focusFirstError(nextErrors);
       return false;
     }
     try {
@@ -54,20 +51,17 @@ export function ContactEditor() {
       return false;
     }
   }
-  const navigation = useCmsUnsavedChanges({ dirty, pending, save: saveChanges, navigate: (path) => router.push(path) });
-  const leave = navigation.leave;
 
   if (preview) return <CmsPreviewFrame label="Contact preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><ContactPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="contact" onNavigate={leave}>
+  return <CmsShell section="contact">
     <CmsPageHeader title="Contact" description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="social-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("social-preview-trigger"); setPreview(true); }}>Preview contact</Button>
     </CmsToolbar>
-    <CmsFeedback label="Contact save status" error={navigation.dialog.open ? undefined : error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
+    <CmsFeedback label="Contact save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <CmsEditorContent><CmsFieldSection title="Content">
       {SOCIAL_PROFILES.map(({ id, label }) => <CmsField key={id} name={id} label={`${label} URL`} type="url" icon={<Link aria-hidden="true" className="size-4" />} hint="Enter a complete HTTPS profile URL." value={value[id]} error={errors[id]} onChange={(url) => setValue((current) => ({ ...current, [id]: url }))} />)}
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
-    <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
   </CmsShell>;
 }

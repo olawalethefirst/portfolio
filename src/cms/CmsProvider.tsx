@@ -1,5 +1,7 @@
 "use client";
 
+import { useDraftStore, type DraftStore } from "./working-drafts";
+
 import {
   createContext,
   useContext,
@@ -24,6 +26,7 @@ interface CmsContextValue {
   records: PublicationRecord[];
   move: (id: string, direction: -1 | 1) => void;
   pending: boolean;
+  working: DraftStore<PublicationDraft>;
   commit: (
     id: string,
     values: PublicationDraft,
@@ -41,6 +44,7 @@ export function CmsProvider({
   initialRecords?: PublicationRecord[];
   request?: DemoRequest;
 }) {
+  const working = useDraftStore<PublicationDraft>();
   const [records, setRecords] = useState(initialRecords ?? initialPublications);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -87,7 +91,7 @@ export function CmsProvider({
   }
 
   return (
-    <CmsContext value={{ records, move, pending, commit }}>
+    <CmsContext value={{ working, records, move, pending, commit }}>
       {children}
     </CmsContext>
   );

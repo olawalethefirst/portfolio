@@ -1,18 +1,8 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { initialSeo } from "@/src/cms/seo";
 import { SeoProvider, useSeo } from "@/src/cms/SeoProvider";
-import { CmsProvider } from "@/src/cms/CmsProvider";
-import { ProjectProvider } from "@/src/cms/ProjectProvider";
-import { HeroProvider } from "@/src/cms/HeroProvider";
-import { AboutProvider } from "@/src/cms/AboutProvider";
-import { SocialProvider } from "@/src/cms/SocialProvider";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SeoEditor } from "./SeoEditor";
-import { HeroEditor } from "./HeroEditor";
-import { AboutEditor } from "./AboutEditor";
-import { ContactEditor } from "./ContactEditor";
-import { ProjectEditor } from "./ProjectEditor";
-import { PublicationEditor } from "./PublicationEditor";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -99,46 +89,6 @@ it("changes a path without creating another record or changing defaults", async 
   expect(screen.getByLabelText("Saved default title").textContent).toBe("Portfolio");
 });
 
-it("preserves input and the leave destination through a failed save and retries", async () => {
-  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<SeoProvider request={request}><SeoEditor id="contact" /><Saved /></SeoProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "SEO title override" }), { target: { value: "Keep edits" } });
-  fireEvent.click(screen.getByRole("button", { name: "Back to SEO" }));
-  let dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByText("Save failed")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("Keep edits");
-  fireEvent.click(screen.getByRole("button", { name: "Back to SEO" }));
-  dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/seo"));
-  expect(screen.getByLabelText("Saved Contact title").textContent).toBe("Keep edits");
-});
-
-it("keeps invalid save-and-leave open, focuses correction and retries the demo failure", async () => {
-  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<SeoProvider request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Default title" }), { target: { value: " " } });
-  fireEvent.click(screen.getByRole("button", { name: "Back to SEO" }));
-  const dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByRole("alert")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  const title = await screen.findByRole("textbox", { name: "Default title" });
-  await waitFor(() => expect(document.activeElement).toBe(title));
-  fireEvent.change(title, { target: { value: "Corrected default" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  expect(await screen.findByRole("alert")).toBeTruthy();
-  expect(screen.getByLabelText("Saved default title").textContent).toBe("Portfolio");
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  await waitFor(() => expect(screen.getByLabelText("Saved default title").textContent).toBe("Corrected default"));
-  expect(screen.queryByRole("alert")).toBeNull();
-});
-
 it("confirms deleting a saved override, preserves edits on cancellation/failure, and blocks pending dismissal", async () => {
   let finish!: () => void;
   const request = vi.fn().mockRejectedValueOnce(new Error("Delete failed")).mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
@@ -174,15 +124,4 @@ it("offers recovery for missing IDs and keeps never-saved records free of deleti
   expect(push).toHaveBeenCalledWith("/admin/seo");
   rerender(<SeoProvider><SeoEditor id="new" /></SeoProvider>);
   expect(screen.queryByRole("button", { name: "Delete override" })).toBeNull();
-});
-
-it.each(["Hero", "Projects", "Publications", "About", "Contact"])("guards navigation from %s to SEO", async (section) => {
-  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : section === "About" ? <AboutEditor /> : <ContactEditor />}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
-  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : section === "About" ? "Heading" : "GitHub URL";
-  fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Unsaved change" } });
-  fireEvent.click(screen.getByRole("button", { name: "SEO" }));
-  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Discard" }));
-  expect(push).toHaveBeenCalledExactlyOnceWith("/admin/seo");
 });

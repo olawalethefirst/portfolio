@@ -1,15 +1,7 @@
+import { SocialProvider, useSocial } from "@/src/cms/SocialProvider";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { SocialProvider, useSocial } from "@/src/cms/SocialProvider";
-import { AboutProvider } from "@/src/cms/AboutProvider";
-import { CmsProvider } from "@/src/cms/CmsProvider";
-import { HeroProvider } from "@/src/cms/HeroProvider";
-import { ProjectProvider } from "@/src/cms/ProjectProvider";
 import { ContactEditor } from "./ContactEditor";
-import { AboutEditor } from "./AboutEditor";
-import { HeroEditor } from "./HeroEditor";
-import { ProjectEditor } from "./ProjectEditor";
-import { PublicationEditor } from "./PublicationEditor";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -22,7 +14,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 function Saved() { const { saved } = useSocial(); return <output aria-label="Saved GitHub">{saved.github}</output>; }
 
-it("previews working URLs through public social links and confirms opening without saving or losing values", async () => {
+it("previews working URLs through public social links with direct links without saving or losing values", async () => {
   render(<SocialProvider><ContactEditor /><Saved /></SocialProvider>);
   const saved = screen.getByLabelText("Saved GitHub").textContent;
   fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/new-profile" } });
@@ -34,18 +26,9 @@ it("previews working URLs through public social links and confirms opening witho
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Exit preview" }));
   const link = within(nav).getByRole("link", { name: "Visit GitHub profile (opens in a new tab)" });
   expect(link.getAttribute("href")).toBe("https://github.com/new-profile");
-  expect(fireEvent.click(link, { ctrlKey: true })).toBe(false);
-  const dialog = await screen.findByRole("dialog", { name: "Open this link?" });
-  const open = within(dialog).getByRole("link", { name: "Open link" });
-  expect(open.getAttribute("href")).toBe("https://github.com/new-profile");
-  expect(open.getAttribute("target")).toBe("_blank");
-  expect(open.getAttribute("rel")).toContain("noopener");
-  fireEvent.keyDown(dialog, { key: "Escape" });
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.getByRole("navigation", { name: "Social links" })).toBeTruthy();
-  expect(fireEvent(link, new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true }))).toBe(false);
-  fireEvent.click(await screen.findByRole("button", { name: "Stay in preview" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(link.getAttribute("target")).toBe("_blank");
+  expect(link.getAttribute("rel")).toContain("noopener");
+  expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.keyDown(window, { key: "Escape" });
   expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/new-profile");
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview contact" }));
@@ -98,39 +81,6 @@ it("captures the submitted URLs, blocks duplicates and retains newer edits and s
   rerender(<SocialProvider request={request}><Saved /></SocialProvider>);
   rerender(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
   expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/submitted");
-});
-
-it("recovers from invalid and failed save-and-leave without losing the destination", async () => {
-  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<SocialProvider request={request}><ContactEditor /></SocialProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "relative/profile" } });
-  fireEvent.click(screen.getByRole("button", { name: "About" }));
-  let dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByRole("alert")).toBeTruthy();
-  expect(request).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  const github = await screen.findByRole("textbox", { name: "GitHub URL" });
-  await waitFor(() => expect(document.activeElement).toBe(github));
-  fireEvent.change(github, { target: { value: "https://github.com/corrected" } });
-  fireEvent.click(screen.getByRole("button", { name: "About" }));
-  dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByText("Save failed")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/about"));
-});
-
-it.each(["Hero", "Projects", "Publications", "About"])("guards navigation from %s to Contact", async (section) => {
-  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : <AboutEditor />}</AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
-  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : "Heading";
-  fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Unsaved change" } });
-  fireEvent.click(screen.getByRole("button", { name: "Contact" }));
-  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Discard" }));
-  expect(push).toHaveBeenCalledExactlyOnceWith("/admin/contact");
 });
 
 it("preserves URLs through a demo toolbar failure and retries", async () => {

@@ -1,6 +1,7 @@
+import { labProjects } from "@/src/components/project-item/lab-projects";
+import { ProjectProvider, useProjects } from "@/src/cms/ProjectProvider";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { ProjectProvider, useProjects } from "@/src/cms/ProjectProvider";
 import { ProjectEditor } from "./ProjectEditor";
 import { ProjectList } from "./ProjectList";
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
@@ -67,9 +68,8 @@ it("keeps edits made during save dirty and leaves published content intact", asy
   expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Unsaved changes");
   expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
   fireEvent.click(screen.getByRole("button", { name: "Publications" }));
-  expect(await screen.findByRole("dialog")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Stay" }));
-  expect(push).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(push).toHaveBeenCalledExactlyOnceWith("/admin/publications");
 });
 
 it("validates publishing, allows incomplete drafts, and recovers from a failed save", async () => {
@@ -125,10 +125,8 @@ it("previews unsaved content on demand and restores editing focus and values", a
   expect(await screen.findByRole("heading", { name: "Unsaved preview" })).toBeTruthy();
   expect(screen.getByText("mobile device preview")).toBeTruthy();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Exit project preview" }));
-  fireEvent.click(screen.getByRole("link", { name: "View Unsaved preview live" }));
-  expect(await screen.findByRole("dialog", { name: "Open this link?" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Stay in preview" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByRole("link", { name: "View Unsaved preview live" }).getAttribute("href")).toBe(labProjects[0].liveHref);
+  expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Exit project preview" }));
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview project" })));
   expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Unsaved preview");
@@ -239,11 +237,8 @@ it("mounts the full published project section on demand and restores filtered li
   expect(screen.queryByText("Draft revision")).toBeNull();
   expect(screen.getByText("mobile device preview")).toBeTruthy();
   expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
-  fireEvent.click(screen.getByRole("link", { name: "View Field Notes live" }));
-  const dialog = await screen.findByRole("dialog", { name: "Open this link?" });
-  fireEvent.keyDown(dialog, { key: "Escape" });
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.getByRole("article", { name: "Field Notes" })).toBeTruthy();
+  expect(screen.getByRole("link", { name: "View Field Notes live" }).getAttribute("href")).toBe(labProjects[0].liveHref);
+  expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.keyDown(window, { key: "Escape" });
   expect((screen.getByRole("searchbox", { name: "Search projects" }) as HTMLInputElement).value).toBe("Relay");
   expect(screen.getByRole("button", { name: /Status/ }).textContent).toContain("Drafts");
@@ -277,23 +272,4 @@ it("shows an empty project section when every record is unpublished", async () =
   expect(await screen.findByRole("heading", { name: "No published projects" })).toBeTruthy();
   expect(screen.queryByRole("article")).toBeNull();
   expect(screen.queryByText("mobile device preview")).toBeNull();
-});
-
-it("retries save-and-leave without losing project edits or changing the published version", async () => {
-  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<ProjectProvider request={request}><ProjectEditor id="field-notes" /><Published /></ProjectProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Keep project changes" } });
-  fireEvent.click(screen.getByRole("button", { name: "Hero" }));
-  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByText("Save failed")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Keep project changes");
-  expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
-  fireEvent.click(screen.getByRole("button", { name: "Hero" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Save and leave" }));
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/hero"));
-  expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
 });

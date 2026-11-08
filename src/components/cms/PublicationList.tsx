@@ -19,7 +19,7 @@ const CollectionPreview = dynamic(() => import("./PublicationCollectionPreview")
 });
 
 export function PublicationList() {
-  const { records, move, pending } = useCms();
+  const { records, move, pending, working } = useCms();
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [announcement, setAnnouncement] = useState("");
@@ -40,7 +40,7 @@ export function PublicationList() {
   if (preview) return <CmsPreviewFrame label="Publication section preview" exitLabel="Exit publication section preview" closeRef={closeRef} onExit={() => setPreview(false)}><CollectionPreview records={records} /></CmsPreviewFrame>;
   return (
     <CmsShell>
-      <CmsPageHeader title="Publications" description="Ideas, observations, and work worth sharing. Start a draft or return to a story." action={<CmsCollectionActions collection="publication" pending={pending} onNew={() => router.push("/admin/publications/new")} onPreview={() => { capture("publication-section-trigger"); setPreview(true); }} />} />
+      <CmsPageHeader title="Publications" description="Ideas, observations, and work worth sharing. Start a draft or return to a story." action={<CmsCollectionActions collection="publication" pending={pending} onNew={() => { working.clear("new"); router.push("/admin/publications/new"); }} onPreview={() => { capture("publication-section-trigger"); setPreview(true); }} />} />
       <CmsCollectionToolbar collection="publications" search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} />
       <CmsFeedback><p>{shown.length} {shown.length === 1 ? "publication" : "publications"}</p><CmsOrderHint /></CmsFeedback>
       <p role="status" aria-label="Publication order" className="sr-only">{announcement}</p>

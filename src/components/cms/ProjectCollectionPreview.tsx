@@ -3,7 +3,6 @@
 import type { ProjectRecord } from "@/src/cms/projects";
 import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
 import { CmsEmptyState } from "./CmsLayout";
-import { CmsPreviewLinks } from "./CmsPreviewLinks";
 import { ProjectPreviewBoundary } from "./ProjectPreview";
 
 export function ProjectCollectionPreview({ records }: { records: readonly ProjectRecord[] }) {
@@ -17,7 +16,5 @@ export function ProjectCollectionPreview({ records }: { records: readonly Projec
     liveHref: published.liveUrl,
     screenTextureSrc: published.screenshot || undefined,
   }] : []);
-  return <CmsPreviewLinks>
-    <ProjectPreviewBoundary><ProjectsSection projects={projects} emptyState={<CmsEmptyState title="No published projects" description="Publish a project to preview it in this section." />} /></ProjectPreviewBoundary>
-  </CmsPreviewLinks>;
+  return <ProjectPreviewBoundary><ProjectsSection projects={projects} emptyState={<CmsEmptyState title="No published projects" description="Publish a project to preview it in this section." />} /></ProjectPreviewBoundary>;
 }

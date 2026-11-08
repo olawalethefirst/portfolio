@@ -1,6 +1,6 @@
+import { HeroProvider } from "@/src/cms/HeroProvider";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { HeroProvider } from "@/src/cms/HeroProvider";
 import { HeroEditor } from "./HeroEditor";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
@@ -75,27 +75,6 @@ it("preserves edits after a failed save and retries", async () => {
   expect(headline.value).toBe("Keep through failed save");
 });
 
-it("saves before leaving Hero and retains edits and destination through a failed save", async () => {
-  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockImplementation(() => new Promise<void>((resolve) => setTimeout(resolve, 300)));
-  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Headline" }), { target: { value: "Keep before leaving" } });
-  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(within(dialog).getByRole("button", { name: "Stay" }).hasAttribute("disabled")).toBe(true);
-  expect(within(dialog).getByRole("button", { name: "Discard" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
-  expect(screen.getByRole("dialog")).toBe(dialog);
-  expect(await within(dialog).findByRole("alert")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect((screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement).value).toBe("Keep before leaving");
-  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Save and leave" }));
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/projects"));
-});
-
 it("blocks incomplete Hero saves, focuses the first error and clears errors on discard", async () => {
   render(<HeroProvider><HeroEditor /></HeroProvider>);
   const eyebrow = screen.getByRole("textbox", { name: "Eyebrow" }) as HTMLInputElement;
@@ -118,42 +97,13 @@ it("blocks incomplete Hero saves, focuses the first error and clears errors on d
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
-it("keeps invalid save-and-leave in the editor and lets Stay focus the field for correction", async () => {
-  render(<HeroProvider><HeroEditor /></HeroProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Headline" }), { target: { value: " " } });
-  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-  const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  expect(await within(dialog).findByRole("alert")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  const headline = await screen.findByRole("textbox", { name: "Headline" });
-  await waitFor(() => expect(document.activeElement).toBe(headline));
-  fireEvent.change(headline, { target: { value: "Corrected headline" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  await waitFor(() => expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("No unsaved changes"));
-  expect(headline.getAttribute("aria-invalid")).not.toBe("true");
-});
-
-it.each([["Work", "/#work"], ["Hire", "/contact"]])("confirms the public %s destination without losing Hero edits", async (label, path) => {
+it.each([["Work", "/#work"], ["Hire", "/contact"]])("uses the public %s destination without losing Hero edits", async (label, path) => {
   render(<HeroProvider><HeroEditor /></HeroProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Headline" }), { target: { value: "Keep while opening links" } });
   fireEvent.click(screen.getByRole("button", { name: "Preview" }));
   const link = await screen.findByRole("link", { name: label });
-  expect(fireEvent.click(link)).toBe(false);
-  const dialog = await screen.findByRole("dialog", { name: "Open this link?" });
-  const open = within(dialog).getByRole("link", { name: "Open link" });
-  expect(open.getAttribute("href")).toBe(new URL(path, window.location.href).href);
-  expect(open.getAttribute("target")).toBe("_blank");
-  expect(open.getAttribute("rel")).toContain("noopener");
-  fireEvent.keyDown(dialog, { key: "Escape" });
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.getByRole("heading", { name: "Keep while opening links" })).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  expect(fireEvent(link, new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true }))).toBe(false);
-  const reopened = await screen.findByRole("dialog", { name: "Open this link?" });
-  fireEvent.click(within(reopened).getByRole("button", { name: "Stay in preview" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(link.getAttribute("href")).toBe(path);
+  expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Exit preview" }));
   expect((screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement).value).toBe("Keep while opening links");
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview" }));

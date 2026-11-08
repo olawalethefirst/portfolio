@@ -16,13 +16,12 @@ const navigationItems = [
   { id: "seo", label: "SEO", path: "/admin/seo", Icon: Search },
 ] as const;
 
-export function CmsShell({ children, onNavigate, section = "publications" }: {
+export function CmsShell({ children, section = "publications" }: {
   children: ReactNode;
-  onNavigate?: (path: string) => void;
   section?: (typeof navigationItems)[number]["id"];
 }) {
   const router = useRouter();
-  const navigate = onNavigate ?? ((path: string) => router.push(path));
+  const navigate = (path: string) => router.push(path);
   const [menuOpen, setMenuOpen] = useState(false);
   const { mode } = useActiveTheme();
   const navigation = (

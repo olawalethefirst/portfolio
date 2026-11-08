@@ -1,4 +1,6 @@
 "use client";
+
+import { useDraftStore, type DraftStore } from "./working-drafts";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialProjects, type ProjectAction, type ProjectDraft, type ProjectRecord } from "./projects";
 
@@ -10,10 +12,12 @@ interface ProjectContextValue {
   records: ProjectRecord[];
   move: (id: string, direction: -1 | 1) => void;
   pending: boolean;
+  working: DraftStore<ProjectDraft>;
   commit: (id: string, draft: ProjectDraft, action: ProjectAction) => Promise<void>;
 }
 const Context = createContext<ProjectContextValue | null>(null);
 export function ProjectProvider({ children, request = demoRequest }: { children: ReactNode; request?: Request }) {
+  const working = useDraftStore<ProjectDraft>();
   const [records, setRecords] = useState(initialProjects);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -46,7 +50,7 @@ export function ProjectProvider({ children, request = demoRequest }: { children:
       return next;
     });
   }
-  return <Context value={{ records, move, pending, commit }}>{children}</Context>;
+  return <Context value={{ working, records, move, pending, commit }}>{children}</Context>;
 }
 export function useProjects() {
   const context = useContext(Context);

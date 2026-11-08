@@ -1,14 +1,14 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CmsProvider, useCms } from "@/src/cms/CmsProvider";
 import { initialPublications } from "@/src/cms/publication-fixtures";
+import {
+act,
+fireEvent,
+render,
+screen,
+waitFor,
+within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PublicationEditor } from "./PublicationEditor";
 import { PublicationList } from "./PublicationList";
 
@@ -206,22 +206,8 @@ describe("publication CMS", () => {
     expect(
       screen.queryByRole("navigation", { name: "Article sections" }),
     ).toBeNull();
-    fireEvent.click(
-      screen.getByRole("link", {
-        name: "Read Designing with productive constraints",
-      }),
-    );
-    const confirmation = await screen.findByRole("dialog", {
-      name: "Open this link?",
-    });
-    expect(
-      within(confirmation)
-        .getByRole("link", { name: "Open link" })
-        .getAttribute("href"),
-    ).toBe("https://example.com/publications/productive-constraints");
-    fireEvent.click(
-      within(confirmation).getByRole("button", { name: "Stay in preview" }),
-    );
+    expect(screen.getByRole("link", { name: "Read Designing with productive constraints" }).getAttribute("href")).toBe("https://example.com/publications/productive-constraints");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("combines search and status filters", async () => {
@@ -252,43 +238,6 @@ describe("publication CMS", () => {
     fireEvent.change(screen.getByRole("searchbox", { name: "Search publications" }), { target: { value: "  UNPUBLISHED REVISION  " } });
     expect(screen.getByRole("heading", { name: records[1].draft.title })).toBeTruthy();
     expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
-  });
-
-  it("keeps the editor open on a failed save-and-leave and allows retry", async () => {
-    const request = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("Save failed"))
-      .mockResolvedValue(undefined);
-    render(
-      <CmsProvider request={request}>
-        <PublicationEditor id="publication-1" />
-      </CmsProvider>,
-    );
-    fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
-      target: { value: "Keep my changes" },
-    });
-    fireEvent.click(screen.getAllByRole("button", { name: "Publications" })[0]);
-    const dialog = await screen.findByRole("dialog", {
-      name: "Keep your changes?",
-    });
-    fireEvent.click(
-      within(dialog).getByRole("button", { name: "Save and leave" }),
-    );
-    await within(dialog).findByText("Save failed");
-    expect(push).not.toHaveBeenCalled();
-    fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(
-      (screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement)
-        .value,
-    ).toBe("Keep my changes");
-    fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Save and leave" }),
-    );
-    await waitFor(() =>
-      expect(push).toHaveBeenCalledWith("/admin/projects"),
-    );
   });
 
   it("publishes the working copy and confirms withdrawal without deleting content", async () => {
@@ -383,17 +332,6 @@ it("deduplicates removable tags and preserves hidden content when changing publi
   expect((screen.getByRole("textbox", { name: "Image description" }) as HTMLInputElement).value).toBe(originalAlt);
 });
 
-
-it("guards navigation from unsaved publications to projects", async () => {
-  render(<CmsProvider><PublicationEditor id="publication-1" /></CmsProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Title" }), { target: { value: "Unsaved title" } });
-  fireEvent.click(screen.getByRole("button", { name: "Projects" }));
-  expect(await screen.findByRole("dialog")).toBeTruthy();
-  expect(push).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Discard" }));
-  expect(push).toHaveBeenCalledWith("/admin/projects");
-});
-
 it.each(["publication-1", "new"])("discards to the last saved publication draft for %s without publishing", async (id) => {
   const request = vi.fn(async () => {});
   render(<CmsProvider request={request}><PublicationEditor id={id} /><PublishedReader /></CmsProvider>);
@@ -479,14 +417,9 @@ it("previews the full published publication section independently of filters and
   expect(screen.queryByText("Saved draft revision")).toBeNull();
   expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Exit publication section preview" }));
-  fireEvent.click(screen.getByRole("link", { name: `Read ${records[2].draft.title}` }));
-  const dialog = await screen.findByRole("dialog", { name: "Open this link?" });
-  expect(within(dialog).getByRole("link", { name: "Open link" }).getAttribute("href")).toBe(records[2].draft.externalUrl);
-  fireEvent.click(within(dialog).getByRole("button", { name: "Stay in preview" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  fireEvent.click(screen.getByRole("link", { name: `Read ${publishedTitle}` }));
-  expect(await screen.findByRole("heading", { level: 1, name: publishedTitle })).toBeTruthy();
-  expect(screen.getByRole("navigation", { name: "Article sections" })).toBeTruthy();
+  expect(screen.getByRole("link", { name: `Read ${records[2].draft.title}` }).getAttribute("href")).toBe(records[2].draft.externalUrl);
+  expect(screen.getByRole("link", { name: `Read ${publishedTitle}` }).getAttribute("href")).toBe("/publication-details-lab");
+  expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.keyDown(window, { key: "Escape" });
   expect((screen.getByRole("searchbox", { name: "Search publications" }) as HTMLInputElement).value).toBe("Saved draft revision");
   expect(screen.getByRole("button", { name: /Status/ }).textContent).toContain("Drafts");

@@ -10,7 +10,6 @@ import {
   samePublication,
   validatePublication,
   type PublicationAction,
-  type PublicationDraft,
   type PublicationErrors,
   type PublicationRecord,
 } from "@/src/cms/publications";
@@ -21,7 +20,7 @@ import { CmsShell } from "./CmsShell";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
-import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
+import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
 
@@ -45,13 +44,8 @@ function PublicationEditorForm({
   initialRecord?: PublicationRecord;
 }) {
   const router = useRouter();
-  const { records, commit, pending } = useCms();
-  const [id] = useState(
-    () => initialRecord?.id ?? `draft-${crypto.randomUUID()}`,
-  );
-  const [value, setValue] = useState<PublicationDraft>(
-    () => initialRecord?.draft ?? emptyPublication(),
-  );
+  const { records, commit, pending, working } = useCms();
+  const { id, value, setValue } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(null);
   const [errors, setErrors] = useState<PublicationErrors>({});
   const [message, setMessage] = useState("");
@@ -65,8 +59,6 @@ function PublicationEditorForm({
     capture(`publication-${mode}-trigger`);
     setPreviewMode(mode);
   }
-  const navigation = useCmsUnsavedChanges({ dirty, pending, save: () => act("save"), navigate: (path) => router.push(path) });
-  const leave = navigation.leave;
 
   async function act(action: PublicationAction | "delete"): Promise<boolean> {
     if (pending) return false;
@@ -113,8 +105,8 @@ function PublicationEditorForm({
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
-    <CmsShell onNavigate={leave}>
-      <CmsBackButton disabled={pending} onPress={() => leave("/admin/publications")}>Publications</CmsBackButton>
+    <CmsShell>
+      <CmsBackButton disabled={pending} onPress={() => router.push("/admin/publications")}>Publications</CmsBackButton>
       <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
       <CmsToolbar actions={<>
         <Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button>
@@ -123,7 +115,7 @@ function PublicationEditorForm({
         <Button id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
         <Button id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
-      <CmsFeedback label="Publication save status" error={dialog === "delete" || navigation.dialog.open ? undefined : requestError}>
+      <CmsFeedback label="Publication save status" error={dialog === "delete" ? undefined : requestError}>
         <span>{pending ? "Saving…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
       </CmsFeedback>
       <PublicationFields value={value} errors={errors} onChange={setValue} />
@@ -138,7 +130,6 @@ function PublicationEditorForm({
           setRequestError("");
         }}>Discard changes</Button>
       </CmsFooter>
-      <CmsUnsavedChangesDialog {...navigation.dialog} error={requestError} />
       <CmsDialog
         open={dialog === "delete"}
         onClose={() => { if (!pending) setDialog(null); }}

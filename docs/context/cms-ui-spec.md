@@ -146,8 +146,8 @@ completion children. ImagePicker accepts a preview child. Avoid a generic form
 engine or configuration-driven replacement for these small compositions.
 
 CmsShell owns a single navigation definition (section IDs, labels, paths and icons).
-It accepts one optional `onNavigate(path)` handler. Editors pass their shared dirty
-guard's leave handler; lists/recovery screens use the shell's router fallback.
+It navigates directly through the router. Editors do not intercept navigation
+or register per-screen navigation callbacks.
 Consumers do not repeat one callback and hardcoded route per navigation item.
 Desktop sidebar and mobile drawer share this same navigation path.
 
@@ -312,14 +312,14 @@ unpublishes or changes snapshots. Load preview modules on demand; project scenes
 mount only while their section preview is open. Errors retain demo content and
 offer reopening the preview.
 
-External/project links require confirmation before opening in a new tab; middle
-click follows the same confirmation. Local publication cards open their current
-demo-published article with the existing PublicationPreview/PublicationDetails
-renderer in the same preview session. Closing returns to the admin list. An
-Escape used to dismiss a link dialog must not also dismiss the section preview.
+All preview links use ordinary browser navigation. External/project links follow
+their live destinations, including modified and middle clicks. Local publication
+cards use the current public article route `/publication-details-lab`; dynamic
+public article routing remains deferred. Hero Work uses `/#work`. No link
+confirmation, click interception or internal article substitution is used.
 
 Test scope is level 2 for published/draft isolation, filter/order/focus/scroll
-continuity, nested link-dialog behavior and on-demand scene mounting. Controller
+continuity, native link behavior and on-demand scene mounting. Controller
 review covers visual fidelity, sticky scrolling, project popovers, actual GPU
 rendering, both themes, keyboard, 320px/200% zoom and reduced motion. Performance
 remains possible: no project canvas/assets before opening the preview and no
@@ -335,7 +335,7 @@ remain controller-owned under CONSTRAINTS.md.
 2. Group editor fields into Content, Cover, and Publishing. An explicit
    Local article / External link choice exposes the relevant content field.
    Preserve hidden values when toggling types; validate only the active type.
-3. Maintain separate working values, last in-memory saved draft, and demo-published
+3. Maintain provider-owned working drafts, last in-memory saved draft, and published
    snapshot. Edits never mutate the published snapshot. Save updates the draft;
    publish validates and copies the current working values into both snapshots.
    Unpublish removes only the demo-published snapshot after confirmation.
@@ -346,14 +346,14 @@ remain controller-owned under CONSTRAINTS.md.
    have an explicit decorative-image opt-out. Do not invent arbitrary text limits.
 5. Request states: idle, pending, success, error. Disable duplicate submissions.
    Capture the submitted snapshot: changes typed during a pending save remain
-   dirty after completion. Failures preserve values and provide retry. The demo
-   controls supply deterministic success/failure scenarios, not random failures.
-6. App-controlled navigation away from dirty values offers Stay / Discard / Save
-   and leave. Leave only after a successful save; failures keep the editor open.
-   Browser close/reload uses the browser's native best-effort unload warning.
-   Do not claim every browser/history navigation can be intercepted reliably.
-7. Opening or closing previews does not save, publish, reset values, or trigger the dirty
-   navigation prompt. Restore the previous form values and useful focus on return.
+   dirty after completion. Failures preserve values and provide retry. Tests inject
+   deterministic request failures without testing controls in the UI.
+6. Every field change updates its provider-owned working draft immediately.
+   Navigation proceeds without interception, confirmation or unload warnings.
+   Working drafts survive CMS editor unmounts, including invalid/incomplete values
+   and new records. Reload persistence is deferred.
+7. Opening or closing previews does not save, publish or reset values. Restore
+   the previous form values and useful focus on return.
 
 List rows identify title, local/external type, publication state, and date.
 A published item with a different saved draft shows “Published · Unpublished
@@ -440,12 +440,10 @@ Never-saved records have no Delete action. There is no separate Reset action and
 no saved record whose sole purpose is to represent inheritance.
 
 SeoProvider retains only demo-saved defaults and path records across CMS
-navigation. Each editor owns its working values and request feedback. Save changes
+navigation. Each provider retains working drafts; editors own validation and request feedback. Save changes
 captures the submitted values; later edits remain dirty. Failures retain edits for
 retry. New/unknown record IDs have clear recovery UI. Reload restores fixtures.
-All editors reuse CmsUnsavedChangesDialog/useCmsUnsavedChanges, including defaults
-validation and path/uniqueness validation for Save and leave. Lists need no dirty
-prompt. Saved values, deletion and default changes never alter publication
+Navigation does not validate or prompt. Saved values, deletion and default changes never alter publication
 content drafts, published snapshots, external sites or live Next.js metadata.
 No backend, persistence or generic form/state framework is introduced.
 
@@ -454,8 +452,7 @@ retain their current metadata as overrides; Homepage initially inherits defaults
 Changing a global default immediately changes effective values for inherited
 fields, while explicit record overrides remain intact. The collection and summaries
 report demo working/saved values as appropriate, without claiming a live SEO result.
-SEO follows Contact in desktop/mobile Content navigation; every existing
-editor guards this destination.
+SEO follows Contact in desktop/mobile Content navigation; navigation is direct.
 
 Title fields consider Type/TextCursorInput and omit icons because labels suffice;
 description textareas and ghost Discard follow the icon-free default. Path
@@ -484,15 +481,14 @@ Each URL must be complete HTTPS without sign-in credentials. SocialProvider
 retains the last demo-saved destinations across CMS navigation. Saving captures
 the submitted URLs; newer edits remain dirty, failures preserve values and retry
 is explicit. Discard restores saved values and clears validation/feedback.
-Unsaved navigation uses the shared save/discard/stay guard. Reload restores
+Working drafts survive editor unmounts without navigation prompts. Reload restores
 fixtures. There is no backend, durable storage or inquiry inbox.
 
 Preview replaces the CMS shell through CmsPreviewFrame and shows the full public
 contact section with the working URLs and three-step form. Invalid
 URLs remain unavailable and are identified by a status message. Preview entry/exit
 does not save or discard; it restores values, initiating focus and scroll.
-CmsPreviewLinks confirms modified/middle-click navigation before opening a profile
-in a new tab; nested Escape closes only the confirmation.
+Profile links navigate directly with their public target and rel attributes.
 
 The public and CMS views compose ContactSection, ContactIntroduction,
 ContactConversationForm, ContactCompletion and SocialLinks. ContactConversationSection
@@ -520,11 +516,10 @@ live contact behavior.
 layout. Heading is a single-line text field; Biography is plain multiline text,
 preserving line breaks. Both require nonblank content on Save changes, with no
 arbitrary text limits. Validation retains input and the saved snapshot; toolbar
-Save focuses the first invalid field. Save and leave uses the same validation
-and shared dialog, with Stay focusing the first invalid field for correction.
+Save focuses the first invalid field. Navigation never validates or prompts.
 
-AboutProvider holds only the last in-memory demo-saved snapshot across CMS
-navigation; working edits stay local to AboutEditor. Reload restores the public
+AboutProvider retains the last saved snapshot and working draft across CMS
+navigation; AboutEditor uses that draft directly. Reload restores the public
 fixtures. Saving captures the submitted values, blocks duplicate requests and
 leaves newer edits dirty. Request failures retain values for retry. Feedback says
 Saved. Discard changes
@@ -537,13 +532,12 @@ AboutCtaSection with typed heading/summary props. Public defaults live in
 public callers retain their content and behavior. The CMS biography maps to
 summary, with visibly identified preview-only placeholders for missing fields.
 The public renderer imports no CMS code. Preview exit restores working values,
-the Preview trigger and scroll without saving. CmsPreviewLinks confirms the fixed
-Start a conversation CTA before opening `/contact` in a new tab; nested Escape
-closes only the link dialog. The CTA label, destination, icon and animation remain
+the Preview trigger and scroll without saving. The fixed Start a conversation CTA
+navigates directly to `/contact`. The CTA label, destination, icon and animation remain
 in public code.
 
 About follows Publications in the shared desktop/mobile Content navigation.
-Existing editors pass About navigation through their shared unsaved-change guard.
+Existing editors navigate directly to About without confirmation.
 Heading considers Type/TextCursorInput and omits an icon because the visible label
 suffices; Biography and ghost Discard follow the icon-free default. Save uses
 leading Save rather than Check; Preview uses leading Maximize2 rather than Eye.
@@ -551,7 +545,7 @@ About navigation uses leading UserRound rather than BadgeInfo under the existing
 navigation exception for ghost buttons. Public CTA styling remains library-owned.
 
 Risk level 2 covers failed saves, edits during pending requests, saved-value
-retention across navigation, validation, guarded navigation and preview continuity.
+retention across navigation, validation, direct links and preview continuity.
 Performance is possible because the public reveal animation mounts on demand:
 controller checks responsive typing/scrolling and repeated preview visits with a
 long biography, ensuring prior reveal effects are cleaned up. Controller also
@@ -566,46 +560,26 @@ the entered values and leave the last demo-saved snapshot unchanged. Toolbar
 validation focuses the first invalid field in editor order. Discard restores the
 saved values and clears validation and request feedback.
 
-Save and leave uses the same validation. If invalid, keep the shared navigation
-dialog open with a summary; Stay returns to the first invalid field for correction.
-Request failures also retain values and allow retry. Leaving requires a successful
-save, and edits typed during a pending toolbar save remain unsaved afterward.
+Request failures retain values and allow retry. Edits typed during a pending
+save remain in the working draft afterward, including after navigation away and
+back. Hero preview renders PrismHeroLayout directly. Work navigates to `/#work`
+and Hire to `/contact`; no click interception or link confirmation is used.
+Preview exit restores editor values, initiating focus and scroll.
 
-Hero preview wraps the public PrismHeroLayout in CmsPreviewLinks. Work resolves
-the public component's `#work` link to `/#work`, since this section-only preview
-contains no Work section; Hire resolves to `/contact`. Both require confirmation
-before opening in a new tab, including modified/middle clicks. Cancel or Escape
-closes only the confirmation, retaining the Hero preview; preview exit restores
-the editor values, initiating focus and scroll. The public component's live links,
-CTA labels, stage controls, layout and animation remain unchanged. CmsPreviewLinks
-accepts an optional `resolveHref` adapter so sections can resolve public destinations
-before the shared web-link validation and confirmation; normal article fragments
-keep their existing in-preview behavior.
+### Working drafts and navigation
 
-### Shared unsaved-navigation guard
-
-Every editable CMS section uses `useCmsUnsavedChanges` and
-`CmsUnsavedChangesDialog` from `src/components/cms/CmsUnsavedChanges.tsx`.
-Publications, Projects, Hero, About, Contact and SEO share this composition.
-Collection lists have no unsaved form values
-and need no save-and-leave dialog.
-
-The hook owns the requested destination, dirty-navigation interception,
-best-effort beforeunload warning and save-and-leave request lock. The dialog
-composes CmsDialog with Stay / Discard / Save and leave. Stay and Discard are
-icon-free ghost actions; Save and leave retains its leading Save icon (rather
-than Check, because it submits a save). These controls belong only to the
-navigation dialog; toolbar Save and footer Discard placement remain unchanged.
-
-Editors supply dirty/pending flags, their existing save callback and controlled
-CMS navigation callback. Saving returns true only after a successful commit;
-validation or request failure returns false and supplies editor-owned error
-feedback. A failed save keeps the dialog, destination and working values for
-retry. While saving, duplicate requests, dismissal, discard and replacement of
-the destination are blocked. A successful save navigates to the requested
-section without publishing. The guard does not own content, validation rules,
-providers, persistence or backend requests, and preview opening/closing never
-uses it. Browser history interception remains best-effort as described above.
+All six providers retain per-editor working drafts using
+`src/cms/working-drafts.ts`. Fields update their draft on change, without a
+request, debounce or validation gate. Existing records use their record ID; new
+editors retain a generated identity so revisiting does not duplicate the draft.
+Drafts are isolated by entity and record. Manual Save captures a separate
+submitted snapshot; Publish remains explicit. Discard restores the last saved
+values. No navigation guard, beforeunload listener, Stay/Save-and-leave dialog,
+link interception or link-confirmation dialog remains. Navigation proceeds even
+with incomplete values or a pending request. Reload and cross-document
+persistence remain future work. Delete and Unpublish keep their action-specific
+confirmations. Tests for removed interception behavior are replaced by draft
+retention and native-link navigation tests.
 
 ## Reuse and preview architecture
 
@@ -704,7 +678,6 @@ Leading icons unless stated otherwise. Retain visible labels; icons are decorati
 | Full-screen preview | Maximize2, Eye | Maximize2; expands the current preview |
 | Choose/replace image | Upload, ImagePlus | Omit; native file chooser already identifies the action |
 | Remove image (ghost) | Not needed | No icon; default policy |
-| Stay/Discard/Save and leave | X, LogOut / Trash2, RotateCcw / Save, Check | Omit Stay/Discard icons; redundant or suggests deletion; Save for save-and-leave |
 | Navigation drawer | Menu, PanelLeft | Menu; conventional mobile navigation |
 | Back to publications (ghost) | ArrowLeft, ChevronLeft | ArrowLeft exception; identifies navigation out of the editor |
 | Light/dark mode (ghost) | Sun/Moon, SunMoon | Sun/Moon exception; identifies the destination mode |
@@ -832,9 +805,9 @@ edits; changes typed during saving remain dirty. Unpublish preserves the draft.
 Delete requires confirmation, removes both demo versions and returns to the list;
 failed deletion can be retried. New or missing records have clear recovery UI.
 
-Both editors guard CMS navigation with Stay / Discard / Save and leave. Browser
-unload protection remains best-effort. Shared navigation reflects the current
-section on desktop and mobile. Project state exists only for mock interactions.
+Both editors retain provider-owned working drafts across direct CMS navigation.
+Shared navigation reflects the current section on desktop and mobile.
+Reload persistence is deferred.
 Public ProjectItem previews and ordering belong to the following iteration.
 
 Project icon decisions: Name (Type/FolderKanban) and image description

@@ -2,7 +2,6 @@
 
 import { Maximize2, Save } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAbout } from "@/src/cms/AboutProvider";
 import { sameAbout, validateAbout, type AboutErrors } from "@/src/cms/about";
@@ -11,7 +10,7 @@ import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsShell } from "./CmsShell";
-import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
+import { useWorkingDraft } from "@/src/cms/working-drafts";
 
 const AboutPreview = dynamic(() => import("./AboutPreview").then((module) => module.AboutPreview), {
   ssr: false,
@@ -19,9 +18,8 @@ const AboutPreview = dynamic(() => import("./AboutPreview").then((module) => mod
 });
 
 export function AboutEditor() {
-  const router = useRouter();
-  const { saved, save, pending } = useAbout();
-  const [value, setValue] = useState(saved);
+  const { saved, save, pending, working } = useAbout();
+  const { value, setValue } = useWorkingDraft(working, "about", () => saved);
   const [errors, setErrors] = useState<AboutErrors>({});
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -40,8 +38,7 @@ export function AboutEditor() {
     const nextErrors = validateAbout(value);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
-      if (navigation.dialog.open) setError("Complete the required About fields before saving. Choose Stay to correct them.");
-      else focusFirstError(nextErrors);
+      focusFirstError(nextErrors);
       return false;
     }
     try {
@@ -53,21 +50,18 @@ export function AboutEditor() {
       return false;
     }
   }
-  const navigation = useCmsUnsavedChanges({ dirty, pending, save: saveChanges, navigate: (path) => router.push(path) });
-  const leave = navigation.leave;
 
   if (preview) return <CmsPreviewFrame label="About preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><AboutPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="about" onNavigate={leave}>
+  return <CmsShell section="about">
     <CmsPageHeader title="About" description="Edit your introduction and biography. The conversation CTA stays fixed." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="about-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("about-preview-trigger"); setPreview(true); }}>Preview</Button>
     </CmsToolbar>
-    <CmsFeedback label="About save status" error={navigation.dialog.open ? undefined : error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
+    <CmsFeedback label="About save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <CmsEditorContent><CmsFieldSection title="Content">
       <CmsField name="heading" label="Heading" value={value.heading} error={errors.heading} onChange={(heading) => setValue((current) => ({ ...current, heading }))} />
       <CmsField name="biography" label="Biography" multiline="short" value={value.biography} error={errors.biography} onChange={(biography) => setValue((current) => ({ ...current, biography }))} />
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
-    <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
   </CmsShell>;
 }

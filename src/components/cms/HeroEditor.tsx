@@ -1,12 +1,11 @@
 "use client";
-import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Maximize2, Save } from "lucide-react";
 import { useState } from "react";
 import { useHero } from "@/src/cms/HeroProvider";
 import { sameHero, validateHero, type HeroDraft, type HeroErrors } from "@/src/cms/hero";
 import { Button } from "@/src/components/ui/Button";
-import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
+import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFieldSection, CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
@@ -14,9 +13,8 @@ import { CmsShell } from "./CmsShell";
 const HeroPreview = dynamic(() => import("./HeroPreview").then((m) => m.HeroPreview), { ssr: false, loading: () => <p role="status">Loading hero preview…</p> });
 const stages = [["idea", "Idea"], ["iterate", "Iterate"], ["solution", "Solution"]] as const;
 export function HeroEditor() {
-  const router = useRouter();
-  const { value: saved, save, pending } = useHero();
-  const [value, setValue] = useState(saved);
+  const { value: saved, save, pending, working } = useHero();
+  const { value, setValue } = useWorkingDraft(working, "hero", () => saved);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
   const [error, setError] = useState("");
@@ -32,8 +30,7 @@ export function HeroEditor() {
     const nextErrors = validateHero(value);
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
-      if (navigation.dialog.open) setError("Complete the required Hero fields before saving. Choose Stay to correct them.");
-      else focusFirstError(nextErrors);
+      focusFirstError(nextErrors);
       return false;
     }
     try {
@@ -44,16 +41,14 @@ export function HeroEditor() {
       return false;
     }
   }
-  const navigation = useCmsUnsavedChanges({ dirty, pending, save: saveChanges, navigate: (path) => router.push(path) });
-  const leave = navigation.leave;
   const update = (patch: Partial<HeroDraft>) => setValue((current) => ({ ...current, ...patch }));
   if (preview) return <CmsPreviewFrame label="Hero preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><HeroPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="hero" onNavigate={leave}>
+  return <CmsShell section="hero">
     <CmsPageHeader title="Hero" description="Edit the introduction and the copy shown for each fixed stage." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="hero-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("hero-preview-trigger"); setPreview(true); }}>Preview</Button>
     </CmsToolbar>
-    <CmsFeedback label="Hero save status" error={navigation.dialog.open ? undefined : error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}</CmsFeedback>
+    <CmsFeedback label="Hero save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}</CmsFeedback>
     <CmsEditorContent><CmsFieldSection title="Content">
       <CmsField name="eyebrow" label="Eyebrow" error={errors.eyebrow} value={value.eyebrow} onChange={(eyebrow) => update({ eyebrow })} />
       <CmsField name="headline" label="Headline" error={errors.headline} value={value.headline} onChange={(headline) => update({ headline })} />
@@ -63,6 +58,5 @@ export function HeroEditor() {
       </CmsFieldSection>)}</div>
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setError(""); setErrors({}); }}>Discard changes</Button></CmsFooter>
-    <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
   </CmsShell>;
 }

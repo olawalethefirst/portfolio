@@ -1,7 +1,5 @@
 "use client";
 
-import { ArrowUpRight } from "lucide-react";
-import { useState, type MouseEvent } from "react";
 import {
   httpsUrl,
   publicationTags,
@@ -10,8 +8,6 @@ import {
 } from "@/src/cms/publications";
 import { PublicationCard } from "@/src/components/publication-card";
 import { PublicationDetails } from "@/src/components/publication-details";
-import { Button } from "@/src/components/ui/Button";
-import { CmsDialog } from "./CmsDialog";
 
 export function PublicationPreview({
   value,
@@ -20,8 +16,6 @@ export function PublicationPreview({
   value: PublicationDraft;
   mode: "card" | "detail";
 }) {
-  const [destination, setDestination] = useState<string | null>(null);
-  const [linkError, setLinkError] = useState("");
   const title = value.title.trim() || "Untitled publication";
   const cover = {
     src: value.coverSrc || "/publication-cover.svg",
@@ -36,44 +30,8 @@ export function PublicationPreview({
     !validDate(value.publishedOn) ||
     (value.kind === "local" && !value.bodyMarkdown.trim());
 
-  function interceptLink(event: MouseEvent<HTMLDivElement>) {
-    const link = (event.target as Element).closest("a");
-    if (!link) return;
-    const href = link.getAttribute("href");
-    if (!href) {
-      event.preventDefault();
-      return;
-    }
-    if (href === "#cms-article-preview") {
-      event.preventDefault();
-      return;
-    }
-    if (href.startsWith("#")) return;
-    event.preventDefault();
-    setLinkError("");
-    try {
-      const url = new URL(href, window.location.href);
-      if (url.protocol === "https:" || url.protocol === "http:")
-        setDestination(url.href);
-      else setLinkError("This preview supports web links only.");
-    } catch {
-      setLinkError(
-        "This link is not a valid web address. Return to the editor to correct it.",
-      );
-    }
-  }
-
   return (
     <>
-      <div onClickCapture={interceptLink}>
-        {linkError ? (
-          <p
-            role="alert"
-            className="border border-danger/30 p-4 text-sm text-danger"
-          >
-            {linkError}
-          </p>
-        ) : null}
         {placeholders ? (
           <p
             role="status"
@@ -106,7 +64,7 @@ export function PublicationPreview({
             <p className="text-xs font-medium uppercase tracking-widest text-muted">External publication</p>
             <h1 className="mt-3 text-3xl font-semibold">{title}</h1>
             <p className="mt-4 text-muted">Readers follow this publication to its original article.</p>
-            <p className="mt-4 break-all">{value.externalUrl || "Add a publication URL in the editor."}</p>
+            {httpsUrl(value.externalUrl) ? <a className="mt-4 block break-all underline" href={value.externalUrl}>{value.externalUrl}</a> : <p className="mt-4">Add a publication URL in the editor.</p>}
           </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 py-6">
@@ -122,7 +80,7 @@ export function PublicationPreview({
               tags={tags}
               href={
                 value.kind === "local"
-                  ? "#cms-article-preview"
+                  ? "/publication-details-lab"
                   : httpsUrl(value.externalUrl)
                     ? value.externalUrl
                     : "#external-destination"
@@ -131,33 +89,6 @@ export function PublicationPreview({
             </div>
           </div>
         )}
-      </div>
-      <CmsDialog
-        open={destination !== null}
-        onClose={() => setDestination(null)}
-        title="Open this link?"
-        actions={
-          <>
-            <Button variant="ghost" onPress={() => setDestination(null)}>
-              Stay in preview
-            </Button>
-            <Button
-              href={destination ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setDestination(null)}
-              endContent={
-                <ArrowUpRight aria-hidden="true" className="size-4" />
-              }
-            >
-              Open link
-            </Button>
-          </>
-        }
-      >
-        <p>The link opens in a new tab. Your edits stay here.</p>
-        <p className="mt-2 break-all">{destination}</p>
-      </CmsDialog>
     </>
   );
 }

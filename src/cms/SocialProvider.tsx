@@ -1,5 +1,7 @@
 "use client";
 
+import { useDraftStore, type DraftStore } from "./working-drafts";
+
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialSocial, type SocialDraft } from "./social";
 
@@ -11,9 +13,11 @@ const SocialContext = createContext<{
   saved: SocialDraft;
   save: (value: SocialDraft) => Promise<void>;
   pending: boolean;
+  working: DraftStore<SocialDraft>;
 } | null>(null);
 
 export function SocialProvider({ children, request = demoRequest }: { children: ReactNode; request?: SocialRequest }) {
+  const working = useDraftStore<SocialDraft>();
   const [saved, setSaved] = useState(initialSocial);
   const [pending, setPending] = useState(false);
   const saving = useRef(false);
@@ -30,7 +34,7 @@ export function SocialProvider({ children, request = demoRequest }: { children: 
       setPending(false);
     }
   }
-  return <SocialContext value={{ saved, save, pending }}>{children}</SocialContext>;
+  return <SocialContext value={{ working, saved, save, pending }}>{children}</SocialContext>;
 }
 
 export function useSocial() {

@@ -118,7 +118,7 @@ export const PrismHeroLayout = forwardRef<
               <div className="pointer-events-auto mt-4 flex flex-nowrap gap-3 sm:mt-6">
                 <Button
                   className="min-w-24 gap-2"
-                  href="#work"
+                  href="/#work"
                   size="sm"
                   startContent={<BriefcaseBusiness aria-hidden="true" className="size-4 shrink-0" />}
                 >

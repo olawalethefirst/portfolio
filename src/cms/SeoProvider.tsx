@@ -1,5 +1,7 @@
 "use client";
 
+import { useDraftStore, type DraftStore } from "./working-drafts";
+
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialSeo, normalizeSeoPath, validateSeoDefaults, validateSeoRecord, type SeoRecord, type SeoState, type SeoValues } from "./seo";
 
@@ -13,9 +15,11 @@ const SeoContext = createContext<{
   saveRecord: (value: SeoRecord) => Promise<SeoRecord>;
   deleteRecord: (id: string) => Promise<void>;
   pending: boolean;
+  working: DraftStore<SeoRecord>;
 } | null>(null);
 
 export function SeoProvider({ children, request = demoRequest, initialState }: { children: ReactNode; request?: SeoRequest; initialState?: SeoState }) {
+  const working = useDraftStore<SeoRecord>();
   const [saved, setSaved] = useState(initialState ?? initialSeo);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -45,7 +49,7 @@ export function SeoProvider({ children, request = demoRequest, initialState }: {
   async function deleteRecord(id: string) {
     await run((current) => ({ ...current, records: current.records.filter((record) => record.id !== id) }));
   }
-  return <SeoContext value={{ saved, saveDefaults, saveRecord, deleteRecord, pending }}>{children}</SeoContext>;
+  return <SeoContext value={{ working, saved, saveDefaults, saveRecord, deleteRecord, pending }}>{children}</SeoContext>;
 }
 export function useSeo() {
   const context = useContext(SeoContext);

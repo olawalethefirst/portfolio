@@ -20,7 +20,7 @@ const CollectionPreview = dynamic(() => import("./ProjectCollectionPreview").the
 
 export function ProjectList() {
   const router = useRouter();
-  const { records, move, pending } = useProjects();
+  const { records, move, pending, working } = useProjects();
   const [announcement, setAnnouncement] = useState("");
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState(false);
@@ -33,7 +33,7 @@ export function ProjectList() {
   );
   if (preview) return <CmsPreviewFrame label="Project section preview" exitLabel="Exit project section preview" closeRef={closeRef} onExit={() => setPreview(false)}><CollectionPreview records={records} /></CmsPreviewFrame>;
   return <CmsShell section="projects">
-    <CmsPageHeader title="Projects" description="The work you want to share." action={<CmsCollectionActions collection="project" pending={pending} onNew={() => router.push("/admin/projects/new")} onPreview={() => { capture("project-section-trigger"); setPreview(true); }} />} />
+    <CmsPageHeader title="Projects" description="The work you want to share." action={<CmsCollectionActions collection="project" pending={pending} onNew={() => { working.clear("new"); router.push("/admin/projects/new"); }} onPreview={() => { capture("project-section-trigger"); setPreview(true); }} />} />
     <CmsCollectionToolbar collection="projects" search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} />
     <CmsFeedback>
       <p>{shown.length} {shown.length === 1 ? "project" : "projects"}</p>

@@ -5,7 +5,6 @@ import { ContactConversationForm } from "@/src/components/contact-conversation/C
 import { ContactCompletion, ContactIntroduction, ContactSection } from "@/src/components/contact-conversation/ContactSection";
 import { SocialLinks } from "@/src/components/contact-conversation/SocialLinks";
 import { SOCIAL_PROFILES, type SocialDestinations } from "@/src/components/contact-conversation/social-profiles";
-import { CmsPreviewLinks } from "./CmsPreviewLinks";
 
 export function ContactPreview({ value }: { value: SocialDraft }) {
   const destinations: Partial<SocialDestinations> = {};
@@ -16,11 +15,11 @@ export function ContactPreview({ value }: { value: SocialDraft }) {
   const incomplete = Object.keys(destinations).length < SOCIAL_PROFILES.length;
   return <>
     {incomplete ? <p role="status" className="p-4 text-sm text-muted">Profiles with missing or invalid HTTPS URLs are unavailable in this preview.</p> : null}
-    <CmsPreviewLinks><ContactSection>
+    <ContactSection>
       <ContactIntroduction><SocialLinks destinations={destinations} /></ContactIntroduction>
       <ContactConversationForm>
         <ContactCompletion>Your response is complete.</ContactCompletion>
       </ContactConversationForm>
-    </ContactSection></CmsPreviewLinks>
+    </ContactSection>
   </>;
 }

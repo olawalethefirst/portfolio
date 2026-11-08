@@ -1,5 +1,7 @@
 "use client";
 
+import { useDraftStore, type DraftStore } from "./working-drafts";
+
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialAbout, type AboutDraft } from "./about";
 
@@ -11,9 +13,11 @@ const AboutContext = createContext<{
   saved: AboutDraft;
   save: (value: AboutDraft) => Promise<void>;
   pending: boolean;
+  working: DraftStore<AboutDraft>;
 } | null>(null);
 
 export function AboutProvider({ children, request = demoRequest }: { children: ReactNode; request?: AboutRequest }) {
+  const working = useDraftStore<AboutDraft>();
   const [saved, setSaved] = useState(initialAbout);
   const [pending, setPending] = useState(false);
   const saving = useRef(false);
@@ -30,7 +34,7 @@ export function AboutProvider({ children, request = demoRequest }: { children: R
       setPending(false);
     }
   }
-  return <AboutContext value={{ saved, save, pending }}>{children}</AboutContext>;
+  return <AboutContext value={{ working, saved, save, pending }}>{children}</AboutContext>;
 }
 
 export function useAbout() {
