@@ -371,13 +371,16 @@ place every page's fields or a publication selector on one singleton form.
 | --- | --- |
 | `/admin/seo` | Searchable override list; Edit defaults and New override header actions |
 | `/admin/seo/defaults` | Edit and demo-save the global title/description |
-| `/admin/seo/new` | Create an override with an exact site path and optional title/description |
-| `/admin/seo/[id]` | Edit a stable-ID override; show effective metadata, reset or delete it |
+| `/admin/seo/new` | Create an override with an exact site path and at least one override field |
+| `/admin/seo/[id]` | Edit a stable-ID override; show effective metadata or delete it |
 
-A path record contains a stable demo ID, a unique site-relative path, and optional
-title/description overrides. Homepage (`/`), Contact (`/contact`) and local article
-paths use this same record type. Seed the current public paths `/`, `/contact`
-and `/publication-details-lab`; use their existing metadata as demo fixtures.
+Every saved row represents an actual override. A path record contains a stable
+demo ID, a unique site-relative path, and at least one nonblank title/description
+override. Each individual field is optional, but both cannot be blank. Homepage (`/`), Contact (`/contact`) and local article
+paths use this same record type. Seed `/contact` and `/publication-details-lab`
+with their existing metadata as demo fixtures. Homepage has no placeholder record:
+paths without a saved record inherit global defaults. A real override for `/` can
+be created when a title or description needs to differ from the defaults.
 Do not invent publication slug routes. External publication destinations are not
 site paths and do not receive local SEO override records. A custom path may be
 entered for demonstration; an override does not create a public page.
@@ -391,15 +394,16 @@ letting URL parsing silently change their destination. Wildcards, route patterns
 outside this iteration. Path validation must not silently change the intended
 destination. IDs remain stable when paths are edited.
 
-The list reuses CmsPageHeader, the shared collection search/filter treatment,
+The list reuses CmsPageHeader, the shared collection toolbar in search-only mode,
 CmsFeedback, CmsRecordRow/CmsRecordLink and CmsEmptyState. Search matches path and
-saved override text case-insensitively. Status filters are All paths / Custom /
-Inherited. A record is Custom when at least one saved override field is nonblank;
-Inherited means both fields use defaults. This status is not a publication state.
-Rows show the path, effective title, source/status and saved description summary.
-List changes do not edit records. Distinguish an empty collection from no matches;
-Clear filters resets search/status. There is no manual ordering, list-row Delete
-or artificial collection preview. Header actions use existing layout and wrapping.
+saved override text case-insensitively. There are no Custom/Inherited filters or
+aggregate status badges: every saved row is an override. Per-field Default/Override
+sources remain useful inside the editor. Rows show the path, effective title and
+description summary. List changes do not edit records. Distinguish an empty
+collection from no matches; Clear search resets the search field. There is no
+manual ordering, list-row Delete or collection preview. Header actions retain the
+shared layout and wrapping. Publications/Projects retain their existing required
+status controls; the shared toolbar's typed SEO variant has search only.
 
 Both defaults and record editors follow Header → Toolbar → Feedback → Content →
 Footer → collapsed Demo controls. Saving actions belong in the toolbar; footer
@@ -407,19 +411,19 @@ Discard is left and applicable Delete is right. Editors have Back navigation.
 Use the shared full-width single-column layout and field/control compositions.
 The record editor shows Path, SEO title override and description override, followed
 by a plain effective metadata summary. Default title and description are required;
-override fields are optional independently. Blank or whitespace-only overrides
-inherit the corresponding global default. Effective summaries show each value and
+override fields are optional independently, with at least one required per record.
+A blank or whitespace-only individual field inherits the corresponding global
+default. Saving both fields blank is rejected for new and saved records, preserving
+input and the saved snapshot. To use both defaults for a path, delete its override. Effective summaries show each value and
 Default/Override source. Missing working defaults show Not set in the summary only.
 No arbitrary text-length limits or exact search-rendering promises are included.
 
-Reset to defaults clears only the current record's title/description pair,
-retaining its ID/path. It is a local unsaved change, requires Save changes to
-commit, and does not change global defaults or other records. Disable it when
-already inherited or saving. Delete is available only for saved records in the
-editor's right footer group. Confirmation identifies the path and explains that
-the demo override is removed and defaults apply; it does not delete a public page.
-Cancel/failure preserve values, pending deletion blocks duplicates/dismissal, and
-success returns to the SEO list. Never-saved records have no Delete action.
+Delete is available only for saved records in the editor's right footer group.
+Confirmation identifies the path and explains that the demo override is removed
+and defaults apply; it does not delete a public page. Cancel/failure preserve values,
+pending deletion blocks duplicates/dismissal, and success returns to the SEO list.
+Never-saved records have no Delete action. There is no separate Reset action and
+no saved record whose sole purpose is to represent inheritance.
 
 SeoProvider retains only demo-saved defaults and path records across CMS
 navigation. Each editor owns its working values and request feedback. Save changes
@@ -427,7 +431,7 @@ captures the submitted values; later edits remain dirty. Failures retain edits f
 retry. New/unknown record IDs have clear recovery UI. Reload restores fixtures.
 All editors reuse CmsUnsavedChangesDialog/useCmsUnsavedChanges, including defaults
 validation and path/uniqueness validation for Save and leave. Lists need no dirty
-prompt. Saved values, reset, deletion and default changes never alter publication
+prompt. Saved values, deletion and default changes never alter publication
 content drafts, published snapshots, external sites or live Next.js metadata.
 No backend, persistence or generic form/state framework is introduced.
 
@@ -440,19 +444,19 @@ SEO follows Social profiles in desktop/mobile Content navigation; every existing
 editor guards this destination.
 
 Title fields consider Type/TextCursorInput and omit icons because labels suffice;
-description textareas and ghost Reset/Discard follow the icon-free default. Path
+description textareas and ghost Discard follow the icon-free default. Path
 uses leading Route over Link to identify a site pathname; search retains Search.
 New override uses Plus over FilePlus2 and Save retains Save over Check. Defaults
 navigation uses Settings2 over SlidersHorizontal. Back reuses CmsBackButton.
 Delete reuses CmsLifecycleButton/CmsDialog and the existing footer/confirmation
-icon decisions. Status uses HeroUI Select with its built-in indicator. SEO navigation
+icon decisions. SEO navigation
 retains Search over FileSearch under the existing ghost-navigation exception.
 
-Risk level 2: exact-path validation/uniqueness, per-field inheritance/reset,
+Risk level 2: exact-path validation/uniqueness, per-field inheritance and the nonblank-record rule,
 record/default isolation, pending-save snapshots, failure/deletion recovery and
 dirty navigation. Performance none: static text and small local collections.
 Controller reviews build, list/editor consistency, keyboard/focus, path validation,
-reset/discard/delete, both themes, 320px/200% zoom and unchanged public metadata.
+discard/delete, both themes, 320px/200% zoom and unchanged public metadata.
 
 ### Social profiles editor and preview
 

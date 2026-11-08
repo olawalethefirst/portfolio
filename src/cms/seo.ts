@@ -7,7 +7,6 @@ export function initialSeo(): SeoState {
   return {
     defaults: { title: "Portfolio", description: "Interactive portfolio and publication previews." },
     records: [
-      { id: "home", path: "/", ...emptySeoOverride() },
       { id: "contact", path: "/contact", title: "Contact", description: "Start a conversation about a project, collaboration, or question." },
       { id: "article", path: "/publication-details-lab", title: "Publication Details Lab", description: "A publication details layout lab for long-form, Markdown-authored writing." },
     ],
@@ -23,7 +22,6 @@ export function resolveSeo(defaults: SeoValues, override: SeoValues) {
 }
 export const sameSeoValues = (a: SeoValues, b: SeoValues) => a.title === b.title && a.description === b.description;
 export const sameSeoRecord = (a: SeoRecord, b: SeoRecord) => a.path === b.path && sameSeoValues(a, b);
-export const seoStatus = (value: SeoValues) => value.title.trim() || value.description.trim() ? "Custom" : "Inherited";
 
 export function normalizeSeoPath(value: string): string | undefined {
   if (!value.startsWith("/") || value.includes("//") || /[?#\\\s*\[\]]/.test(value)) return;
@@ -49,8 +47,10 @@ export function validateSeoDefaults(value: SeoValues): SeoErrors {
   return errors;
 }
 export function validateSeoRecord(value: SeoRecord, records: SeoRecord[]): SeoErrors {
+  const errors: SeoErrors = {};
   const path = normalizeSeoPath(value.path);
-  if (!path) return { path: "Enter an exact site path starting with /, without a query, fragment or route pattern." };
-  if (records.some((record) => record.id !== value.id && normalizeSeoPath(record.path) === path)) return { path: "An SEO override already exists for this path." };
-  return {};
+  if (!path) errors.path = "Enter an exact site path starting with /, without a query, fragment or route pattern.";
+  else if (records.some((record) => record.id !== value.id && normalizeSeoPath(record.path) === path)) errors.path = "An SEO override already exists for this path.";
+  if (!value.title.trim() && !value.description.trim()) errors.title = "Enter at least one title or description override.";
+  return errors;
 }

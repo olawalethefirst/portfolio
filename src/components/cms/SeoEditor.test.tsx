@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { initialSeo } from "@/src/cms/seo";
 import { SeoProvider, useSeo } from "@/src/cms/SeoProvider";
 import { CmsProvider } from "@/src/cms/CmsProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
@@ -26,31 +27,39 @@ function Saved() {
   return <><output aria-label="Saved default title">{saved.defaults.title}</output><output aria-label="Saved Contact title">{saved.records.find((record) => record.id === "contact")?.title ?? "Removed"}</output><output aria-label="Path count">{saved.records.length}</output></>;
 }
 
-it("saves defaults independently and updates inherited records while retaining explicit overrides", async () => {
+it("saves defaults independently and updates a blank individual field while retaining the explicit override", async () => {
+  const initialState = initialSeo();
+  initialState.records = initialState.records.map((record) => record.id === "contact" ? { ...record, title: "" } : record);
   const request = vi.fn(async () => {});
-  const { rerender } = render(<SeoProvider request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
+  const { rerender } = render(<SeoProvider initialState={initialState} request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Default title" }), { target: { value: "New default" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByLabelText("Saved default title").textContent).toBe("New default"));
-  expect(screen.getByLabelText("Saved Contact title").textContent).toBe("Contact");
-  rerender(<SeoProvider request={request}><SeoEditor id="home" /><Saved /></SeoProvider>);
-  expect(within(screen.getByRole("region", { name: "SEO effective metadata" })).getByText("New default")).toBeTruthy();
+  expect(screen.getByLabelText("Saved Contact title").textContent).toBe("");
+  rerender(<SeoProvider initialState={initialState} request={request}><SeoEditor id="contact" /><Saved /></SeoProvider>);
+  const summary = within(screen.getByRole("region", { name: "SEO effective metadata" }));
+  expect(summary.getByText("New default")).toBeTruthy();
+  expect(summary.getByText("Start a conversation about a project, collaboration, or question.")).toBeTruthy();
   expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("");
 });
 
-it("resets only the current override, retains its path and supports discard and save", async () => {
+it("rejects clearing both fields, preserves saved values and permits saving one inherited field", async () => {
   render(<SeoProvider request={async () => {}}><SeoEditor id="contact" /><Saved /></SeoProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Reset to defaults" }));
-  expect((screen.getByRole("textbox", { name: "Path" }) as HTMLInputElement).value).toBe("/contact");
-  expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("");
-  expect(within(screen.getByRole("region", { name: "SEO effective metadata" })).getByText("Portfolio")).toBeTruthy();
+  const title = screen.getByRole("textbox", { name: "SEO title override" });
+  fireEvent.change(title, { target: { value: "" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "SEO description override" }), { target: { value: " " } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(document.activeElement).toBe(title));
+  expect(title.getAttribute("aria-invalid")).toBe("true");
   expect(screen.getByLabelText("Saved Contact title").textContent).toBe("Contact");
+  expect((screen.getByRole("textbox", { name: "Path" }) as HTMLInputElement).value).toBe("/contact");
   fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-  expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("Contact");
-  fireEvent.click(screen.getByRole("button", { name: "Reset to defaults" }));
+  expect((title as HTMLInputElement).value).toBe("Contact");
+  fireEvent.change(title, { target: { value: "" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByLabelText("Saved Contact title").textContent).toBe(""));
-  expect(screen.getByLabelText("Saved default title").textContent).toBe("Portfolio");
+  expect(within(screen.getByRole("region", { name: "SEO effective metadata" })).getByText("Portfolio")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Reset to defaults" })).toBeNull();
 });
 
 it("validates new paths, saves normalized paths once and retains edits typed during saving", async () => {
@@ -69,11 +78,11 @@ it("validates new paths, saves normalized paths once and retains edits typed dur
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(request).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole("button", { name: "Reset to defaults" }).hasAttribute("disabled")).toBe(true);
+  expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
   fireEvent.change(screen.getByRole("textbox", { name: "SEO title override" }), { target: { value: "Newer edits" } });
   await act(async () => finish());
   expect((path as HTMLInputElement).value).toBe("/notes");
-  expect(screen.getByLabelText("Path count").textContent).toBe("4");
+  expect(screen.getByLabelText("Path count").textContent).toBe("3");
   expect(screen.getByRole("status", { name: "SEO save status" }).textContent).toContain("Unsaved changes");
   fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
   expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("Submitted");
@@ -85,7 +94,7 @@ it("changes a path without creating another record or changing defaults", async 
   fireEvent.change(screen.getByRole("textbox", { name: "Path" }), { target: { value: "/connect" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByRole("status", { name: "SEO save status" }).textContent).toContain("No unsaved changes"));
-  expect(screen.getByLabelText("Path count").textContent).toBe("3");
+  expect(screen.getByLabelText("Path count").textContent).toBe("2");
   expect(screen.getByLabelText("Saved Contact title").textContent).toBe("Contact");
   expect(screen.getByLabelText("Saved default title").textContent).toBe("Portfolio");
 });

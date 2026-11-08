@@ -4,7 +4,7 @@ import { Route, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSeo } from "@/src/cms/SeoProvider";
-import { emptySeoOverride, sameSeoRecord, sameSeoValues, seoStatus, validateSeoDefaults, validateSeoRecord, type SeoErrors, type SeoRecord } from "@/src/cms/seo";
+import { emptySeoOverride, sameSeoRecord, sameSeoValues, validateSeoDefaults, validateSeoRecord, type SeoErrors, type SeoRecord } from "@/src/cms/seo";
 import { Button } from "@/src/components/ui/Button";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsCheckbox } from "./CmsCheckbox";
@@ -78,12 +78,12 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
   const leave = navigation.leave;
   return <CmsShell section="seo" onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")} onPublications={() => leave("/admin/publications")} onAbout={() => leave("/admin/about")} onSocial={() => leave("/admin/social")} onSeo={() => leave("/admin/seo")}>
     <CmsBackButton disabled={pending} onPress={() => leave("/admin/seo")}>Back to SEO</CmsBackButton>
-    <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} status={defaultsMode ? undefined : seoStatus(value)} />
+    <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>{null}</CmsToolbar>
     <CmsFeedback label="SEO save status" error={!deleting && !navigation.dialog.open ? error : undefined}>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
-    <CmsEditorContent><CmsFieldSection title="Content" description={defaultsMode ? "Both defaults are required." : "Leave an override field blank to inherit its default."}>
+    <CmsEditorContent><CmsFieldSection title="Content" description={defaultsMode ? "Both defaults are required." : "Provide at least one override. A blank individual field inherits its default."}>
       {!defaultsMode ? <CmsField name="path" label="Path" value={value.path} error={errors.path} icon={<Route aria-hidden="true" className="size-4" />} hint="An exact site path such as /contact. Trailing slashes are normalized on save." onChange={(path) => setValue((current) => ({ ...current, path }))} /> : null}
-      <SeoFields value={value} defaults={defaultsMode ? undefined : saved.defaults} errors={errors} pending={pending} onChange={(next) => setValue((current) => ({ ...current, ...next }))} onReset={defaultsMode ? undefined : () => setValue((current) => ({ ...current, ...emptySeoOverride() }))} />
+      <SeoFields value={value} defaults={defaultsMode ? undefined : saved.defaults} errors={errors} onChange={(next) => setValue((current) => ({ ...current, ...next }))} />
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter actions={!defaultsMode && record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setError(""); setDeleting(true); }}>Delete override</CmsLifecycleButton> : undefined}>
       <Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(baseline); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button>

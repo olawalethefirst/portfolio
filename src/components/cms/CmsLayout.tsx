@@ -56,7 +56,7 @@ export function CmsRecordRow({ children, actions }: { children: ReactNode; actio
   </li>;
 }
 
-export function CmsRecordLink({ href, title, summary, metadata, status, thumbnail }: { href: string; title: string; summary: string; metadata: ReactNode; status: string; thumbnail?: ReactNode }) {
+export function CmsRecordLink({ href, title, summary, metadata, status, thumbnail }: { href: string; title: string; summary: string; metadata: ReactNode; status?: string; thumbnail?: ReactNode }) {
   return <Link href={href} className="group flex min-w-0 flex-wrap items-start gap-5 focus-visible:outline-2 focus-visible:outline-focus">
     {thumbnail}
     <div className="min-w-0 flex-1 basis-48">
@@ -64,7 +64,7 @@ export function CmsRecordLink({ href, title, summary, metadata, status, thumbnai
       <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted [overflow-wrap:anywhere]">{summary}</p>
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">{metadata}</div>
     </div>
-    <Chip size="sm" className="h-auto max-w-full whitespace-normal">{status}</Chip>
+    {status ? <Chip size="sm" className="h-auto max-w-full whitespace-normal">{status}</Chip> : null}
   </Link>;
 }
 

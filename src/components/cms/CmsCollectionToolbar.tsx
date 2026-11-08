@@ -8,26 +8,24 @@ import { Input } from "@/src/components/ui/Input";
 import { fieldClassName } from "@/src/components/ui/field-styles";
 import { CmsToolbar } from "./CmsLayout";
 
-export function CmsCollectionToolbar({
-  collection,
-  search,
-  onSearchChange,
-  status,
-  onStatusChange,
-}: {
-  collection: "publications" | "projects" | "seo";
+type CmsCollectionToolbarProps = {
   search: string;
   onSearchChange: (value: string) => void;
+} & ({
+  collection: "seo";
+} | {
+  collection: "publications" | "projects";
   status: string;
   onStatusChange: (value: string) => void;
-}) {
-  const statuses = collection === "seo"
-    ? [{ value: "all", label: "All paths" }, { value: "custom", label: "Custom" }, { value: "inherited", label: "Inherited" }]
-    : [{ value: "all", label: `All ${collection}` }, { value: "published", label: "Published" }, { value: "draft", label: "Drafts" }];
+});
+
+export function CmsCollectionToolbar(props: CmsCollectionToolbarProps) {
+  const { collection, search, onSearchChange } = props;
+  const statuses = [{ value: "all", label: `All ${collection}` }, { value: "published", label: "Published" }, { value: "draft", label: "Drafts" }];
   return (
-    <CmsToolbar actions={
-      <Select value={status} onChange={(next) => {
-        if (typeof next === "string" && statuses.some((option) => option.value === next)) onStatusChange(next);
+    <CmsToolbar actions={props.collection === "seo" ? undefined :
+      <Select value={props.status} onChange={(next) => {
+        if (typeof next === "string" && statuses.some((option) => option.value === next)) props.onStatusChange(next);
       }} className="w-full sm:w-44">
         <Label className="text-sm font-medium">Status</Label>
         <Select.Trigger className={`${fieldClassName} h-12 sm:text-sm`}>

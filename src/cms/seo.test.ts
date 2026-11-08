@@ -7,9 +7,9 @@ it("inherits title and description independently, preserving explicit overrides 
   expect(resolveSeo({ title: "Changed", description: "Changed description" }, override).description).toBe("Changed description");
   expect(resolveSeo({ title: "Changed", description: "Description" }, emptySeoOverride()).title).toBe("Changed");
 });
-it("requires defaults and permits empty overrides", () => {
+it("requires defaults and permits a partial override", () => {
   expect(validateSeoDefaults({ title: " ", description: "" })).toEqual({ title: "Enter a default SEO title.", description: "Enter a default SEO description." });
-  expect(validateSeoRecord({ id: "new", path: "/new", ...emptySeoOverride() }, initialSeo().records)).toEqual({});
+  expect(validateSeoRecord({ id: "new", path: "/new", title: "New title", description: "" }, initialSeo().records)).toEqual({});
 });
 it.each(["", "contact", "https://example.com/contact", "//example.com", "/contact?test=1", "/contact#form", "/a/../contact", "/a/%2e%2e/contact", "/bad\\path", "/a/%2f/b", "/a/%5c/b", "/bad path", "/a//b", "/:slug", "/[slug]", "/all/*", "/bad%zz"])("rejects an ambiguous or non-exact site path: %s", (path) => {
   expect(normalizeSeoPath(path)).toBeUndefined();
@@ -22,4 +22,17 @@ it("normalizes trailing slashes and equivalent unreserved encodings, preserves c
   expect(validateSeoRecord({ id: "new", path: "/contact/", ...emptySeoOverride() }, initialSeo().records).path).toContain("already");
   const contact = initialSeo().records.find((record) => record.path === "/contact")!;
   expect(validateSeoRecord({ ...contact, path: "/contact/" }, initialSeo().records)).toEqual({});
+});
+
+it("requires at least one nonblank override field for new and saved records", () => {
+  const records = initialSeo().records;
+  for (const value of [{ id: "new", path: "/new", title: " ", description: "" }, { ...records[0], title: "", description: "  " }]) {
+    expect(validateSeoRecord(value, records).title).toBeTruthy();
+  }
+  expect(validateSeoRecord({ id: "new", path: "/new", title: "", description: "Description only" }, records)).toEqual({});
+});
+it("seeds only actual overrides, leaving Homepage to inherit without a record", () => {
+  const { records } = initialSeo();
+  expect(records.some((record) => record.path === "/")).toBe(false);
+  for (const record of records) expect(Boolean(record.title.trim() || record.description.trim())).toBe(true);
 });
