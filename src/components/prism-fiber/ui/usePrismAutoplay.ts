@@ -11,8 +11,8 @@ import {
 
 const AUTOPLAY_DURATION_SECONDS = 6;
 
-export function usePrismAutoplay() {
-  const [state, setState] = useState<PrismState>(PRISM_INITIAL_STATE);
+export function usePrismAutoplay(initialState: PrismState = PRISM_INITIAL_STATE) {
+  const [state, setState] = useState<PrismState>(initialState);
   const [isAutoplayRequested, setIsAutoplayRequested] = useState(true);
   const autoplayProgress = useMotionValue(0);
   const shouldReduceMotion = useReducedMotion();

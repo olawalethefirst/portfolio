@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { BriefcaseBusiness, Mail } from "lucide-react";
 
 import { HeroControlPanel } from "../../../ui/hero-control-panel";
@@ -8,13 +8,28 @@ import { SectionContainer } from "../../../ui/SectionContainer";
 import { Button } from "../../../ui/Button";
 import { Prism, type PrismHandle } from "../../Prism";
 import { usePrismAutoplay } from "../usePrismAutoplay";
-import { PRISM_HERO_CONTENT, PRISM_HERO_TITLE } from "./prism-hero-content";
+import { PRISM_INITIAL_STATE, type PrismState } from "../../state/prism-state";
+import { PRISM_HERO_DEFAULT_CONTENT, type PrismHeroContent } from "./prism-hero-content";
 import { usePrismHomeFrame } from "./usePrismHomeFrame";
 import styles from "./PrismHeroLayout.module.css";
 
-export interface PrismHeroLayoutProps {
+interface PrismHeroLayoutBaseProps {
   allowsCameraZoom?: boolean;
 }
+
+export type PrismHeroLayoutProps =
+  | (PrismHeroLayoutBaseProps & {
+      mode?: "live";
+      content?: never;
+      initialStage?: never;
+      onStageChange?: never;
+    })
+  | (PrismHeroLayoutBaseProps & {
+      mode: "preview";
+      content: PrismHeroContent;
+      initialStage?: PrismState;
+      onStageChange?: (state: PrismState) => void;
+    });
 
 export interface PrismHeroLayoutHandle {
   setDiscoveryProgress(progress: number): void;
@@ -23,7 +38,12 @@ export interface PrismHeroLayoutHandle {
 export const PrismHeroLayout = forwardRef<
   PrismHeroLayoutHandle,
   PrismHeroLayoutProps
->(function PrismHeroLayout({ allowsCameraZoom = true }, ref) {
+>(function PrismHeroLayout(props, ref) {
+  const allowsCameraZoom = props.allowsCameraZoom ?? true;
+  const preview = props.mode === "preview";
+  const content = preview ? props.content : PRISM_HERO_DEFAULT_CONTENT;
+  const initialStage = preview ? props.initialStage ?? PRISM_INITIAL_STATE : PRISM_INITIAL_STATE;
+  const onStageChange = preview ? props.onStageChange : undefined;
   const prismRef = useRef<PrismHandle>(null);
   const {
     bottomBoundaryRef,
@@ -42,8 +62,9 @@ export const PrismHeroLayout = forwardRef<
     selectState,
     state,
     toggleAutoplay,
-  } = usePrismAutoplay();
-  const content = PRISM_HERO_CONTENT[state];
+  } = usePrismAutoplay(initialStage);
+  useEffect(() => onStageChange?.(state), [onStageChange, state]);
+  const stage = content.stages[state];
 
   useImperativeHandle(ref, () => ({
     setDiscoveryProgress(progress) {
@@ -83,16 +104,16 @@ export const PrismHeroLayout = forwardRef<
               className={`${styles.editorial} pointer-events-none absolute inset-x-0 top-4 z-10 mx-auto flex w-auto max-w-xl flex-col items-center text-center md:landscape:relative md:landscape:inset-auto md:landscape:col-start-1 md:landscape:row-span-2 md:landscape:row-start-1 md:landscape:w-full md:landscape:mx-0 md:landscape:items-start md:landscape:justify-self-start md:landscape:self-center md:landscape:text-left lg:relative lg:inset-auto lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:w-full lg:mx-0 lg:items-start lg:justify-self-start lg:self-center lg:text-left`}
             >
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-accent sm:mb-4">
-                Product delivery
+                {content.eyebrow}
               </p>
               <h1 className="max-w-2xl text-3xl font-semibold leading-[0.98] tracking-[-0.045em] text-balance sm:text-5xl lg:text-6xl">
-                {PRISM_HERO_TITLE}
+                {content.headline}
               </h1>
               <h2 className="hidden lg:block mt-2 text-xl font-semibold tracking-[-0.02em] sm:text-2xl">
-                {content.tagline}
+                {stage.tagline}
               </h2>
               <p className="mt-2 max-w-lg text-sm leading-6 text-muted sm:text-base sm:leading-7">
-                {content.description}
+                {stage.description}
               </p>
               <div className="pointer-events-auto mt-4 flex flex-nowrap gap-3 sm:mt-6">
                 <Button

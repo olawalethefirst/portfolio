@@ -5,6 +5,12 @@ export interface PrismHeroStateContent {
   readonly description: string;
 }
 
+export interface PrismHeroContent {
+  eyebrow: string;
+  headline: string;
+  stages: Record<PrismState, PrismHeroStateContent>;
+}
+
 export const PRISM_HERO_TITLE = "Ideas into products.";
 
 export const PRISM_HERO_CONTENT = {
@@ -21,3 +27,9 @@ export const PRISM_HERO_CONTENT = {
     description: "Deliver a coherent product built to evolve.",
   },
 } satisfies Record<PrismState, PrismHeroStateContent>;
+
+export const PRISM_HERO_DEFAULT_CONTENT = {
+  eyebrow: "Product delivery",
+  headline: PRISM_HERO_TITLE,
+  stages: PRISM_HERO_CONTENT,
+} satisfies PrismHeroContent;
