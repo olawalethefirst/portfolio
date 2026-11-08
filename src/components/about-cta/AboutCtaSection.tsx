@@ -11,6 +11,7 @@ import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSecti
 import { SectionContainer } from "@/src/components/ui/SectionContainer";
 
 import { createSummaryReveal } from "./reveal";
+import { ABOUT_DEFAULT_CONTENT } from "./about-content";
 
 gsap.registerPlugin(useGSAP);
 
@@ -33,11 +34,13 @@ function serverCanAnimate() {
 }
 
 interface AboutCtaSectionProps {
+  heading?: string;
   summary?: string;
 }
 
 export function AboutCtaSection({
-  summary = "I bring ideas to life through thoughtful design and careful engineering. My work connects what people need with what technology can make possible. From early exploration to finished experiences, I turn complex problems into clear, useful interfaces. I care about the details that make digital products feel intuitive, accessible, and a pleasure to use.",
+  heading = ABOUT_DEFAULT_CONTENT.heading,
+  summary = ABOUT_DEFAULT_CONTENT.biography,
 }: AboutCtaSectionProps) {
   const titleId = useId();
   const sectionRef = useRef<HTMLElement>(null);
@@ -75,7 +78,7 @@ export function AboutCtaSection({
     <PerspectiveGridSection ref={sectionRef} gridOpacity={0.2} aria-labelledby={titleId} className="relative flex min-h-dvh items-center bg-surface pt-16 pb-[var(--navigation-bottom-clearance)] lg:pt-28">
       <SectionContainer>
         <h2 id={titleId} className="mb-2 text-center text-sm font-medium text-muted lg:mb-3">
-          About me
+          {heading}
         </h2>
         <div className="mx-auto max-w-[36ch] text-[clamp(1.25rem,1.5vw,1.5rem)]">
           <p ref={summaryRef} className="text-justify leading-[1.35] font-medium tracking-tight whitespace-pre-wrap [overflow-wrap:anywhere]">

@@ -39,6 +39,14 @@ describe("About CTA", () => {
     expect(paragraph.querySelector("[style*='opacity']")).not.toBeNull();
   });
 
+  it("accepts editable heading and biography without changing its contact CTA", () => {
+    reducedMotionPreference(true);
+    render(<AboutCtaSection heading="Meet the maker" summary="A custom biography." />);
+    expect(screen.getByRole("region", { name: "Meet the maker" })).toBeTruthy();
+    expect(screen.getByText("A custom biography.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Start a conversation" }).getAttribute("href")).toBe("/contact");
+  });
+
   it("links the conversation CTA to the contact form", () => {
     reducedMotionPreference(true);
     render(<AboutCtaSection />);
