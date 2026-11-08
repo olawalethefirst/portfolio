@@ -1,3 +1,4 @@
+import { SocialProvider } from "@/src/cms/SocialProvider";
 import { AboutProvider } from "@/src/cms/AboutProvider";
 import { HeroProvider } from "@/src/cms/HeroProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
@@ -21,5 +22,5 @@ export default function AdminLayout({
     process.env.CMS_DEMO_ENABLED !== "true"
   )
     notFound();
-  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider>{children}</AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
+  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{children}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
 }

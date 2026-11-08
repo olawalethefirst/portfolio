@@ -56,7 +56,8 @@ under `/admin/publications` and `/admin/projects`; singleton routes
 Use `/new` for creation and stable record IDs for editing. Separate preview routes are deferred. Route names are implementation proposals.
 
 CMS Content navigation follows the homepage section order: Hero →
-Projects → Publications → About, in both the desktop sidebar and mobile drawer.
+Projects → Publications → About → Social profiles, in both the desktop sidebar
+and mobile drawer.
 The Hero navigation item and editor use the short label “Hero”. Its leading
 PanelTop icon was chosen over Sparkles to identify the top page section rather
 than an effect. It uses the shared navigation icon sizing and decorative treatment,
@@ -360,6 +361,51 @@ follow the publication draft/publish distinction, with project-specific fields.
 Comment editing and moderation are excluded. Reusing Markdown input utilities
 never introduces CommentMarkdown into PublicationDetails or makes comments editable.
 
+### Social profiles editor and preview
+
+`/admin/social` edits the three existing GitHub, LinkedIn and X destinations in
+the shared full-width editor layout. The fixed fields use URL inputs with visible
+labels. Save changes requires complete HTTPS URLs for all three profiles; relative,
+blank, HTTP, malformed and credential-bearing URLs are invalid. No provider-host
+restriction or arbitrary text limit is imposed. Surrounding whitespace is ignored
+for validation/preview without rewriting working or saved text. Preview URLs are
+parsed before reaching the public link renderer; invalid values have no href.
+
+SocialProvider owns only the last demo-saved snapshot across CMS navigation.
+Working values stay in SocialEditor. The submitted snapshot is captured before
+the mock request; later edits remain dirty. Duplicate requests are blocked, failures
+preserve input and allow retry, and Demo controls can deliberately fail the next
+save. Discard restores saved values and clears validation/request feedback. Reload
+resets fixtures. Save and leave uses the shared guard and validation, retaining the
+dialog/destination on failure and letting Stay focus the first invalid field.
+There are no publish, unpublish, delete, add-profile or label/icon editing controls.
+
+SocialPreview shows only the public SocialLinks navigation, mounted on demand in
+CmsPreviewFrame. The renderer is shared with ContactConversationSection; its
+fixed labels, icon paths, sizes, theme treatment, external-link names and default
+public destinations live under contact-conversation, with no CMS imports. Invalid
+preview destinations use HeroUI's disabled-link presentation without substituting
+saved/default URLs. Distinguish partially unavailable profiles from a preview
+with no valid links. No contact form is mounted in this preview.
+
+CmsPreviewLinks confirms each valid profile destination before opening a new tab,
+including modified and middle clicks. Cancel/nested Escape stays in preview; exit
+restores the same working values, initiating focus and scroll without saving.
+Demo values never change the real contact page. Social profiles follows About in
+shared desktop/mobile navigation; every editor guards this destination.
+
+URL inputs consider Link/ExternalLink and use leading Link to identify a value
+rather than navigation. Save retains Save over Check; Preview retains Maximize2
+over Eye. Discard stays icon-free. The navigation item uses leading Share2 over
+UsersRound as the social-destinations cue, under the existing ghost-navigation
+exception. Public profile logos and labels remain fixed.
+
+Risk level 2: URL handling, failed/pending saves, snapshot isolation, navigation
+and confirmed preview-link opening need focused tests. Performance is none:
+three static links, no animation or heavy scene added. Controller review covers
+build, both themes, desktop/320px/200% zoom, keyboard/labels/focus, nested dialogs,
+mobile drawer behavior and unchanged public contact rendering.
+
 ### About editor and preview
 
 `/admin/about` edits Heading and Biography using the full-width shared editor
@@ -432,7 +478,7 @@ keep their existing in-preview behavior.
 
 Every editable CMS section uses `useCmsUnsavedChanges` and
 `CmsUnsavedChangesDialog` from `src/components/cms/CmsUnsavedChanges.tsx`.
-Publications, Projects, Hero and About share this composition; Social and SEO
+Publications, Projects, Hero, About and Social share this composition; SEO
 must reuse it when implemented. Collection lists have no unsaved form values
 and need no save-and-leave dialog.
 
@@ -621,7 +667,7 @@ controlled demo review and is not authentication. The provider retains saved and
 published demo values across CMS navigation; reload resets them. New draft links
 cease to exist after reload and show a recovery message.
 
-Hero, Projects, Publications and About appear in navigation. Additional content areas are
+Hero, Projects, Publications, About and Social profiles appear in navigation. Additional content areas are
 added when their editors are implemented, so the shell has no dead links.
 Cover selection supports local files and existing fixture images. Full-screen
 preview stays in the same tab and uses native document scrolling.
