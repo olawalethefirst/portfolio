@@ -10,7 +10,6 @@ import { projectStatus } from "@/src/cms/projects";
 import { Button } from "@/src/components/ui/Button";
 import { CmsEmptyState, CmsPageHeader, CmsFeedback, CmsRecordRow, CmsRecordLink } from "./CmsLayout";
 import { CmsOrderActions, CmsOrderHint } from "./CmsOrderActions";
-import { CmsShell } from "./CmsShell";
 import { CmsCollectionToolbar } from "./CmsCollectionToolbar";
 
 const CollectionPreview = dynamic(() => import("./ProjectCollectionPreview").then((module) => module.ProjectCollectionPreview), {
@@ -32,7 +31,7 @@ export function ProjectList() {
     (status === "all" || (status === "published" ? Boolean(published) : !published)),
   );
   if (preview) return <CmsPreviewFrame label="Project section preview" exitLabel="Exit project section preview" closeRef={closeRef} onExit={() => setPreview(false)}><CollectionPreview records={records} /></CmsPreviewFrame>;
-  return <CmsShell section="projects">
+  return <>
     <CmsPageHeader title="Projects" description="The work you want to share." action={<CmsCollectionActions collection="project" pending={pending} onNew={() => { working.clear("new"); router.push("/admin/projects/new"); }} onPreview={() => { capture("project-section-trigger"); setPreview(true); }} />} />
     <CmsCollectionToolbar collection="projects" search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} />
     <CmsFeedback>
@@ -51,5 +50,5 @@ export function ProjectList() {
       </CmsRecordRow>)}
     </ul>
     {!shown.length ? <CmsEmptyState title={records.length ? "No matching projects" : "Your first project starts here"} description={records.length ? "Try a different search or choose another status." : "Create a project to start sharing your work."} action={records.length ? <Button variant="ghost" onPress={() => { setSearch(""); setStatus("all"); }}>Clear filters</Button> : null} /> : null}
-  </CmsShell>;
+  </>;
 }

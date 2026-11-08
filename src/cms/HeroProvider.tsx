@@ -1,28 +1,28 @@
 "use client";
 
 import { useDraftStore, type DraftStore } from "./working-drafts";
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialHero, type HeroDraft } from "./hero";
-const HeroContext = createContext<{ value: HeroDraft; saved: HeroDraft; save: (value: HeroDraft) => Promise<void>; pending: boolean; working: DraftStore<HeroDraft> } | null>(null);
+const HeroContext = createContext<{ saved: HeroDraft; save: (value: HeroDraft) => Promise<void>; pending: boolean; working: DraftStore<HeroDraft> } | null>(null);
 async function demoRequest() {
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
 export function HeroProvider({ children, request = demoRequest }: { children: ReactNode; request?: () => Promise<void> }) {
   const working = useDraftStore<HeroDraft>();
-  const [value, setValue] = useState(initialHero);
   const [saved, setSaved] = useState(initialHero);
   const [pending, setPending] = useState(false);
+  const saving = useRef(false);
   async function save(next: HeroDraft) {
-    if (pending) throw new Error("A save is already in progress.");
+    if (saving.current) throw new Error("A save is already in progress.");
+    const submitted = structuredClone(next);
+    saving.current = true;
     setPending(true);
     try {
       await request();
-      const copy = structuredClone(next);
-      setValue(copy);
-      setSaved(copy);
-    } finally { setPending(false); }
+      setSaved(submitted);
+    } finally { saving.current = false; setPending(false); }
   }
-  return <HeroContext value={{ working, value, saved, save, pending }}>{children}</HeroContext>;
+  return <HeroContext value={{ working, saved, save, pending }}>{children}</HeroContext>;
 }
 export function useHero() {
   const context = useContext(HeroContext);

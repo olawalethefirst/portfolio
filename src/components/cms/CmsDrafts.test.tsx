@@ -1,3 +1,4 @@
+import { CmsShell } from "./CmsShell";
 import { AboutProvider } from "@/src/cms/AboutProvider";
 import { CmsProvider } from "@/src/cms/CmsProvider";
 import { HeroProvider } from "@/src/cms/HeroProvider";
@@ -15,14 +16,14 @@ import { PublicationEditor } from "./PublicationEditor";
 import { SeoEditor } from "./SeoEditor";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 beforeEach(() => {
   push.mockReset();
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
 });
 afterEach(() => vi.unstubAllGlobals());
 function Providers({ children }: { children: ReactNode }) {
-  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider><SeoProvider>{children}</SeoProvider></SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
+  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider><SeoProvider><CmsShell>{children}</CmsShell></SeoProvider></SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
 }
 it.each([
   ["Hero", () => <HeroEditor />, "Headline"],

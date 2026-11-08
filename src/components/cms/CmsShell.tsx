@@ -2,8 +2,8 @@
 
 import { Drawer } from "@heroui/react/drawer";
 import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun, UserRound, MessagesSquare, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { setGlobalMode, useActiveTheme } from "@/src/theme/active-theme";
 import { Button } from "@/src/components/ui/Button";
 
@@ -16,10 +16,12 @@ const navigationItems = [
   { id: "seo", label: "SEO", path: "/admin/seo", Icon: Search },
 ] as const;
 
-export function CmsShell({ children, section = "publications" }: {
-  children: ReactNode;
-  section?: (typeof navigationItems)[number]["id"];
-}) {
+export const CmsPreviewVisibility = createContext<Dispatch<SetStateAction<boolean>> | null>(null);
+
+export function CmsShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const section = navigationItems.find(({ path }) => pathname === path || pathname.startsWith(`${path}/`))?.id;
+  const [preview, setPreview] = useState(false);
   const router = useRouter();
   const navigate = (path: string) => router.push(path);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,14 +45,15 @@ export function CmsShell({ children, section = "publications" }: {
     </nav>
   );
   return (
-    <div className="min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <a
+    <CmsPreviewVisibility value={setPreview}>
+    <div className={preview ? "min-h-dvh bg-surface text-foreground" : "min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]"}>
+      {!preview && <a
         href="#cms-main"
         className="sr-only z-50 bg-surface p-4 focus:not-sr-only focus:fixed"
       >
         Skip to content
-      </a>
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-5 py-8 lg:flex">
+      </a>}
+      {!preview && <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-5 py-8 lg:flex">
         <p className="text-lg font-semibold tracking-tight">
           Content studio<span className="text-accent">.</span>
         </p>
@@ -61,9 +64,9 @@ export function CmsShell({ children, section = "publications" }: {
           <br />
           Preview it as your readers will see it.
         </div>
-      </aside>
+      </aside>}
       <div className="min-w-0">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3 sm:px-8">
+        {!preview && <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3 sm:px-8">
           <div className="flex items-center gap-3">
             <div className="lg:hidden">
               <Drawer isOpen={menuOpen} onOpenChange={setMenuOpen}>
@@ -102,14 +105,15 @@ export function CmsShell({ children, section = "publications" }: {
           >
             {mode === "dark" ? "Light mode" : "Dark mode"}
           </Button>
-        </header>
+        </header>}
         <main
           id="cms-main"
-          className="mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12"
+          className={preview ? "min-h-dvh" : "mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12"}
         >
           {children}
         </main>
       </div>
     </div>
+    </CmsPreviewVisibility>
   );
 }

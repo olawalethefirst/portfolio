@@ -1,10 +1,14 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { SocialProvider, useSocial } from "@/src/cms/SocialProvider";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ContactEditor } from "./ContactEditor";
 
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 beforeEach(() => {
   push.mockReset();
   vi.stubGlobal("scrollTo", vi.fn());

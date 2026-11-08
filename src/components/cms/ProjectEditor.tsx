@@ -8,7 +8,6 @@ import { emptyProject, projectStatus, sameProject, validateProject, type Project
 import { Button } from "@/src/components/ui/Button";
 import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsShell } from "./CmsShell";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
@@ -24,7 +23,7 @@ export function ProjectEditor({ id }: { id: string }) {
   const { records } = useProjects();
   const router = useRouter();
   const record = records.find((item) => item.id === id);
-  if (id !== "new" && !record) return <CmsShell section="projects"><CmsBackButton onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton><CmsPageHeader title="Project unavailable" description="Return to projects to start again." /></CmsShell>;
+  if (id !== "new" && !record) return <><CmsBackButton onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton><CmsPageHeader title="Project unavailable" description="Return to projects to start again." /></>;
   return <ProjectEditorForm initialRecord={record} />;
 }
 function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord }) {
@@ -60,7 +59,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
     }
   }
   if (preview) return <CmsPreviewFrame label="Project preview" exitLabel="Exit project preview" closeRef={closeRef} onExit={() => setPreview(false)}><ProjectPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="projects">
+  return <>
     <CmsBackButton disabled={pending} onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton>
     <CmsPageHeader title={initialRecord ? "Edit project" : "New project"} description="Shape your project, then preview it as visitors will see it." status={record ? projectStatus({ ...record, draft: value }) : "New draft"} />
     <CmsToolbar actions={<><Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button><Button startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending} onPress={() => void act("publish")}>{record?.published ? "Update published" : "Publish"}</Button></>}>
@@ -86,5 +85,5 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
     </>}>
       {dialog === "delete" ? `Delete “${value.name || "Untitled project"}”? This removes the saved draft, published version and current edits.` : "This removes the published version. Your saved draft and current edits remain available."}
     </CmsDialog>
-  </CmsShell>;
+  </>;
 }

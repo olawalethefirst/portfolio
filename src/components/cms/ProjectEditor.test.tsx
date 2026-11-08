@@ -1,11 +1,15 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { labProjects } from "@/src/components/project-item/lab-projects";
 import { ProjectProvider, useProjects } from "@/src/cms/ProjectProvider";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ProjectEditor } from "./ProjectEditor";
 import { ProjectList } from "./ProjectList";
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 
 vi.mock("@/src/components/project-item/ProjectDeviceStage", () => ({
   ProjectDeviceStage: ({ platform }: { platform: string }) => <p>{platform} device preview</p>,

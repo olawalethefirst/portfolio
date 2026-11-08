@@ -1,12 +1,22 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { HeroProvider } from "@/src/cms/HeroProvider";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { HeroEditor } from "./HeroEditor";
 
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 // Keep the real public layout and CTA links; replace only the WebGL scene.
 vi.mock("@/src/components/prism-fiber/Prism", () => ({ Prism: () => null }));
+
+// Exercise the real preview without depending on dynamic-import scheduling.
+vi.mock("next/dynamic", async () => {
+  const { HeroPreview } = await import("./HeroPreview");
+  return { default: () => HeroPreview };
+});
 
 beforeEach(() => {
   push.mockReset();

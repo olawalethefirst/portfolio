@@ -1,10 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
+import { fireEvent, render as renderPage, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SeoProvider } from "@/src/cms/SeoProvider";
 import { initialSeo } from "@/src/cms/seo";
 import { SeoList } from "./SeoList";
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 beforeEach(() => {
   push.mockReset();
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));

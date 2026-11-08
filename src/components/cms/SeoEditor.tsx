@@ -11,7 +11,6 @@ import { CmsDialog } from "./CmsDialog";
 import { CmsField } from "./CmsField";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
-import { CmsShell } from "./CmsShell";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { SeoFields } from "./SeoFields";
 
@@ -19,10 +18,10 @@ export function SeoEditor({ id }: { id: string }) {
   const { saved } = useSeo();
   const router = useRouter();
   const record = saved.records.find((item) => item.id === id);
-  if (id !== "defaults" && id !== "new" && !record) return <CmsShell section="seo">
+  if (id !== "defaults" && id !== "new" && !record) return <>
     <CmsBackButton onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title="SEO override unavailable" description="Return to SEO to start again." />
-  </CmsShell>;
+  </>;
   return <SeoEditorForm key={id} defaultsMode={id === "defaults"} initialRecord={record} />;
 }
 
@@ -71,7 +70,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
     try { await deleteRecord(id); router.push("/admin/seo"); }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Delete failed. Your changes are still here."); }
   }
-  return <CmsShell section="seo">
+  return <>
     <CmsBackButton disabled={pending} onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>{null}</CmsToolbar>
@@ -87,5 +86,5 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
       <Button variant="ghost" isDisabled={pending} onPress={() => setDeleting(false)}>Cancel</Button>
       <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void remove()}>Delete</CmsLifecycleButton>
     </>}>Remove the override for {record?.path}? This removes its saved values and current edits. Global defaults will apply. The public page is not deleted.</CmsDialog>
-  </CmsShell>;
+  </>;
 }

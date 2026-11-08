@@ -9,11 +9,10 @@ import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFieldSection, CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsShell } from "./CmsShell";
 const HeroPreview = dynamic(() => import("./HeroPreview").then((m) => m.HeroPreview), { ssr: false, loading: () => <p role="status">Loading hero preview…</p> });
 const stages = [["idea", "Idea"], ["iterate", "Iterate"], ["solution", "Solution"]] as const;
 export function HeroEditor() {
-  const { value: saved, save, pending, working } = useHero();
+  const { saved, save, pending, working } = useHero();
   const { value, setValue } = useWorkingDraft(working, "hero", () => saved);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
@@ -43,7 +42,7 @@ export function HeroEditor() {
   }
   const update = (patch: Partial<HeroDraft>) => setValue((current) => ({ ...current, ...patch }));
   if (preview) return <CmsPreviewFrame label="Hero preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><HeroPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="hero">
+  return <>
     <CmsPageHeader title="Hero" description="Edit the introduction and the copy shown for each fixed stage." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="hero-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("hero-preview-trigger"); setPreview(true); }}>Preview</Button>
@@ -58,5 +57,5 @@ export function HeroEditor() {
       </CmsFieldSection>)}</div>
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setError(""); setErrors({}); }}>Discard changes</Button></CmsFooter>
-  </CmsShell>;
+  </>;
 }

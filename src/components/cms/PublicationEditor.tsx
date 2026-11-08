@@ -16,7 +16,6 @@ import {
 import { Button } from "@/src/components/ui/Button";
 import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsShell } from "./CmsShell";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
@@ -30,10 +29,10 @@ export function PublicationEditor({ id }: { id: string }) {
   const record = records.find((item) => item.id === id);
   if (id !== "new" && !record)
     return (
-      <CmsShell>
+      <>
         <CmsBackButton onPress={() => router.push("/admin/publications")}>Back to publications</CmsBackButton>
         <CmsPageHeader title="Publication unavailable" description="Return to publications to start again." />
-      </CmsShell>
+      </>
     );
   return <PublicationEditorForm initialRecord={record} />;
 }
@@ -105,7 +104,7 @@ function PublicationEditorForm({
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
-    <CmsShell>
+    <>
       <CmsBackButton disabled={pending} onPress={() => router.push("/admin/publications")}>Publications</CmsBackButton>
       <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
       <CmsToolbar actions={<>
@@ -144,7 +143,7 @@ function PublicationEditorForm({
       </CmsDialog>
       <CmsDialog
         open={dialog === "unpublish"}
-        onClose={() => setDialog(null)}
+        onClose={() => { if (!pending) setDialog(null); }}
         title="Unpublish this publication?"
         actions={
           <>
@@ -164,6 +163,6 @@ function PublicationEditorForm({
         This removes the published version. Your draft and current edits
         will remain available.
       </CmsDialog>
-    </CmsShell>
+    </>
   );
 }

@@ -126,7 +126,7 @@ Move up/down through shared CmsOrderActions. Media, ordering,
 publication filters and other entity-specific
 controls remain optional without changing the overall arrangement.
 
-Fullscreen previews share one presentation frame: replace the admin shell,
+Fullscreen previews share one presentation frame: hide the shared shell chrome,
 show only the edited section/view, use the public rendering components, and
 position the unstyled HeroUI CloseButton top-right through its wrapper. Share
 Escape handling, editor focus/scroll restoration and unsaved-value continuity.
@@ -145,7 +145,14 @@ reuse the same layout and form primitives with different social-link data and
 completion children. ImagePicker accepts a preview child. Avoid a generic form
 engine or configuration-driven replacement for these small compositions.
 
-CmsShell owns a single navigation definition (section IDs, labels, paths and icons).
+The server-owned `app/admin/layout.tsx` renders CmsShell once around the route
+content, inside the content providers. Pages render only their own content.
+CmsShell derives the active section from `usePathname`, including nested editor
+routes, and owns one navigation definition (section IDs, labels, paths and icons).
+Its preview visibility context hides the sidebar, header and editor gutters
+while CmsPreviewFrame is mounted. The shared main landmark stays mounted;
+CmsPreviewFrame is a named section within it. Preview exit restores the chrome
+and existing focus/scroll behavior without creating another shell.
 It navigates directly through the router. Editors do not intercept navigation
 or register per-screen navigation callbacks.
 Consumers do not repeat one callback and hardcoded route per navigation item.
@@ -154,7 +161,7 @@ Desktop sidebar and mobile drawer share this same navigation path.
 Shared presentation lives in `src/components/cms/CmsLayout.tsx`. Editors retain
 entity-owned working values and request handling. `CmsPreviewFrame.tsx` owns the
 preview frame and shared lifecycle hook; each editor captures its initiating
-control and scroll before replacing the shell. Previews use the document scroll
+control and scroll before hiding the shell chrome. Previews use the document scroll
 context so public sticky content and reading progress can observe scrolling.
 On exit the remounted editor restores its initiating control and scroll position.
 Heavy public scenes remain behind their existing on-demand preview boundaries.
@@ -305,7 +312,7 @@ Preview only the selected section, without the hero, About or page navigation.
 PublicationsSection's named standalone layout removes the negative margin used
 to overlap the following public section while retaining its sticky scroll runway.
 
-Both collections use CmsPreviewFrame/useCmsPreview: replace the admin shell,
+Both collections use CmsPreviewFrame/useCmsPreview: hide the shared shell chrome,
 focus the unstyled HeroUI exit control, support Escape, and restore the same list
 filters, order, focus and scroll on exit. Opening/closing never saves, publishes,
 unpublishes or changes snapshots. Load preview modules on demand; project scenes
@@ -339,6 +346,7 @@ remain controller-owned under CONSTRAINTS.md.
    snapshot. Edits never mutate the published snapshot. Save updates the draft;
    publish validates and copies the current working values into both snapshots.
    Unpublish removes only the demo-published snapshot after confirmation.
+   Both Delete and Unpublish block confirmation dismissal while a request is pending.
 4. Draft save permits incomplete content. Publish requires nonblank title,
    summary, selected cover, publication date, and either nonblank local body or
    a valid HTTPS external destination. Future dates show a scheduling-not-supported
@@ -484,7 +492,7 @@ is explicit. Discard restores saved values and clears validation/feedback.
 Working drafts survive editor unmounts without navigation prompts. Reload restores
 fixtures. There is no backend, durable storage or inquiry inbox.
 
-Preview replaces the CMS shell through CmsPreviewFrame and shows the full public
+Preview hides the shared shell chrome through CmsPreviewFrame and shows the full public
 contact section with the working URLs and three-step form. Invalid
 URLs remain unavailable and are identified by a status message. Preview entry/exit
 does not save or discard; it restores values, initiating focus and scroll.
@@ -550,6 +558,14 @@ Performance is possible because the public reveal animation mounts on demand:
 controller checks responsive typing/scrolling and repeated preview visits with a
 long biography, ensuring prior reveal effects are cleaned up. Controller also
 reviews desktop/320px/200% zoom, both themes, reduced motion and keyboard/focus.
+
+### Hero save coordination
+
+HeroProvider exposes one saved snapshot plus its provider-owned working drafts.
+Its synchronous ref lock rejects duplicate saves before React rerenders. It deep
+clones the submitted Hero content before awaiting the request, so later edits
+cannot alter that submission. Success replaces only the saved snapshot; failure
+preserves it, and both outcomes release the lock. Working drafts remain separate.
 
 ### Hero validation and preview destinations
 

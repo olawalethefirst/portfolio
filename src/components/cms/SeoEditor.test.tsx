@@ -1,11 +1,15 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { initialSeo } from "@/src/cms/seo";
 import { SeoProvider, useSeo } from "@/src/cms/SeoProvider";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SeoEditor } from "./SeoEditor";
 
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 beforeEach(() => {
   push.mockReset();
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));

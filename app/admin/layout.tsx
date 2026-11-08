@@ -1,3 +1,4 @@
+import { CmsShell } from "@/src/components/cms/CmsShell";
 import { SeoProvider } from "@/src/cms/SeoProvider";
 import { SocialProvider } from "@/src/cms/SocialProvider";
 import { AboutProvider } from "@/src/cms/AboutProvider";
@@ -23,5 +24,5 @@ export default function AdminLayout({
     process.env.CMS_DEMO_ENABLED !== "true"
   )
     notFound();
-  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider><SeoProvider>{children}</SeoProvider></SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
+  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider><SeoProvider><CmsShell>{children}</CmsShell></SeoProvider></SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
 }

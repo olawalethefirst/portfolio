@@ -1,7 +1,9 @@
 "use client";
 
 import { CloseButton } from "@heroui/react/close-button";
-import { useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useContext, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+
+import { CmsPreviewVisibility } from "./CmsShell";
 
 // Lives in the owning screen so restoration runs after its controls remount.
 export function useCmsPreview(active: boolean, onExit: () => void) {
@@ -36,8 +38,13 @@ export function useCmsPreview(active: boolean, onExit: () => void) {
 }
 
 export function CmsPreviewFrame({ label, exitLabel, closeRef, onExit, children }: { label: string; exitLabel: string; closeRef: RefObject<HTMLButtonElement | null>; onExit: () => void; children: ReactNode }) {
-  return <main aria-label={label} className="min-h-dvh bg-surface text-foreground">
+  const setPreview = useContext(CmsPreviewVisibility);
+  useLayoutEffect(() => {
+    setPreview?.(true);
+    return () => setPreview?.(false);
+  }, [setPreview]);
+  return <section aria-label={label} className="min-h-dvh bg-surface text-foreground">
     {children}
     <div className="fixed right-3 top-3 z-[120]"><CloseButton ref={closeRef} aria-label={exitLabel} onPress={onExit} /></div>
-  </main>;
+  </section>;
 }

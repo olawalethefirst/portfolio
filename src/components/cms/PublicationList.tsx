@@ -11,7 +11,6 @@ import { Button } from "@/src/components/ui/Button";
 import { CmsCollectionToolbar } from "./CmsCollectionToolbar";
 import { CmsEmptyState, CmsPageHeader, CmsFeedback, CmsRecordRow, CmsRecordLink } from "./CmsLayout";
 import { CmsOrderActions, CmsOrderHint } from "./CmsOrderActions";
-import { CmsShell } from "./CmsShell";
 
 const CollectionPreview = dynamic(() => import("./PublicationCollectionPreview").then((module) => module.PublicationCollectionPreview), {
   ssr: false,
@@ -39,7 +38,7 @@ export function PublicationList() {
   });
   if (preview) return <CmsPreviewFrame label="Publication section preview" exitLabel="Exit publication section preview" closeRef={closeRef} onExit={() => setPreview(false)}><CollectionPreview records={records} /></CmsPreviewFrame>;
   return (
-    <CmsShell>
+    <>
       <CmsPageHeader title="Publications" description="Ideas, observations, and work worth sharing. Start a draft or return to a story." action={<CmsCollectionActions collection="publication" pending={pending} onNew={() => { working.clear("new"); router.push("/admin/publications/new"); }} onPreview={() => { capture("publication-section-trigger"); setPreview(true); }} />} />
       <CmsCollectionToolbar collection="publications" search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} />
       <CmsFeedback><p>{shown.length} {shown.length === 1 ? "publication" : "publications"}</p><CmsOrderHint /></CmsFeedback>
@@ -61,6 +60,6 @@ export function PublicationList() {
       ) : (
         <CmsEmptyState title={records.length ? "No matching publications" : "Your first story starts here"} description={records.length ? "Try a different search or choose another status." : "Create a publication to start writing."} action={records.length ? <Button variant="ghost" onPress={() => { setSearch(""); setStatus("all"); }}>Clear filters</Button> : null} />
       )}
-    </CmsShell>
+    </>
   );
 }

@@ -1,9 +1,11 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { CmsProvider, useCms } from "@/src/cms/CmsProvider";
 import { initialPublications } from "@/src/cms/publication-fixtures";
 import {
 act,
 fireEvent,
-render,
+render as renderPage,
 screen,
 waitFor,
 within,
@@ -12,8 +14,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PublicationEditor } from "./PublicationEditor";
 import { PublicationList } from "./PublicationList";
 
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 
 async function chooseStatus(label: string) {
   fireEvent.click(screen.getByRole("button", { name: /Status/ }));
@@ -494,4 +498,19 @@ it("disables publication ordering during a pending request without changing orde
   expect(within(screen.getByRole("list")).getAllByRole("heading").map((heading) => heading.textContent)).toEqual(records.map((record) => record.draft.title));
   expect(move.hasAttribute("disabled")).toBe(false);
   expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("keeps the unpublish confirmation open while the request is pending", async () => {
+  let finish!: () => void;
+  const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  render(<CmsProvider request={request}><PublicationEditor id="publication-1" /><PublishedReader /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
+  const dialog = await screen.findByRole("dialog", { name: "Unpublish this publication?" });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Unpublish" }));
+  fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+  expect(screen.getByRole("dialog", { name: "Unpublish this publication?" })).toBe(dialog);
+  expect(request).toHaveBeenCalledTimes(1);
+  await act(async () => finish());
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByLabelText("Demo published title").textContent).toBe("Unpublished");
 });

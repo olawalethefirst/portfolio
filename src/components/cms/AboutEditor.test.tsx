@@ -1,10 +1,14 @@
+import { CmsShell } from "./CmsShell";
+import type { ReactNode } from "react";
 import { AboutProvider, useAbout } from "@/src/cms/AboutProvider";
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AboutEditor } from "./AboutEditor";
 
+function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 
 beforeEach(() => {
   push.mockReset();
@@ -50,7 +54,7 @@ it("validates without changing saved content and discards errors and working edi
   expect(screen.getByRole("textbox", { name: "Biography" }).getAttribute("aria-invalid")).toBe("true");
   expect(screen.getByLabelText("Saved biography").textContent).toBe(saved);
   fireEvent.click(screen.getByRole("button", { name: "Preview" }));
-  expect(await within(screen.getByRole("main", { name: "About preview" })).findByRole("status")).toBeTruthy();
+  expect(await within(screen.getByRole("region", { name: "About preview" })).findByRole("status")).toBeTruthy();
   expect(await screen.findByRole("region", { name: "Untitled About section" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Exit preview" }));
   expect((screen.getByRole("textbox", { name: "Biography" }) as HTMLTextAreaElement).value).toBe("");

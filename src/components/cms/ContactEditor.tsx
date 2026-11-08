@@ -10,7 +10,6 @@ import { Button } from "@/src/components/ui/Button";
 import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsShell } from "./CmsShell";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 
 const ContactPreview = dynamic(() => import("./ContactPreview").then((module) => module.ContactPreview), {
@@ -53,7 +52,7 @@ export function ContactEditor() {
   }
 
   if (preview) return <CmsPreviewFrame label="Contact preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><ContactPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="contact">
+  return <>
     <CmsPageHeader title="Contact" description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed." />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="social-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("social-preview-trigger"); setPreview(true); }}>Preview contact</Button>
@@ -63,5 +62,5 @@ export function ContactEditor() {
       {SOCIAL_PROFILES.map(({ id, label }) => <CmsField key={id} name={id} label={`${label} URL`} type="url" icon={<Link aria-hidden="true" className="size-4" />} hint="Enter a complete HTTPS profile URL." value={value[id]} error={errors[id]} onChange={(url) => setValue((current) => ({ ...current, [id]: url }))} />)}
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
-  </CmsShell>;
+  </>;
 }
