@@ -90,8 +90,8 @@ content occupies established areas; do not add empty panels or filler controls.
 Use the current shell's max-w-6xl container, shared responsive gutters, and a
 consistent title hierarchy. Editors with supporting content use the existing
 main-column/18rem-supporting-column grid and gap-10 spacing. Supporting content
-includes images and publishing settings. Single-column editors retain a readable
-field width within the shared page container. Sections share visible headings
+includes images and publishing settings. Editors without supporting content fill
+the shared page container without an additional field-width cap. Sections share visible headings
 and field spacing; field labels, hints and errors use the shared field treatment.
 
 Every editor offers an icon-free ghost **Discard changes** action in the footer's
@@ -164,7 +164,7 @@ classes across Publications, Projects and Hero:
 
 | Shared piece | Responsibility | Consumers |
 | --- | --- | --- |
-| CmsEditorContent | Own the readable single-column width or main/18rem-supporting-column grid, gap-10 spacing and responsive stacking; omit absent supporting panels | Publication and Project fields; single-column Hero |
+| CmsEditorContent | Own full-width single-column content or the main/18rem-supporting-column grid, gap-10 spacing and responsive stacking; omit absent supporting panels | Publication and Project fields; single-column Hero |
 | CmsFieldSection | Own heading hierarchy, optional description, field spacing and optional section separator; accept entity fields as children | Content, Cover/Screenshot, Publishing and Hero stage sections |
 | CmsEmptyState | Own spacing, heading/description and optional action presentation; accept distinct empty-library/no-results messages | Publications and Projects |
 

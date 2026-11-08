@@ -69,7 +69,7 @@ export function CmsRecordLink({ href, title, summary, metadata, status, thumbnai
 }
 
 export function CmsEditorContent({ children, supporting }: { children: ReactNode; supporting?: ReactNode }) {
-  if (!supporting) return <div className="max-w-3xl space-y-8">{children}</div>;
+  if (!supporting) return <div className="min-w-0 w-full space-y-8">{children}</div>;
   return <div className="grid min-w-0 gap-10 xl:grid-cols-[minmax(0,1fr)_18rem]">
     <div className="min-w-0 space-y-8">{children}</div>
     <aside className="min-w-0 space-y-8 border-t border-border pt-6 xl:border-t-0 xl:border-l xl:pt-0 xl:pl-6">{supporting}</aside>
