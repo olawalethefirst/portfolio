@@ -360,6 +360,31 @@ follow the publication draft/publish distinction, with project-specific fields.
 Comment editing and moderation are excluded. Reusing Markdown input utilities
 never introduces CommentMarkdown into PublicationDetails or makes comments editable.
 
+### Hero validation and preview destinations
+
+Hero Save changes requires nonblank eyebrow, headline and tagline/description
+for every fixed idea, iterate and solution stage. Whitespace-only values are
+invalid; there are no arbitrary text-length limits. Inline field errors preserve
+the entered values and leave the last demo-saved snapshot unchanged. Toolbar
+validation focuses the first invalid field in editor order. Discard restores the
+saved values and clears validation and request feedback.
+
+Save and leave uses the same validation. If invalid, keep the shared navigation
+dialog open with a summary; Stay returns to the first invalid field for correction.
+Request failures also retain values and allow retry. Leaving requires a successful
+save, and edits typed during a pending toolbar save remain unsaved afterward.
+
+Hero preview wraps the public PrismHeroLayout in CmsPreviewLinks. Work resolves
+the public component's `#work` link to `/#work`, since this section-only preview
+contains no Work section; Hire resolves to `/contact`. Both require confirmation
+before opening in a new tab, including modified/middle clicks. Cancel or Escape
+closes only the confirmation, retaining the Hero preview; preview exit restores
+the editor values, initiating focus and scroll. The public component's live links,
+CTA labels, stage controls, layout and animation remain unchanged. CmsPreviewLinks
+accepts an optional `resolveHref` adapter so sections can resolve public destinations
+before the shared web-link validation and confirmation; normal article fragments
+keep their existing in-preview behavior.
+
 ### Shared unsaved-navigation guard
 
 Every editable CMS section uses `useCmsUnsavedChanges` and

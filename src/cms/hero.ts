@@ -16,3 +16,19 @@ export const initialHero: HeroDraft = {
 };
 export const sameHero = (a: HeroDraft, b: HeroDraft) =>
   JSON.stringify(a) === JSON.stringify(b);
+
+type HeroField = "eyebrow" | "headline" | `${keyof HeroDraft["stages"]}-${keyof HeroStageContent}`;
+export type HeroErrors = Partial<Record<HeroField, string>>;
+
+export function validateHero(value: HeroDraft): HeroErrors {
+  const errors: HeroErrors = {};
+  for (const key of ["eyebrow", "headline"] as const) {
+    if (!value[key].trim()) errors[key] = "Complete this field before saving.";
+  }
+  for (const stage of ["idea", "iterate", "solution"] as const) {
+    for (const field of ["tagline", "description"] as const) {
+      if (!value.stages[stage][field].trim()) errors[`${stage}-${field}`] = "Complete this field before saving.";
+    }
+  }
+  return errors;
+}
