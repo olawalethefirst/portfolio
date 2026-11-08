@@ -1,7 +1,7 @@
 "use client";
 
 import { Drawer } from "@heroui/react/drawer";
-import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun } from "lucide-react";
+import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { setGlobalMode, useActiveTheme } from "@/src/theme/active-theme";
@@ -12,13 +12,15 @@ export function CmsShell({
   onPublications,
   onProjects,
   onHero,
+  onAbout,
   section = "publications",
 }: {
   children: ReactNode;
   onPublications: () => void;
   onProjects?: () => void;
   onHero?: () => void;
-  section?: "publications" | "projects" | "hero";
+  onAbout?: () => void;
+  section?: "publications" | "projects" | "hero" | "about";
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,6 +33,9 @@ export function CmsShell({
       if (onProjects) onProjects(); else router.push("/admin/projects");
     } },
     { id: "publications", label: "Publications", Icon: BookOpen, onPress: onPublications },
+    { id: "about", label: "About", Icon: UserRound, onPress: () => {
+      if (onAbout) onAbout(); else router.push("/admin/about");
+    } },
   ];
   const navigation = (
     <nav aria-label="Content navigation" className="mt-10">

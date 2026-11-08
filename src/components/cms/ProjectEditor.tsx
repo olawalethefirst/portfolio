@@ -64,7 +64,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
     }
   }
   if (preview) return <CmsPreviewFrame label="Project preview" exitLabel="Exit project preview" closeRef={closeRef} onExit={() => setPreview(false)}><ProjectPreview value={value} /></CmsPreviewFrame>;
-  return <CmsShell section="projects" onPublications={() => leave("/admin/publications")} onHero={() => leave("/admin/hero")} onProjects={() => leave("/admin/projects")}>
+  return <CmsShell section="projects" onPublications={() => leave("/admin/publications")} onHero={() => leave("/admin/hero")} onAbout={() => leave("/admin/about")} onProjects={() => leave("/admin/projects")}>
     <CmsBackButton disabled={pending} onPress={() => leave("/admin/projects")}>Back to projects</CmsBackButton>
     <CmsPageHeader title={initialRecord ? "Edit project" : "New project"} description="Shape your project, then preview it as visitors will see it." status={record ? projectStatus({ ...record, draft: value }) : "New draft"} />
     <CmsToolbar actions={<><Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button><Button startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending} onPress={() => void act("publish")}>{record?.published ? "Update published" : "Publish"}</Button></>}>

@@ -1,3 +1,4 @@
+import { AboutProvider } from "@/src/cms/AboutProvider";
 import { HeroProvider } from "@/src/cms/HeroProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
 import type { Metadata } from "next";
@@ -20,5 +21,5 @@ export default function AdminLayout({
     process.env.CMS_DEMO_ENABLED !== "true"
   )
     notFound();
-  return <CmsProvider><ProjectProvider><HeroProvider>{children}</HeroProvider></ProjectProvider></CmsProvider>;
+  return <CmsProvider><ProjectProvider><HeroProvider><AboutProvider>{children}</AboutProvider></HeroProvider></ProjectProvider></CmsProvider>;
 }

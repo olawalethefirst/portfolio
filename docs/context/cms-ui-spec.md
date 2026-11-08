@@ -56,7 +56,7 @@ under `/admin/publications` and `/admin/projects`; singleton routes
 Use `/new` for creation and stable record IDs for editing. Separate preview routes are deferred. Route names are implementation proposals.
 
 CMS Content navigation follows the homepage section order: Hero →
-Projects → Publications, in both the desktop sidebar and mobile drawer.
+Projects → Publications → About, in both the desktop sidebar and mobile drawer.
 The Hero navigation item and editor use the short label “Hero”. Its leading
 PanelTop icon was chosen over Sparkles to identify the top page section rather
 than an effect. It uses the shared navigation icon sizing and decorative treatment,
@@ -360,6 +360,49 @@ follow the publication draft/publish distinction, with project-specific fields.
 Comment editing and moderation are excluded. Reusing Markdown input utilities
 never introduces CommentMarkdown into PublicationDetails or makes comments editable.
 
+### About editor and preview
+
+`/admin/about` edits Heading and Biography using the full-width shared editor
+layout. Heading is a single-line text field; Biography is plain multiline text,
+preserving line breaks. Both require nonblank content on Save changes, with no
+arbitrary text limits. Validation retains input and the saved snapshot; toolbar
+Save focuses the first invalid field. Save and leave uses the same validation
+and shared dialog, with Stay focusing the first invalid field for correction.
+
+AboutProvider holds only the last in-memory demo-saved snapshot across CMS
+navigation; working edits stay local to AboutEditor. Reload restores the public
+fixtures. Saving captures the submitted values, blocks duplicate requests and
+leaves newer edits dirty. Request failures retain values for retry. Feedback says
+Saved in demo, and collapsed Demo controls can fail the next save. Discard changes
+restores the last saved snapshot and clears validation and request feedback.
+There are no publish/unpublish/delete actions for this singleton.
+
+AboutPreview mounts on demand inside CmsPreviewFrame and uses the existing
+AboutCtaSection with typed heading/summary props. Public defaults live in
+`src/components/about-cta/about-content.ts`; the existing summary prop and default
+public callers retain their content and behavior. The CMS biography maps to
+summary, with visibly identified preview-only placeholders for missing fields.
+The public renderer imports no CMS code. Preview exit restores working values,
+the Preview trigger and scroll without saving. CmsPreviewLinks confirms the fixed
+Start a conversation CTA before opening `/contact` in a new tab; nested Escape
+closes only the link dialog. The CTA label, destination, icon and animation remain
+in public code.
+
+About follows Publications in the shared desktop/mobile Content navigation.
+Existing editors pass About navigation through their shared unsaved-change guard.
+Heading considers Type/TextCursorInput and omits an icon because the visible label
+suffices; Biography and ghost Discard follow the icon-free default. Save uses
+leading Save rather than Check; Preview uses leading Maximize2 rather than Eye.
+About navigation uses leading UserRound rather than BadgeInfo under the existing
+navigation exception for ghost buttons. Public CTA styling remains library-owned.
+
+Risk level 2 covers failed saves, edits during pending requests, saved-value
+retention across navigation, validation, guarded navigation and preview continuity.
+Performance is possible because the public reveal animation mounts on demand:
+controller checks responsive typing/scrolling and repeated preview visits with a
+long biography, ensuring prior reveal effects are cleaned up. Controller also
+reviews desktop/320px/200% zoom, both themes, reduced motion and keyboard/focus.
+
 ### Hero validation and preview destinations
 
 Hero Save changes requires nonblank eyebrow, headline and tagline/description
@@ -389,7 +432,7 @@ keep their existing in-preview behavior.
 
 Every editable CMS section uses `useCmsUnsavedChanges` and
 `CmsUnsavedChangesDialog` from `src/components/cms/CmsUnsavedChanges.tsx`.
-Publications, Projects and Hero share this composition; About, Social and SEO
+Publications, Projects, Hero and About share this composition; Social and SEO
 must reuse it when implemented. Collection lists have no unsaved form values
 and need no save-and-leave dialog.
 
@@ -578,7 +621,7 @@ controlled demo review and is not authentication. The provider retains saved and
 published demo values across CMS navigation; reload resets them. New draft links
 cease to exist after reload and show a recovery message.
 
-Publications and Projects appear in navigation. Additional content areas are
+Hero, Projects, Publications and About appear in navigation. Additional content areas are
 added when their editors are implemented, so the shell has no dead links.
 Cover selection supports local files and existing fixture images. Full-screen
 preview stays in the same tab and uses native document scrolling.
