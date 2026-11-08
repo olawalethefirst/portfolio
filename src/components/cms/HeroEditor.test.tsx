@@ -60,16 +60,9 @@ it("discards Hero edits to the last saved values and disables discard during sav
   expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("No unsaved changes");
 });
 
-it("retains the demo failure setting through collapse and preserves edits for save retry", async () => {
-  render(<HeroProvider><HeroEditor /></HeroProvider>);
-  expect(screen.queryByRole("checkbox", { name: "Fail next save" })).toBeNull();
-  const demo = screen.getByRole("button", { name: "Demo controls" });
-  fireEvent.click(demo);
-  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next save" }));
-  fireEvent.click(demo);
-  expect(demo.getAttribute("aria-expanded")).toBe("false");
-  fireEvent.click(demo);
-  expect(screen.getByRole("checkbox", { name: "Fail next save", checked: true })).toBeTruthy();
+it("preserves edits after a failed save and retries", async () => {
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
   const headline = screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement;
   fireEvent.change(headline, { target: { value: "Keep through failed save" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -83,10 +76,9 @@ it("retains the demo failure setting through collapse and preserves edits for sa
 });
 
 it("saves before leaving Hero and retains edits and destination through a failed save", async () => {
-  render(<HeroProvider><HeroEditor /></HeroProvider>);
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockImplementation(() => new Promise<void>((resolve) => setTimeout(resolve, 300)));
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Headline" }), { target: { value: "Keep before leaving" } });
-  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next save" }));
   fireEvent.click(screen.getByRole("button", { name: "Projects" }));
   const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });
   fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));

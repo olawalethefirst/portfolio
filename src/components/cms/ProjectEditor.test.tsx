@@ -73,42 +73,39 @@ it("keeps edits made during save dirty and leaves published content intact", asy
 });
 
 it("validates publishing, allows incomplete drafts, and recovers from a failed save", async () => {
-  const request = vi.fn(async (fail: boolean) => { if (fail) throw new Error("Try again"); });
+  const request = vi.fn().mockRejectedValueOnce(new Error("Try again")).mockResolvedValue(undefined);
   render(<ProjectProvider request={request}><ProjectEditor id="new" /></ProjectProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Publish" }));
   expect(request).not.toHaveBeenCalled();
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Name" })));
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "New draft" } });
-  fireEvent.click(screen.getByText("Demo controls"));
-  fireEvent.click(screen.getByLabelText("Fail the next project request"));
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("New draft");
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved in demo."));
+  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));
 });
 
 it("publishes, unpublishes without losing edits, and confirms deletion", async () => {
-  const request = vi.fn((fail: boolean) => fail ? Promise.reject(new Error("Deletion failed")) : Promise.resolve());
+  const request = vi.fn().mockResolvedValue(undefined);
   render(<ProjectProvider request={request}><ProjectEditor id="field-notes" /><Published /></ProjectProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Updated project" } });
   fireEvent.click(screen.getByRole("button", { name: "Update published" }));
   await waitFor(() => expect(screen.getByLabelText("Published name").textContent).toBe("Updated project"));
   fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
-  fireEvent.click(screen.getByRole("button", { name: "Unpublish in demo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
   await waitFor(() => expect(screen.getByLabelText("Published name").textContent).toBe("Unpublished"));
   expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Updated project");
   fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(request).toHaveBeenCalledTimes(2);
-  fireEvent.click(screen.getByText("Demo controls"));
-  fireEvent.click(screen.getByLabelText("Fail the next project request"));
+  request.mockRejectedValueOnce(new Error("Deletion failed"));
   fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
-  fireEvent.click(screen.getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(push).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/projects"));
 });
 
@@ -177,7 +174,7 @@ it.each(["field-notes", "new"])("discards to the last saved project draft for %s
   fireEvent.change(name, { target: { value: "Saved project draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   expect(discard.hasAttribute("disabled")).toBe(true);
-  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved in demo."));
+  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));
   fireEvent.change(name, { target: { value: "" } });
   fireEvent.click(screen.getByRole("button", { name: /^(Publish|Update published)$/ }));
   await waitFor(() => expect(name.getAttribute("aria-invalid")).toBe("true"));
@@ -277,7 +274,7 @@ it("shows an empty project section when every record is unpublished", async () =
   fireEvent.click(screen.getByRole("button", { name: "Withdraw demo projects" }));
   await waitFor(() => expect(screen.getAllByText("Draft")).toHaveLength(2));
   fireEvent.click(screen.getByRole("button", { name: "Preview projects" }));
-  expect(await screen.findByRole("heading", { name: "No demo-published projects" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "No published projects" })).toBeTruthy();
   expect(screen.queryByRole("article")).toBeNull();
   expect(screen.queryByText("mobile device preview")).toBeNull();
 });

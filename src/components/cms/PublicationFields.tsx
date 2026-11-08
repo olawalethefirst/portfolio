@@ -72,7 +72,7 @@ export function PublicationFields({
             error={errors.publishedOn}
           />
           <p className="text-xs leading-5 text-muted">
-            Save a draft whenever you like. Publishing updates the demo only.
+            Save a draft whenever you like.
           </p>
         </CmsFieldSection>
       </>;

@@ -16,7 +16,7 @@ export function SeoList() {
   const [search, setSearch] = useState("");
   const shown = saved.records.filter((record) => `${record.path} ${record.title} ${record.description}`.toLowerCase().includes(search.trim().toLowerCase()));
   return <CmsShell section="seo">
-    <CmsPageHeader title="SEO" description="Paths without an override use global defaults. Changes are demo-only." action={<div className="flex flex-wrap gap-2">
+    <CmsPageHeader title="SEO" description="Paths without an override use global defaults." action={<div className="flex flex-wrap gap-2">
       <Button variant="outline" isDisabled={pending} startContent={<Settings2 aria-hidden="true" className="size-4" />} onPress={() => router.push("/admin/seo/defaults")}>Edit defaults</Button>
       <Button isDisabled={pending} startContent={<Plus aria-hidden="true" className="size-4" />} onPress={() => router.push("/admin/seo/new")}>New override</Button>
     </div>} />

@@ -18,6 +18,6 @@ export function ProjectCollectionPreview({ records }: { records: readonly Projec
     screenTextureSrc: published.screenshot || undefined,
   }] : []);
   return <CmsPreviewLinks>
-    <ProjectPreviewBoundary><ProjectsSection projects={projects} emptyState={<CmsEmptyState title="No demo-published projects" description="Publish a project in the demo to preview it in this section." />} /></ProjectPreviewBoundary>
+    <ProjectPreviewBoundary><ProjectsSection projects={projects} emptyState={<CmsEmptyState title="No published projects" description="Publish a project to preview it in this section." />} /></ProjectPreviewBoundary>
   </CmsPreviewLinks>;
 }

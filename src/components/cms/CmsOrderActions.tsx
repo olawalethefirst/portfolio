@@ -20,5 +20,5 @@ export function CmsOrderActions({ name, index, total, disabled, onMove }: {
 }
 
 export function CmsOrderHint() {
-  return <p className="mt-2">Order changes apply immediately in this demo. Clear filters to reorder.</p>;
+  return <p className="mt-2">Order changes apply immediately. Clear filters to reorder.</p>;
 }

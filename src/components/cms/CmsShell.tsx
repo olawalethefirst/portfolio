@@ -88,12 +88,6 @@ export function CmsShell({ children, onNavigate, section = "publications" }: {
                 </Drawer.Backdrop>
               </Drawer>
             </div>
-            <p className="text-xs leading-5 text-muted">
-              <span className="mr-2 border border-border px-1.5 py-0.5 font-medium text-foreground">
-                Demo
-              </span>
-              Changes reset on reload
-            </p>
           </div>
           <Button
             variant="ghost"

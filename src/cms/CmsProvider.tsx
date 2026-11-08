@@ -15,21 +15,15 @@ import {
   type PublicationRecord,
 } from "./publications";
 
-type DemoRequest = (fail: boolean) => Promise<void>;
-const demoRequest: DemoRequest = async (fail) => {
+type DemoRequest = () => Promise<void>;
+const demoRequest: DemoRequest = async () => {
   await new Promise((resolve) => setTimeout(resolve, 450));
-  if (fail)
-    throw new Error(
-      "The demo request failed. Your edits are still here. Try again.",
-    );
 };
 
 interface CmsContextValue {
   records: PublicationRecord[];
   move: (id: string, direction: -1 | 1) => void;
   pending: boolean;
-  failNext: boolean;
-  setFailNext: (value: boolean) => void;
   commit: (
     id: string,
     values: PublicationDraft,
@@ -49,7 +43,6 @@ export function CmsProvider({
 }) {
   const [records, setRecords] = useState(initialRecords ?? initialPublications);
   const [pending, setPending] = useState(false);
-  const [failNext, setFailNext] = useState(false);
   const busy = useRef(false);
 
   async function commit(
@@ -61,10 +54,8 @@ export function CmsProvider({
     busy.current = true;
     setPending(true);
     const submitted = { ...values };
-    const fail = failNext;
-    setFailNext(false);
     try {
-      await request(fail);
+      await request();
       setRecords((current) => {
         if (action === "delete") return current.filter((item) => item.id !== id);
         const existing = current.find((item) => item.id === id);
@@ -96,7 +87,7 @@ export function CmsProvider({
   }
 
   return (
-    <CmsContext value={{ records, move, pending, failNext, setFailNext, commit }}>
+    <CmsContext value={{ records, move, pending, commit }}>
       {children}
     </CmsContext>
   );

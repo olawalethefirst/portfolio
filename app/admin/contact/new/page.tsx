@@ -1,3 +1,3 @@
-import { ContactEditor } from "@/src/components/cms/ContactEditor";
+import { redirect } from "next/navigation";
 
-export default function NewContactProfilePage() { return <ContactEditor id="new" />; }
+export default function ContactProfilePage() { redirect("/admin/contact"); }

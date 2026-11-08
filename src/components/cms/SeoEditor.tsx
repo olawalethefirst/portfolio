@@ -7,11 +7,10 @@ import { useSeo } from "@/src/cms/SeoProvider";
 import { emptySeoOverride, sameSeoRecord, sameSeoValues, validateSeoDefaults, validateSeoRecord, type SeoErrors, type SeoRecord } from "@/src/cms/seo";
 import { Button } from "@/src/components/ui/Button";
 import { CmsBackButton } from "./CmsBackButton";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsDialog } from "./CmsDialog";
 import { CmsField } from "./CmsField";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
-import { CmsDemoControls, CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
+import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsShell } from "./CmsShell";
 import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
 import { SeoFields } from "./SeoFields";
@@ -22,14 +21,14 @@ export function SeoEditor({ id }: { id: string }) {
   const record = saved.records.find((item) => item.id === id);
   if (id !== "defaults" && id !== "new" && !record) return <CmsShell section="seo">
     <CmsBackButton onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
-    <CmsPageHeader title="SEO override unavailable" description="Demo overrides reset on reload. Return to SEO to start again." />
+    <CmsPageHeader title="SEO override unavailable" description="Return to SEO to start again." />
   </CmsShell>;
   return <SeoEditorForm key={id} defaultsMode={id === "defaults"} initialRecord={record} />;
 }
 
 function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean; initialRecord?: SeoRecord }) {
   const router = useRouter();
-  const { saved, saveDefaults, saveRecord, deleteRecord, pending, failNext, setFailNext } = useSeo();
+  const { saved, saveDefaults, saveRecord, deleteRecord, pending } = useSeo();
   const [id] = useState(() => initialRecord?.id ?? `seo-${crypto.randomUUID()}`);
   const record = saved.records.find((item) => item.id === id);
   const [value, setValue] = useState<SeoRecord>(() => defaultsMode ? { id, path: "", ...saved.defaults } : initialRecord ?? { id, path: "", ...emptySeoOverride() });
@@ -61,7 +60,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
         // Reflect canonicalization only if the user has not typed a newer path.
         setValue((current) => current.path === value.path ? { ...current, path: submitted.path } : current);
       }
-      setMessage("Saved in demo.");
+      setMessage("Saved.");
       return true;
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Save failed. Your changes are still here.");
@@ -80,7 +79,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
     <CmsBackButton disabled={pending} onPress={() => leave("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>{null}</CmsToolbar>
-    <CmsFeedback label="SEO save status" error={!deleting && !navigation.dialog.open ? error : undefined}>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
+    <CmsFeedback label="SEO save status" error={!deleting && !navigation.dialog.open ? error : undefined}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <CmsEditorContent><CmsFieldSection title="Content" description={defaultsMode ? "Both defaults are required." : "Provide at least one override. A blank individual field inherits its default."}>
       {!defaultsMode ? <CmsField name="path" label="Path" value={value.path} error={errors.path} icon={<Route aria-hidden="true" className="size-4" />} hint="An exact site path such as /contact. Trailing slashes are normalized on save." onChange={(path) => setValue((current) => ({ ...current, path }))} /> : null}
       <SeoFields value={value} defaults={defaultsMode ? undefined : saved.defaults} errors={errors} onChange={(next) => setValue((current) => ({ ...current, ...next }))} />
@@ -88,11 +87,10 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
     <CmsFooter actions={!defaultsMode && record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setError(""); setDeleting(true); }}>Delete override</CmsLifecycleButton> : undefined}>
       <Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(baseline); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button>
     </CmsFooter>
-    <CmsDemoControls><CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail next request</CmsCheckbox></CmsDemoControls>
     <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
     <CmsDialog open={deleting} onClose={() => { if (!pending) setDeleting(false); }} title="Delete this override?" error={error} actions={<>
       <Button variant="ghost" isDisabled={pending} onPress={() => setDeleting(false)}>Cancel</Button>
-      <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void remove()}>Delete in demo</CmsLifecycleButton>
-    </>}>Remove the override for {record?.path}? This removes its saved values and current edits from the demo. Global defaults will apply. The public page is not deleted.</CmsDialog>
+      <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void remove()}>Delete</CmsLifecycleButton>
+    </>}>Remove the override for {record?.path}? This removes its saved values and current edits. Global defaults will apply. The public page is not deleted.</CmsDialog>
   </CmsShell>;
 }

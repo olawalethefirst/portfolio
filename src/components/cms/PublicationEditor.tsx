@@ -15,11 +15,10 @@ import {
   type PublicationRecord,
 } from "@/src/cms/publications";
 import { Button } from "@/src/components/ui/Button";
-import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter, CmsDemoControls } from "./CmsLayout";
+import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsShell } from "./CmsShell";
 import { CmsBackButton } from "./CmsBackButton";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
@@ -34,7 +33,7 @@ export function PublicationEditor({ id }: { id: string }) {
     return (
       <CmsShell>
         <CmsBackButton onPress={() => router.push("/admin/publications")}>Back to publications</CmsBackButton>
-        <CmsPageHeader title="Publication unavailable" description="Demo drafts reset on reload. Return to publications to start again." />
+        <CmsPageHeader title="Publication unavailable" description="Return to publications to start again." />
       </CmsShell>
     );
   return <PublicationEditorForm initialRecord={record} />;
@@ -46,7 +45,7 @@ function PublicationEditorForm({
   initialRecord?: PublicationRecord;
 }) {
   const router = useRouter();
-  const { records, commit, pending, failNext, setFailNext } = useCms();
+  const { records, commit, pending } = useCms();
   const [id] = useState(
     () => initialRecord?.id ?? `draft-${crypto.randomUUID()}`,
   );
@@ -93,10 +92,10 @@ function PublicationEditorForm({
         router.push("/admin/publications");
       } else setMessage(
         action === "save"
-          ? "Saved in demo."
+          ? "Saved."
           : action === "publish"
-            ? "Published in demo."
-            : "Unpublished in demo. Your draft is still available.",
+            ? "Published."
+            : "Unpublished. Your draft is still available.",
       );
       setDialog(null);
       return true;
@@ -104,7 +103,7 @@ function PublicationEditorForm({
       setRequestError(
         error instanceof Error
           ? error.message
-          : "The demo request failed. Your edits are still here. Try again.",
+          : "The request failed. Your edits are still here. Try again.",
       );
       if (action !== "delete") setDialog(null);
       return false;
@@ -125,7 +124,7 @@ function PublicationEditorForm({
         <Button id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
       <CmsFeedback label="Publication save status" error={dialog === "delete" || navigation.dialog.open ? undefined : requestError}>
-        <span>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
+        <span>{pending ? "Saving…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
       </CmsFeedback>
       <PublicationFields value={value} errors={errors} onChange={setValue} />
       <CmsFooter actions={<>
@@ -139,10 +138,6 @@ function PublicationEditorForm({
           setRequestError("");
         }}>Discard changes</Button>
       </CmsFooter>
-      <CmsDemoControls>
-        <CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail the next publication request</CmsCheckbox>
-        <p>Use this to review error recovery. No changes reach the website.</p>
-      </CmsDemoControls>
       <CmsUnsavedChangesDialog {...navigation.dialog} error={requestError} />
       <CmsDialog
         open={dialog === "delete"}
@@ -151,10 +146,10 @@ function PublicationEditorForm({
         error={requestError}
         actions={<>
           <Button variant="ghost" isDisabled={pending} onPress={() => setDialog(null)}>Cancel</Button>
-          <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void act("delete")}>Delete in demo</CmsLifecycleButton>
+          <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void act("delete")}>Delete</CmsLifecycleButton>
         </>}
       >
-        Delete “{value.title.trim() || "Untitled publication"}”? This removes the saved draft, published version and current edits from this demo session. This cannot be undone in this session.
+        Delete “{value.title.trim() || "Untitled publication"}”? This removes the saved draft, published version and current edits. This cannot be undone.
       </CmsDialog>
       <CmsDialog
         open={dialog === "unpublish"}
@@ -170,12 +165,12 @@ function PublicationEditorForm({
               Cancel
             </Button>
             <CmsLifecycleButton action="unpublish" confirmation pending={pending} onPress={() => void act("unpublish")}>
-              Unpublish in demo
+              Unpublish
             </CmsLifecycleButton>
           </>
         }
       >
-        This removes the demo-published version. Your draft and current edits
+        This removes the published version. Your draft and current edits
         will remain available.
       </CmsDialog>
     </CmsShell>

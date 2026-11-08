@@ -1,3 +1,3 @@
-import { ContactList } from "@/src/components/cms/ContactList";
+import { ContactEditor } from "@/src/components/cms/ContactEditor";
 
-export default function ContactPage() { return <ContactList />; }
+export default function ContactPage() { return <ContactEditor />; }

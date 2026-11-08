@@ -1,12 +1,9 @@
-import { DEFAULT_SOCIAL_LINKS, type SocialLinkProfile } from "@/src/components/contact-conversation/social-profiles";
+import { SOCIAL_DEFAULT_DESTINATIONS, SOCIAL_PROFILES, type SocialDestinations } from "@/src/components/contact-conversation/social-profiles";
 
-export interface SocialDraft { name: string; url: string; imageSrc: string; icon?: SocialLinkProfile["icon"] }
-export interface SocialRecord extends SocialDraft { id: string }
-export type SocialErrors = Partial<Record<"name" | "url" | "imageSrc", string>>;
-export const emptySocial = (): SocialDraft => ({ name: "", url: "", imageSrc: "" });
-export const initialSocial = (): SocialRecord[] => DEFAULT_SOCIAL_LINKS.map((profile) => ({ id: profile.id, name: profile.label, url: profile.href ?? "", imageSrc: "", icon: profile.icon }));
-export const sameSocial = (a: SocialDraft, b: SocialDraft) => a.name === b.name && a.url === b.url && a.imageSrc === b.imageSrc && a.icon === b.icon;
-export const socialImageSrc = (value: string) => /^data:image\/(png|jpeg|webp);base64,[a-z0-9+/]+=*$/i.test(value) ? value : undefined;
+export type SocialDraft = SocialDestinations;
+export type SocialErrors = Partial<Record<keyof SocialDraft, string>>;
+export const initialSocial: SocialDraft = { ...SOCIAL_DEFAULT_DESTINATIONS };
+export const sameSocial = (a: SocialDraft, b: SocialDraft) => SOCIAL_PROFILES.every(({ id }) => a[id] === b[id]);
 
 export function socialProfileHref(value: string): string | undefined {
   const trimmed = value.trim();
@@ -19,11 +16,10 @@ export function socialProfileHref(value: string): string | undefined {
   }
 }
 
-
 export function validateSocial(value: SocialDraft): SocialErrors {
   const errors: SocialErrors = {};
-  if (!value.name.trim()) errors.name = "Enter a profile name.";
-  if (!socialProfileHref(value.url)) errors.url = "Enter a complete HTTPS profile URL without sign-in credentials.";
-  if (value.imageSrc ? !socialImageSrc(value.imageSrc) : !value.icon) errors.imageSrc = "Choose a JPEG, PNG or WebP profile image.";
+  for (const { id } of SOCIAL_PROFILES) {
+    if (!socialProfileHref(value[id])) errors[id] = "Enter a complete HTTPS profile URL without sign-in credentials.";
+  }
   return errors;
 }

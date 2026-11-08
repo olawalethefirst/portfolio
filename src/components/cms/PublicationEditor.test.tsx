@@ -136,7 +136,7 @@ describe("publication CMS", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await act(async () => finish());
     expect(request).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Saved in demo.")).toBeTruthy();
+    expect(screen.getByText("Saved.")).toBeTruthy();
     expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect((title as HTMLInputElement).value).toBe("Still typing");
     expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
@@ -146,9 +146,7 @@ describe("publication CMS", () => {
   });
 
   it("retains a failed save and can retry successfully", async () => {
-    const request = vi.fn(async (fail: boolean) => {
-      if (fail) throw new Error("Demo failure. Try again.");
-    });
+    const request = vi.fn().mockRejectedValueOnce(new Error("Save failed. Try again.")).mockResolvedValue(undefined);
     render(
       <CmsProvider request={request}>
         <PublicationEditor id="publication-1" />
@@ -157,12 +155,6 @@ describe("publication CMS", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
       target: { value: "Retain this draft" },
     });
-    fireEvent.click(screen.getByText("Demo controls"));
-    fireEvent.click(
-      screen.getByRole("checkbox", {
-        name: "Fail the next publication request",
-      }),
-    );
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(
@@ -170,7 +162,7 @@ describe("publication CMS", () => {
         .value,
     ).toBe("Retain this draft");
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    expect(await screen.findByText("Saved in demo.")).toBeTruthy();
+    expect(await screen.findByText("Saved.")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
@@ -182,7 +174,7 @@ describe("publication CMS", () => {
       </CmsProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    await screen.findByText("Saved in demo.");
+    await screen.findByText("Saved.");
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(
       await screen.findByText("Add a title before publishing."),
@@ -310,7 +302,7 @@ describe("publication CMS", () => {
       target: { value: "Ready for readers" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Update published" }));
-    await screen.findByText("Published in demo.");
+    await screen.findByText("Published.");
     expect(screen.getByLabelText("Demo published title").textContent).toBe(
       "Ready for readers",
     );
@@ -319,10 +311,10 @@ describe("publication CMS", () => {
       name: "Unpublish this publication?",
     });
     fireEvent.click(
-      within(dialog).getByRole("button", { name: "Unpublish in demo" }),
+      within(dialog).getByRole("button", { name: "Unpublish" }),
     );
     await screen.findByText(
-      "Unpublished in demo. Your draft is still available.",
+      "Unpublished. Your draft is still available.",
     );
     expect(screen.getByLabelText("Demo published title").textContent).toBe(
       "Unpublished",
@@ -344,7 +336,7 @@ it("keeps a selected cover through full-screen card preview and return to editin
     fireEvent.change(screen.getByLabelText("Replace image"), {
       target: { files: [new File(["image"], "selected.png", { type: "image/png" })] },
     });
-    await screen.findByText("selected.png selected for this demo.");
+    await screen.findByText("selected.png selected.");
     const source = document.querySelector('img[src^="data:"]')?.getAttribute("src");
     expect(source).toMatch(/^data:image\/png/);
     fireEvent.click(screen.getByRole("button", { name: "Preview card" }));
@@ -417,7 +409,7 @@ it.each(["publication-1", "new"])("discards to the last saved publication draft 
   fireEvent.change(title, { target: { value: "Saved draft only" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   expect(discard.hasAttribute("disabled")).toBe(true);
-  await screen.findByText("Saved in demo.");
+  await screen.findByText("Saved.");
   fireEvent.change(title, { target: { value: "" } });
   fireEvent.click(screen.getByRole("button", { name: /^(Publish|Update published)$/ }));
   await screen.findByText("Add a title before publishing.");
@@ -444,14 +436,14 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
   expect(request).not.toHaveBeenCalled();
   expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe("Unsaved delete title");
   fireEvent.click(screen.getByRole("button", { name: "Delete publication" }));
-  fireEvent.click(screen.getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
   const retryDialog = await screen.findByRole("dialog", { name: "Delete this publication?" });
   expect(await within(retryDialog).findByRole("alert")).toBeTruthy();
   expect(screen.getByLabelText("Demo published title").textContent).toBe(record.draft.title);
   expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe("Unsaved delete title");
   expect(push).not.toHaveBeenCalled();
-  fireEvent.click(within(retryDialog).getByRole("button", { name: "Delete in demo" }));
-  fireEvent.click(within(retryDialog).getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(within(retryDialog).getByRole("button", { name: "Delete" }));
+  fireEvent.click(within(retryDialog).getByRole("button", { name: "Delete" }));
   fireEvent.click(within(retryDialog).getByRole("button", { name: "Cancel" }));
   fireEvent.keyDown(retryDialog, { key: "Escape" });
   expect(screen.getByRole("dialog", { name: "Delete this publication?" })).toBeTruthy();
@@ -465,9 +457,9 @@ it("offers editor deletion only after a new publication draft is saved", async (
   render(<CmsProvider request={async () => {}}><PublicationEditor id="new" /></CmsProvider>);
   expect(screen.queryByRole("button", { name: "Delete publication" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  await screen.findByText("Saved in demo.");
+  await screen.findByText("Saved.");
   fireEvent.click(screen.getByRole("button", { name: "Delete publication" }));
-  fireEvent.click(screen.getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/publications"));
 });
 
@@ -506,7 +498,7 @@ it("shows a truthful publication section empty state when nothing is demo-publis
   const records = initialPublications().map((record) => ({ ...record, published: null }));
   render(<CmsProvider initialRecords={records}><PublicationList /></CmsProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Preview publications" }));
-  expect(await screen.findByRole("heading", { name: "No demo-published publications" })).toBeTruthy();
+  expect(await screen.findByRole("heading", { name: "No published publications" })).toBeTruthy();
   expect(screen.queryByRole("article")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Exit publication section preview" }));
   expect(screen.getByRole("heading", { name: records[0].draft.title })).toBeTruthy();

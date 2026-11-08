@@ -63,7 +63,7 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
         if (current !== generation.current) return;
         change.current(source);
         setPending(false);
-        setFeedback(`${file.name} selected for this demo.`);
+        setFeedback(`${file.name} selected.`);
       } catch { fail(); }
     };
     next.readAsDataURL(file);
@@ -78,7 +78,7 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
       aria-invalid={Boolean(fileError || error)} aria-describedby={`${id}-hint ${id}-error`}
       className="block min-h-11 w-full min-w-0 text-sm file:mr-3 file:border-0 file:bg-default file:px-3 file:py-3 file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
       onChange={(event) => { select(event.target.files?.[0]); event.target.value = ""; }} />
-    <p id={`${id}-hint`} className="text-xs text-muted">JPEG, PNG or WebP · up to 10 MiB. Local preview only.</p>
+    <p id={`${id}-hint`} className="text-xs text-muted">JPEG, PNG or WebP · up to 10 MiB.</p>
     <p role="status" className="text-xs text-muted">{pending ? "Reading image…" : feedback}</p>
     <p id={`${id}-error`} role={fileError || error ? "alert" : undefined} className="text-sm text-danger">{fileError || error}</p>
     {value ? <Button variant="ghost" size="sm" onPress={() => {

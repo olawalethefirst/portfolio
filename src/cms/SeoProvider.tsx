@@ -3,10 +3,9 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { initialSeo, normalizeSeoPath, validateSeoDefaults, validateSeoRecord, type SeoRecord, type SeoState, type SeoValues } from "./seo";
 
-type SeoRequest = (fail: boolean) => Promise<void>;
-async function demoRequest(fail: boolean) {
+type SeoRequest = () => Promise<void>;
+async function demoRequest() {
   await new Promise((resolve) => setTimeout(resolve, 300));
-  if (fail) throw new Error("The demo save failed. Your changes are still here.");
 }
 const SeoContext = createContext<{
   saved: SeoState;
@@ -14,22 +13,17 @@ const SeoContext = createContext<{
   saveRecord: (value: SeoRecord) => Promise<SeoRecord>;
   deleteRecord: (id: string) => Promise<void>;
   pending: boolean;
-  failNext: boolean;
-  setFailNext: (value: boolean) => void;
 } | null>(null);
 
 export function SeoProvider({ children, request = demoRequest, initialState }: { children: ReactNode; request?: SeoRequest; initialState?: SeoState }) {
   const [saved, setSaved] = useState(initialState ?? initialSeo);
   const [pending, setPending] = useState(false);
-  const [failNext, setFailNext] = useState(false);
   const busy = useRef(false);
   async function run(change: (current: SeoState) => SeoState) {
     if (busy.current) throw new Error("A change is already in progress.");
     busy.current = true;
-    const fail = failNext;
     setPending(true);
-    setFailNext(false);
-    try { await request(fail); setSaved(change); }
+    try { await request(); setSaved(change); }
     finally { busy.current = false; setPending(false); }
   }
   async function saveDefaults(value: SeoValues) {
@@ -51,7 +45,7 @@ export function SeoProvider({ children, request = demoRequest, initialState }: {
   async function deleteRecord(id: string) {
     await run((current) => ({ ...current, records: current.records.filter((record) => record.id !== id) }));
   }
-  return <SeoContext value={{ saved, saveDefaults, saveRecord, deleteRecord, pending, failNext, setFailNext }}>{children}</SeoContext>;
+  return <SeoContext value={{ saved, saveDefaults, saveRecord, deleteRecord, pending }}>{children}</SeoContext>;
 }
 export function useSeo() {
   const context = useContext(SeoContext);

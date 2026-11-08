@@ -10,12 +10,3 @@ export const SOCIAL_DEFAULT_DESTINATIONS: SocialDestinations = {
   linkedin: "https://www.linkedin.com/in/olawalethefirst",
   x: "https://x.com/olawalethefirst",
 };
-
-export interface SocialLinkProfile {
-  id: string;
-  label: string;
-  href?: string;
-  imageSrc?: string;
-  icon?: "github" | "linkedin" | "twitter-x";
-}
-export const DEFAULT_SOCIAL_LINKS: readonly SocialLinkProfile[] = SOCIAL_PROFILES.map(({ id, label, icon }) => ({ id, label, icon, href: SOCIAL_DEFAULT_DESTINATIONS[id] }));

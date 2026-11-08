@@ -1,44 +1,40 @@
 "use client";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialSocial, validateSocial, type SocialDraft, type SocialRecord } from "./social";
-type SocialRequest = (fail: boolean) => Promise<void>;
-async function demoRequest(fail: boolean) {
+import { initialSocial, type SocialDraft } from "./social";
+
+type SocialRequest = () => Promise<void>;
+async function demoRequest() {
   await new Promise((resolve) => setTimeout(resolve, 300));
-  if (fail) throw new Error("The demo request failed. Your changes are still here.");
 }
 const SocialContext = createContext<{
-  records: SocialRecord[];
-  save: (id: string, value: SocialDraft) => Promise<void>;
-  remove: (id: string) => Promise<void>;
+  saved: SocialDraft;
+  save: (value: SocialDraft) => Promise<void>;
   pending: boolean;
-  failNext: boolean;
-  setFailNext: (value: boolean) => void;
 } | null>(null);
-export function SocialProvider({ children, request = demoRequest, initialRecords }: { children: ReactNode; request?: SocialRequest; initialRecords?: SocialRecord[] }) {
-  const [records, setRecords] = useState(initialRecords ?? initialSocial);
+
+export function SocialProvider({ children, request = demoRequest }: { children: ReactNode; request?: SocialRequest }) {
+  const [saved, setSaved] = useState(initialSocial);
   const [pending, setPending] = useState(false);
-  const [failNext, setFailNext] = useState(false);
-  const busy = useRef(false);
-  async function run(change: (current: SocialRecord[]) => SocialRecord[]) {
-    if (busy.current) throw new Error("A request is already in progress.");
-    busy.current = true;
-    const fail = failNext;
-    setPending(true); setFailNext(false);
-    try { await request(fail); setRecords(change); }
-    finally { busy.current = false; setPending(false); }
+  const saving = useRef(false);
+  async function save(value: SocialDraft) {
+    if (saving.current) throw new Error("A save is already in progress.");
+    saving.current = true;
+    const submitted = { ...value };
+    setPending(true);
+    try {
+      await request();
+      setSaved(submitted);
+    } finally {
+      saving.current = false;
+      setPending(false);
+    }
   }
-  async function save(id: string, value: SocialDraft) {
-    const error = Object.values(validateSocial(value))[0];
-    if (error) throw new Error(error);
-    const submitted = { ...value, id };
-    await run((current) => current.some((record) => record.id === id) ? current.map((record) => record.id === id ? submitted : record) : [...current, submitted]);
-  }
-  async function remove(id: string) { await run((current) => current.filter((record) => record.id !== id)); }
-  return <SocialContext value={{ records, save, remove, pending, failNext, setFailNext }}>{children}</SocialContext>;
+  return <SocialContext value={{ saved, save, pending }}>{children}</SocialContext>;
 }
+
 export function useSocial() {
   const context = useContext(SocialContext);
-  if (!context) throw new Error("Contact screens require SocialProvider.");
+  if (!context) throw new Error("Social editor requires SocialProvider.");
   return context;
 }

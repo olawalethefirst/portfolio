@@ -6,17 +6,16 @@ import { useState } from "react";
 import { useHero } from "@/src/cms/HeroProvider";
 import { sameHero, validateHero, type HeroDraft, type HeroErrors } from "@/src/cms/hero";
 import { Button } from "@/src/components/ui/Button";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
 import { CmsField } from "./CmsField";
-import { CmsEditorContent, CmsFieldSection, CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter, CmsDemoControls } from "./CmsLayout";
+import { CmsEditorContent, CmsFieldSection, CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsShell } from "./CmsShell";
 const HeroPreview = dynamic(() => import("./HeroPreview").then((m) => m.HeroPreview), { ssr: false, loading: () => <p role="status">Loading hero preview…</p> });
 const stages = [["idea", "Idea"], ["iterate", "Iterate"], ["solution", "Solution"]] as const;
 export function HeroEditor() {
   const router = useRouter();
-  const { value: saved, save, pending, failNext, setFailNext } = useHero();
+  const { value: saved, save, pending } = useHero();
   const [value, setValue] = useState(saved);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
@@ -64,7 +63,6 @@ export function HeroEditor() {
       </CmsFieldSection>)}</div>
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setError(""); setErrors({}); }}>Discard changes</Button></CmsFooter>
-    <CmsDemoControls><CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail next save</CmsCheckbox></CmsDemoControls>
     <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
   </CmsShell>;
 }

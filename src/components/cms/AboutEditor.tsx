@@ -7,9 +7,8 @@ import { useState } from "react";
 import { useAbout } from "@/src/cms/AboutProvider";
 import { sameAbout, validateAbout, type AboutErrors } from "@/src/cms/about";
 import { Button } from "@/src/components/ui/Button";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { CmsField } from "./CmsField";
-import { CmsDemoControls, CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
+import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsShell } from "./CmsShell";
 import { CmsUnsavedChangesDialog, useCmsUnsavedChanges } from "./CmsUnsavedChanges";
@@ -21,7 +20,7 @@ const AboutPreview = dynamic(() => import("./AboutPreview").then((module) => mod
 
 export function AboutEditor() {
   const router = useRouter();
-  const { saved, save, pending, failNext, setFailNext } = useAbout();
+  const { saved, save, pending } = useAbout();
   const [value, setValue] = useState(saved);
   const [errors, setErrors] = useState<AboutErrors>({});
   const [error, setError] = useState("");
@@ -47,7 +46,7 @@ export function AboutEditor() {
     }
     try {
       await save(value);
-      setMessage("Saved in demo.");
+      setMessage("Saved.");
       return true;
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Save failed. Your edits are still here.");
@@ -63,13 +62,12 @@ export function AboutEditor() {
     <CmsToolbar actions={<Button variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />} onPress={() => void saveChanges()}>Save changes</Button>}>
       <Button id="about-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("about-preview-trigger"); setPreview(true); }}>Preview</Button>
     </CmsToolbar>
-    <CmsFeedback label="About save status" error={navigation.dialog.open ? undefined : error}>{pending ? "Saving in demo…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
+    <CmsFeedback label="About save status" error={navigation.dialog.open ? undefined : error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <CmsEditorContent><CmsFieldSection title="Content">
       <CmsField name="heading" label="Heading" value={value.heading} error={errors.heading} onChange={(heading) => setValue((current) => ({ ...current, heading }))} />
       <CmsField name="biography" label="Biography" multiline="short" value={value.biography} error={errors.biography} onChange={(biography) => setValue((current) => ({ ...current, biography }))} />
     </CmsFieldSection></CmsEditorContent>
     <CmsFooter><Button variant="ghost" isDisabled={pending || !dirty} onPress={() => { setValue(saved); setErrors({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
-    <CmsDemoControls><CmsCheckbox value={failNext} disabled={pending} onChange={setFailNext}>Fail next save</CmsCheckbox></CmsDemoControls>
     <CmsUnsavedChangesDialog {...navigation.dialog} error={error} onStay={() => { navigation.dialog.onStay(); focusFirstError(errors); }} />
   </CmsShell>;
 }

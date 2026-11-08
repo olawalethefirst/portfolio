@@ -1,19 +1,14 @@
 import { expect, it } from "vitest";
-import { emptySocial, initialSocial, socialProfileHref, validateSocial } from "./social";
-const image = "data:image/png;base64,aW1hZ2U=";
-it.each(["", "  ", "/profile", "javascript:alert(1)", "data:text/html,hello", "http://github.com/profile", "https:github.com/profile", "https://user:password@github.com/profile", "https://github.com/my profile"])("rejects an unsafe profile destination: %s", (url) => {
-  expect(socialProfileHref(url)).toBeUndefined();
-  expect(validateSocial({ name: "Profile", url, imageSrc: image }).url).toBeTruthy();
+import { initialSocial, socialProfileHref, validateSocial } from "./social";
+
+it.each(["", "  ", "/profile", "javascript:alert(1)", "data:text/html,hello", "http://github.com/profile", "https:github.com/profile", "https://user:password@github.com/profile", "https://github.com/my profile"])("rejects a non-public HTTPS profile destination: %s", (value) => {
+  expect(socialProfileHref(value)).toBeUndefined();
+  expect(validateSocial({ ...initialSocial, github: value }).github).toBeTruthy();
 });
-it("accepts custom names, images and HTTPS hosts while preserving entered text", () => {
-  const value = { name: "My community", url: "  https://community.example.com/me  ", imageSrc: image };
+
+it("accepts a complete HTTPS destination without restricting the host and preserves editor text", () => {
+  const value = { ...initialSocial, github: "  https://code.example.com/profile  " };
   expect(validateSocial(value)).toEqual({});
-  expect(socialProfileHref(value.url)).toBe("https://community.example.com/me");
-  expect(value.url).toBe("  https://community.example.com/me  ");
-});
-it("requires a name and uploaded image for custom profiles and preserves built-in seed icons", () => {
-  expect(validateSocial(emptySocial()).name).toBeTruthy();
-  expect(validateSocial({ name: "Community", url: "https://example.com", imageSrc: "" }).imageSrc).toBeTruthy();
-  expect(validateSocial({ name: "Community", url: "https://example.com", imageSrc: "data:image/svg+xml,bad" }).imageSrc).toBeTruthy();
-  for (const profile of initialSocial()) expect(validateSocial(profile)).toEqual({});
+  expect(socialProfileHref(value.github)).toBe("https://code.example.com/profile");
+  expect(value.github).toBe("  https://code.example.com/profile  ");
 });

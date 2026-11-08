@@ -1,6 +1,5 @@
 "use client";
 
-import { Accordion } from "@heroui/react/accordion";
 import { Chip } from "@/src/components/ui/Chip";
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
@@ -36,17 +35,6 @@ export function CmsFooter({ children, actions }: { children?: ReactNode; actions
     {children ? <div className="flex flex-wrap gap-2">{children}</div> : null}
     {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
   </footer>;
-}
-
-export function CmsDemoControls({ children }: { children: ReactNode }) {
-  return <Accordion className="mt-6" hideSeparator>
-    <Accordion.Item id="demo-controls">
-      <Accordion.Heading>
-        <Accordion.Trigger className="text-sm">Demo controls<Accordion.Indicator /></Accordion.Trigger>
-      </Accordion.Heading>
-      <Accordion.Panel><Accordion.Body className="text-xs text-muted">{children}</Accordion.Body></Accordion.Panel>
-    </Accordion.Item>
-  </Accordion>;
 }
 
 export function CmsRecordRow({ children, actions }: { children: ReactNode; actions?: ReactNode }) {

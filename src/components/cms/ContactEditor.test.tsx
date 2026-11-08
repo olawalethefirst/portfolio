@@ -19,132 +19,107 @@ beforeEach(() => {
   vi.stubGlobal("scrollY", 280);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));
 });
-afterEach(() => { vi.unstubAllGlobals(); Reflect.deleteProperty(HTMLImageElement.prototype, "decode"); });
-function Saved() { const { records } = useSocial(); return <output aria-label="Saved GitHub URL">{records.find((record) => record.id === "github")?.url ?? "Removed"}</output>; }
-async function chooseImage() {
-  fireEvent.change(screen.getByLabelText(/Choose image|Replace image/), { target: { files: [new File(["image"], "custom.png", { type: "image/png" })] } });
-  await screen.findByText("custom.png selected for this demo.");
-}
+afterEach(() => vi.unstubAllGlobals());
+function Saved() { const { saved } = useSocial(); return <output aria-label="Saved GitHub">{saved.github}</output>; }
 
-it("previews working names, URLs and uploaded images in the full contact form and restores edits", async () => {
-  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: vi.fn(async () => {}) });
-  render(<SocialProvider><ContactEditor id="github" /><Saved /></SocialProvider>);
-  const saved = screen.getByLabelText("Saved GitHub URL").textContent;
-  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "My community" } });
-  fireEvent.change(screen.getByRole("textbox", { name: "Profile URL" }), { target: { value: "https://community.example.com/me" } });
-  await chooseImage();
+it("previews working URLs through public social links and confirms opening without saving or losing values", async () => {
+  render(<SocialProvider><ContactEditor /><Saved /></SocialProvider>);
+  const saved = screen.getByLabelText("Saved GitHub").textContent;
+  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/new-profile" } });
   fireEvent.click(screen.getByRole("button", { name: "Preview contact" }));
-  expect(await screen.findByRole("heading", { name: "Let’s make something happen." })).toBeTruthy();
+  const nav = await screen.findByRole("navigation", { name: "Social links" });
   expect(screen.getByRole("heading", { name: "How would you like to connect?" })).toBeTruthy();
   expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
-  expect(screen.getByLabelText("Saved GitHub URL").textContent).toBe(saved);
-  const link = screen.getByRole("link", { name: "Visit My community profile (opens in a new tab)" });
-  expect(link.querySelector("img")?.getAttribute("src")).toMatch(/^data:image\/png/);
+  expect(screen.getByLabelText("Saved GitHub").textContent).toBe(saved);
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Exit preview" }));
+  const link = within(nav).getByRole("link", { name: "Visit GitHub profile (opens in a new tab)" });
+  expect(link.getAttribute("href")).toBe("https://github.com/new-profile");
   expect(fireEvent.click(link, { ctrlKey: true })).toBe(false);
   const dialog = await screen.findByRole("dialog", { name: "Open this link?" });
-  expect(within(dialog).getByRole("link", { name: "Open link" }).getAttribute("href")).toBe("https://community.example.com/me");
+  const open = within(dialog).getByRole("link", { name: "Open link" });
+  expect(open.getAttribute("href")).toBe("https://github.com/new-profile");
+  expect(open.getAttribute("target")).toBe("_blank");
+  expect(open.getAttribute("rel")).toContain("noopener");
   fireEvent.keyDown(dialog, { key: "Escape" });
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.getByRole("heading", { name: "How would you like to connect?" })).toBeTruthy();
+  expect(screen.getByRole("navigation", { name: "Social links" })).toBeTruthy();
   expect(fireEvent(link, new MouseEvent("auxclick", { button: 1, bubbles: true, cancelable: true }))).toBe(false);
   fireEvent.click(await screen.findByRole("button", { name: "Stay in preview" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   fireEvent.keyDown(window, { key: "Escape" });
-  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("My community");
-  expect(screen.getByAltText("My community image").getAttribute("src")).toMatch(/^data:image\/png/);
+  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/new-profile");
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview contact" }));
   expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 280, behavior: "instant" });
+  expect(push).not.toHaveBeenCalled();
 });
 
-it("validates required custom values and captures the submitted image while retaining newer edits", async () => {
-  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: vi.fn(async () => {}) });
+it("validates unsafe and blank URLs, keeps invalid previews inert and discards errors to saved values", async () => {
+  render(<SocialProvider><ContactEditor /><Saved /></SocialProvider>);
+  const saved = screen.getByLabelText("Saved GitHub").textContent;
+  const github = screen.getByRole("textbox", { name: "GitHub URL" });
+  fireEvent.change(github, { target: { value: "javascript:alert(1)" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "LinkedIn URL" }), { target: { value: "" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "X URL" }), { target: { value: "http://x.com/profile" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(document.activeElement).toBe(github));
+  expect(github.getAttribute("aria-invalid")).toBe("true");
+  expect(screen.getByLabelText("Saved GitHub").textContent).toBe(saved);
+  fireEvent.click(screen.getByRole("button", { name: "Preview contact" }));
+  const nav = await screen.findByRole("navigation", { name: "Social links" });
+  for (const link of within(nav).getAllByRole("link")) {
+    expect(link.getAttribute("href")).toBeNull();
+    expect(link.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(link);
+  }
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByText(/invalid HTTPS URLs/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Exit preview" }));
+  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("javascript:alert(1)");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe(saved);
+  expect(screen.getByRole("textbox", { name: "GitHub URL" }).getAttribute("aria-invalid")).not.toBe("true");
+});
+
+it("captures the submitted URLs, blocks duplicates and retains newer edits and saved values across remount", async () => {
   let finish!: () => void;
   const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-  render(<SocialProvider request={request}><ContactEditor id="new" /></SocialProvider>);
-  expect(screen.queryByRole("button", { name: "Delete profile" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  const name = screen.getByRole("textbox", { name: "Name" });
-  await waitFor(() => expect(document.activeElement).toBe(name));
-  expect(request).not.toHaveBeenCalled();
-  fireEvent.change(name, { target: { value: "Community" } });
-  fireEvent.change(screen.getByRole("textbox", { name: "Profile URL" }), { target: { value: "https://example.com/me" } });
-  await chooseImage();
+  const { rerender } = render(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(request).toHaveBeenCalledTimes(1);
-  fireEvent.change(name, { target: { value: "Newer name" } });
+  expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
+  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/newer-edit" } });
   await act(async () => finish());
+  expect(screen.getByLabelText("Saved GitHub").textContent).toBe("https://github.com/submitted");
   expect(screen.getByRole("status", { name: "Contact save status" }).textContent).toContain("Unsaved changes");
   fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-  expect((name as HTMLInputElement).value).toBe("Community");
-  expect(screen.getByAltText("Community image").getAttribute("src")).toMatch(/^data:image\/png/);
-  expect(screen.getByRole("button", { name: "Delete profile" })).toBeTruthy();
+  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/submitted");
+  rerender(<SocialProvider request={request}><Saved /></SocialProvider>);
+  rerender(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
+  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/submitted");
 });
 
-it("keeps invalid and failed save-and-leave in the editor and retries without losing the destination", async () => {
+it("recovers from invalid and failed save-and-leave without losing the destination", async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<SocialProvider request={request}><ContactEditor id="github" /><Saved /></SocialProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Profile URL" }), { target: { value: "javascript:alert(1)" } });
-  fireEvent.click(screen.getByRole("button", { name: "Back to Contact" }));
+  render(<SocialProvider request={request}><ContactEditor /></SocialProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "relative/profile" } });
+  fireEvent.click(screen.getByRole("button", { name: "About" }));
   let dialog = await screen.findByRole("dialog");
   fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
   expect(await within(dialog).findByRole("alert")).toBeTruthy();
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(within(dialog).getByRole("button", { name: "Stay" }));
-  const url = await screen.findByRole("textbox", { name: "Profile URL" });
-  await waitFor(() => expect(document.activeElement).toBe(url));
-  fireEvent.change(url, { target: { value: "https://github.com/revised" } });
-  fireEvent.click(screen.getByRole("button", { name: "Back to Contact" }));
+  const github = await screen.findByRole("textbox", { name: "GitHub URL" });
+  await waitFor(() => expect(document.activeElement).toBe(github));
+  fireEvent.change(github, { target: { value: "https://github.com/corrected" } });
+  fireEvent.click(screen.getByRole("button", { name: "About" }));
   dialog = await screen.findByRole("dialog");
   fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
   expect(await within(dialog).findByText("Save failed")).toBeTruthy();
   expect(push).not.toHaveBeenCalled();
   fireEvent.click(within(dialog).getByRole("button", { name: "Save and leave" }));
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/contact"));
-  expect(screen.getByLabelText("Saved GitHub URL").textContent).toBe("https://github.com/revised");
-});
-
-it("preserves the selected image on failed replacement and saves through a demo failure/retry", async () => {
-  const decode = vi.fn().mockResolvedValue(undefined);
-  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: decode });
-  render(<SocialProvider><ContactEditor id="github" /></SocialProvider>);
-  await chooseImage();
-  const image = screen.getByAltText("GitHub image").getAttribute("src");
-  decode.mockRejectedValueOnce(new Error("Decode failed"));
-  fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["bad"], "bad.png", { type: "image/png" })] } });
-  await screen.findByText(/could not be read/);
-  expect(screen.getByAltText("GitHub image").getAttribute("src")).toBe(image);
-  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next request" }));
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  await screen.findByText(/demo request failed/);
-  expect(screen.getByAltText("GitHub image").getAttribute("src")).toBe(image);
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  await waitFor(() => expect(screen.getByRole("status", { name: "Contact save status" }).textContent).toContain("No unsaved changes"));
-});
-
-it("confirms profile deletion and recovers from cancellation/failure without changing other profiles", async () => {
-  let finish!: () => void;
-  const request = vi.fn().mockRejectedValueOnce(new Error("Delete failed")).mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
-  render(<SocialProvider request={request}><ContactEditor id="github" /><Saved /></SocialProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
-  let dialog = await screen.findByRole("dialog", { name: "Delete this profile?" });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  fireEvent.click(screen.getByRole("button", { name: "Delete profile" }));
-  dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
-  expect(await within(dialog).findByText("Delete failed")).toBeTruthy();
-  expect(screen.getByLabelText("Saved GitHub URL").textContent).not.toBe("Removed");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
-  expect(request).toHaveBeenCalledTimes(2);
-  expect(within(dialog).getByRole("button", { name: "Cancel" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.keyDown(dialog, { key: "Escape" });
-  expect(screen.getByRole("dialog")).toBe(dialog);
-  await act(async () => finish());
-  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/contact"));
-  expect(screen.getByLabelText("Saved GitHub URL").textContent).toBe("Removed");
+  await waitFor(() => expect(push).toHaveBeenCalledExactlyOnceWith("/admin/about"));
 });
 
 it.each(["Hero", "Projects", "Publications", "About"])("guards navigation from %s to Contact", async (section) => {
@@ -156,4 +131,17 @@ it.each(["Hero", "Projects", "Publications", "About"])("guards navigation from %
   expect(push).not.toHaveBeenCalled();
   fireEvent.click(within(dialog).getByRole("button", { name: "Discard" }));
   expect(push).toHaveBeenCalledExactlyOnceWith("/admin/contact");
+});
+
+it("preserves URLs through a demo toolbar failure and retries", async () => {
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
+  render(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
+  const saved = screen.getByLabelText("Saved GitHub").textContent;
+  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/retry" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(screen.getByLabelText("Saved GitHub").textContent).toBe(saved);
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(screen.getByLabelText("Saved GitHub").textContent).toBe("https://github.com/retry"));
+  expect(screen.queryByRole("alert")).toBeNull();
 });

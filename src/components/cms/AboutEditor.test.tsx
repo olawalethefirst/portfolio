@@ -125,10 +125,9 @@ it.each(["Hero", "Projects", "Publications"])("guards navigation from the %s edi
 });
 
 it("preserves About edits through the demo failure control and retries a toolbar save", async () => {
-  render(<AboutProvider><AboutEditor /><Saved /></AboutProvider>);
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
+  render(<AboutProvider request={request}><AboutEditor /><Saved /></AboutProvider>);
   const saved = screen.getByLabelText("Saved biography").textContent;
-  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next save" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Biography" }), { target: { value: "Retry this biography" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
@@ -137,5 +136,5 @@ it("preserves About edits through the demo failure control and retries a toolbar
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByLabelText("Saved biography").textContent).toBe("Retry this biography"));
   expect(screen.queryByRole("alert")).toBeNull();
-  expect(screen.getByRole("status", { name: "About save status" }).textContent).toContain("Saved in demo.");
+  expect(screen.getByRole("status", { name: "About save status" }).textContent).toContain("Saved.");
 });

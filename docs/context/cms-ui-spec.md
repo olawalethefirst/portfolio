@@ -22,9 +22,12 @@ private data. Real access control is a prerequisite for production CMS release.
 
 Assumptions for review: one editor, existing visual tokens and component library,
 manual Save, no scheduling, no collaborator workflow, no standalone media library.
-The first prototype uses in-memory editing state; reload resets it to fixtures. Durable or session persistence is deferred. Clearly label
-the UI “Demo — changes reset on reload” and use “Saved in demo” /
-“Published in demo” feedback rather than implying durable storage.
+The first prototype uses in-memory editing state; reload resets it to fixtures.
+Durable or session persistence is deferred. User-facing copy uses neutral action
+feedback without mock/demo badges, reset notices or simulated-functionality
+notices. Testing controls and failure toggles are absent from every CMS tab;
+automated tests inject request failures through provider dependencies. Previews remain available; this copy policy does not change persistence
+or submission behavior.
 
 ## Screen and content inventory
 
@@ -34,7 +37,7 @@ the UI “Demo — changes reset on reload” and use “Saved in demo” /
 | Projects | Ordered list; name, summary, What, How, mobile/web platform, screenshot, live URL | ProjectItem including What/How popovers |
 | Homepage | Eyebrow, headline; tagline and description for idea, iterate, solution | PrismHeroLayout |
 | About | Heading and biography | AboutCtaSection |
-| Contact | Create/edit profile names, HTTPS URLs and uploaded images | Full contact section with social links and simulated contact form |
+| Contact | GitHub, LinkedIn and X HTTPS URLs; fixed labels and accent-colored icons | Full contact section with social links and simulated contact form |
 | SEO | Default title/description; exact site-path override list and editors, including local articles | Plain metadata summary, explicitly not a search-engine rendering guarantee |
 
 Tags are managed in the publication editor through selection and creation of
@@ -86,7 +89,6 @@ content occupies established areas; do not add empty panels or filler controls.
 | Feedback | Reserved save-status row, then request errors when present | Result count and operation feedback |
 | Content | Main editing column and optional supporting column | Record rows or an empty/no-results state |
 | Footer | Discard changes on the left; entity lifecycle actions on the right | Optional supporting actions |
-| Demo controls | Collapsed section below the working UI | Same placement and treatment |
 
 Use the current shell's max-w-6xl container, shared responsive gutters, and a
 consistent title hierarchy. Editors with supporting content use the existing
@@ -198,7 +200,6 @@ TextField/Label/Description/FieldError and CloseButton usage stays library-owned
 | Decorative-image and demo-failure checkboxes | CmsCheckbox composes HeroUI Checkbox | Accessible labels, controlled values, disabled state and failure recovery |
 | Publication-type and Project-platform choices | CmsRadioGroup composes HeroUI RadioGroup / Radio | Group labels, keyboard operation, selected values and hidden-field preservation |
 | Publication/project status badges | Existing HeroUI-backed Chip wrapper | Status wording, wrapping and semantic theme colors |
-| Collapsed Demo controls | HeroUI Accordion within CmsDemoControls | Initially collapsed state, labelled trigger, keyboard access and placement below footer |
 
 `CmsRadioGroup` owns label typography, option wrapping/gaps and radio target
 sizing; callers supply typed options, values and handlers. `CmsBackButton` owns
@@ -364,8 +365,8 @@ one; no destructive control should be presented without implemented behavior.
 
 ## Shared editor behavior
 
-Hero, About and SEO defaults use working values and a last demo-saved snapshot.
-Contact profiles and SEO path overrides use their own demo-saved records.
+Hero, About, Contact and SEO defaults use working values and a last demo-saved snapshot.
+SEO path overrides use their own demo-saved records.
 Save changes validates and commits the submitted values in the demo; errors retain
 input and offer retry. These screens have no separate draft/publish controls in
 this phase. Hero/About offer public-component previews; Contact composes the full public contact section;
@@ -419,7 +420,7 @@ shared layout and wrapping. Publications/Projects retain their existing required
 status controls; the shared toolbar's typed SEO variant has search only.
 
 Both defaults and record editors follow Header → Toolbar → Feedback → Content →
-Footer → collapsed Demo controls. Saving actions belong in the toolbar; footer
+Footer. Saving actions belong in the toolbar; footer
 Discard is left and applicable Delete is right. Editors have Back navigation.
 Use the shared full-width single-column layout and field/control compositions.
 The record editor shows Path, SEO title override and description override, followed
@@ -471,73 +472,47 @@ dirty navigation. Performance none: static text and small local collections.
 Controller reviews build, list/editor consistency, keyboard/focus, path validation,
 discard/delete, both themes, 320px/200% zoom and unchanged public metadata.
 
-### Contact profile collection and full contact preview
+### Contact URL editor and full contact preview
 
-The CMS section is Contact. `/admin/contact` lists profile records with shared
-collection search, rows, feedback and empty/no-results states. New profile opens
-`/admin/contact/new`; saved records use stable IDs at `/admin/contact/[id]`.
-`/admin/social` redirects to the new list for existing links. There is no status
-filter, publishing state, manual ordering or list-row Delete.
+`/admin/contact` edits the GitHub, LinkedIn and X HTTPS destinations in one
+screen. Labels and the built-in accent-colored icons stay fixed in code.
+There are no custom profile records, image controls, create or delete actions.
+`/admin/social`, `/admin/contact/new` and `/admin/contact/[id]` redirect to this
+editor for existing links.
 
-Each record edits Name, Profile URL and Image using the shared editor layout,
-with the image panel beside the main fields and stacked below at narrow widths.
-Save changes requires a nonblank name, complete HTTPS URL without sign-in
-credentials and a selected image for a new custom profile. Names are not tied to
-an enumeration of platforms. Existing GitHub/LinkedIn/X fixtures retain their
-original built-in logos until replaced; removing a replacement restores that
-built-in logo. A custom record without an image cannot be saved. The link's
-accessible name identifies its purpose, so the displayed image is decorative.
+Each URL must be complete HTTPS without sign-in credentials. SocialProvider
+retains the last demo-saved destinations across CMS navigation. Saving captures
+the submitted URLs; newer edits remain dirty, failures preserve values and retry
+is explicit. Discard restores saved values and clears validation/feedback.
+Unsaved navigation uses the shared save/discard/stay guard. Reload restores
+fixtures. There is no backend, durable storage or inquiry inbox.
 
-Reuse ImagePicker for JPEG/PNG/WebP files up to 10 MiB, including read/decode,
-replacement recovery, cancellation and stale-result protection. These are local
-demo selections, not uploads. ImagePicker owns those interactions and accepts a
-preview child; Contact composes ContactProfileImage for its square, contained
-image treatment. Publications and Projects retain the picker's default preview.
-Do not add per-consumer appearance flags to the picker.
-
-SocialProvider retains flat demo-saved profile records across CMS navigation.
-Each editor owns its unsaved values. Saving captures the submitted name/URL/image;
-newer edits remain dirty, failures preserve values and retry is explicit. Discard
-restores the saved record (or an empty new profile) and clears validation/feedback.
-Never-saved records have no Delete. Saved-record deletion uses the shared footer
-placement, lifecycle button and confirmation, preserving values on cancel/failure
-and blocking duplicate requests/dismissal while pending. Success returns to Contact.
-Reload restores fixtures. There is no backend, durable storage or inquiry inbox.
-
-Both collection and editor previews replace the CMS shell through CmsPreviewFrame.
-They show the complete contact section: its public heading, profile links and
-three-step contact form. Collection preview uses all saved records, ignoring search;
-editor preview substitutes its working record or appends a never-saved profile.
-Missing values use identified placeholders and invalid URLs remain unavailable.
-An empty collection still previews the full form without substituting fixed links.
-Preview entry/exit does not save or discard; it restores values, initiating focus,
-scroll and list search. CmsPreviewLinks confirms modified/middle-click navigation
-before opening a profile in a new tab; nested Escape closes only the confirmation.
+Preview replaces the CMS shell through CmsPreviewFrame and shows the full public
+contact section with the working URLs and three-step form. Invalid
+URLs remain unavailable and are identified by a status message. Preview entry/exit
+does not save or discard; it restores values, initiating focus and scroll.
+CmsPreviewLinks confirms modified/middle-click navigation before opening a profile
+in a new tab; nested Escape closes only the confirmation.
 
 The public and CMS views compose ContactSection, ContactIntroduction,
 ContactConversationForm, ContactCompletion and SocialLinks. ContactConversationSection
 remains a convenience composition for the live page, preserving its original props,
 default links and submission callback. The form owns validation and step/submission
 state, accepts an optional submission handler and renders its completion children.
-The CMS composition supplies no external submission handler and provides truthful
-simulated-completion content. Public components contain no CMS/preview mode flags
+The CMS composition supplies no external submission handler and provides neutral
+completion content. Public components contain no CMS/preview mode flags
 or CMS imports. Profile data stays typed data; layout and content choices use
 composition rather than consumer-specific configuration props.
 
-Name considers Type/UserRound and omits an icon because context suffices. URL
-retains leading Link over ExternalLink. New profile retains Plus over UserPlus;
-Preview contact retains Maximize2 over Eye; Save retains Save over Check. Native
-file selection and ghost Remove/Discard remain icon-free. Contact navigation uses
-MessagesSquare over Share2 for the complete contact-conversation section under
-the existing ghost-navigation exception. Uploaded images retain their own colors.
+URL fields retain leading Link over ExternalLink to identify destinations.
+Preview contact retains Maximize2 over Eye; Save retains Save over Check.
+Ghost Discard remains icon-free. Contact navigation retains MessagesSquare.
 
-Risk level 2: custom-record validation, image replacement and staged-image continuity,
-pending-save snapshots, create/delete recovery, dirty navigation and form/link
-preview continuity. Performance possible: controller verifies responsive editing
-and repeated full-form previews with several near-limit images, no new FileReader
-work after text-only changes and no growing collection of abandoned image reads.
-Controller also checks build, desktop/320px/200% zoom, themes, reduced motion,
-keyboard/focus and unchanged live contact behavior.
+Risk level 2: URL validation, pending-save snapshots, save recovery, dirty
+navigation and form/link preview continuity. Performance none: the fixed three
+links avoid image loading or collection growth. Controller checks build,
+desktop/320px/200% zoom, themes, reduced motion, keyboard/focus and unchanged
+live contact behavior.
 
 ### About editor and preview
 
@@ -552,7 +527,7 @@ AboutProvider holds only the last in-memory demo-saved snapshot across CMS
 navigation; working edits stay local to AboutEditor. Reload restores the public
 fixtures. Saving captures the submitted values, blocks duplicate requests and
 leaves newer edits dirty. Request failures retain values for retry. Feedback says
-Saved in demo, and collapsed Demo controls can fail the next save. Discard changes
+Saved. Discard changes
 restores the last saved snapshot and clears validation and request feedback.
 There are no publish/unpublish/delete actions for this singleton.
 
@@ -831,8 +806,7 @@ publication and explains that its saved draft, published demo version and curren
 edits are removed. Cancellation leaves it unchanged. Pending requests block
 repeat deletion and dismissal; failures keep confirmation open for retry and
 leave records and working editor values intact. Success from the editor returns
-to Publications. The editor's demo controls can deliberately fail the next
-request. Reload restores fixtures; deletion never affects the real website.
+to Publications. Reload restores fixtures; deletion never affects the real website.
 
 Icon decisions: editor-footer Delete uses text-only `danger-soft`
 buttons. Trash2/X were considered for these entry points; omit an icon because

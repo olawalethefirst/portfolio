@@ -1,6 +1,3 @@
-import { ContactEditor } from "@/src/components/cms/ContactEditor";
+import { redirect } from "next/navigation";
 
-export default async function ContactProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  return <ContactEditor key={id} id={id} />;
-}
+export default function ContactProfilePage() { redirect("/admin/contact"); }

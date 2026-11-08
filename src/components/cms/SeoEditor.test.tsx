@@ -119,7 +119,8 @@ it("preserves input and the leave destination through a failed save and retries"
 });
 
 it("keeps invalid save-and-leave open, focuses correction and retries the demo failure", async () => {
-  render(<SeoProvider><SeoEditor id="defaults" /><Saved /></SeoProvider>);
+  const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
+  render(<SeoProvider request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Default title" }), { target: { value: " " } });
   fireEvent.click(screen.getByRole("button", { name: "Back to SEO" }));
   const dialog = await screen.findByRole("dialog");
@@ -130,8 +131,6 @@ it("keeps invalid save-and-leave open, focuses correction and retries the demo f
   const title = await screen.findByRole("textbox", { name: "Default title" });
   await waitFor(() => expect(document.activeElement).toBe(title));
   fireEvent.change(title, { target: { value: "Corrected default" } });
-  fireEvent.click(screen.getByRole("button", { name: "Demo controls" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: "Fail next request" }));
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(screen.getByLabelText("Saved default title").textContent).toBe("Portfolio");
@@ -153,11 +152,11 @@ it("confirms deleting a saved override, preserves edits on cancellation/failure,
   expect((screen.getByRole("textbox", { name: "SEO title override" }) as HTMLInputElement).value).toBe("Unsaved title");
   fireEvent.click(screen.getByRole("button", { name: "Delete override" }));
   dialog = await screen.findByRole("dialog");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
   expect(await within(dialog).findByText("Delete failed")).toBeTruthy();
   expect(screen.getByLabelText("Saved Contact title").textContent).toBe("Contact");
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
-  fireEvent.click(within(dialog).getByRole("button", { name: "Delete in demo" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
+  fireEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
   expect(request).toHaveBeenCalledTimes(2);
   expect(within(dialog).getByRole("button", { name: "Cancel" }).hasAttribute("disabled")).toBe(true);
   fireEvent.keyDown(dialog, { key: "Escape" });
@@ -178,8 +177,8 @@ it("offers recovery for missing IDs and keeps never-saved records free of deleti
 });
 
 it.each(["Hero", "Projects", "Publications", "About", "Contact"])("guards navigation from %s to SEO", async (section) => {
-  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : section === "About" ? <AboutEditor /> : <ContactEditor id="github" />}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
-  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : section === "About" ? "Heading" : "Profile URL";
+  render(<CmsProvider><ProjectProvider><HeroProvider><AboutProvider><SocialProvider>{section === "Hero" ? <HeroEditor /> : section === "Projects" ? <ProjectEditor id="field-notes" /> : section === "Publications" ? <PublicationEditor id="publication-1" /> : section === "About" ? <AboutEditor /> : <ContactEditor />}</SocialProvider></AboutProvider></HeroProvider></ProjectProvider></CmsProvider>);
+  const field = section === "Hero" ? "Headline" : section === "Projects" ? "Name" : section === "Publications" ? "Title" : section === "About" ? "Heading" : "GitHub URL";
   fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Unsaved change" } });
   fireEvent.click(screen.getByRole("button", { name: "SEO" }));
   const dialog = await screen.findByRole("dialog", { name: "Keep your changes?" });

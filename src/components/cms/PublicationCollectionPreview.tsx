@@ -31,6 +31,6 @@ export function PublicationCollectionPreview({ records }: { records: readonly Pu
     setArticle(selected);
     return true;
   }}>
-    <PublicationsSection publications={publications} layout="standalone" emptyState={<CmsEmptyState title="No demo-published publications" description="Publish a publication in the demo to preview it in this section." />} />
+    <PublicationsSection publications={publications} layout="standalone" emptyState={<CmsEmptyState title="No published publications" description="Publish a publication to preview it in this section." />} />
   </CmsPreviewLinks>;
 }

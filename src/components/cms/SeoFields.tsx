@@ -20,6 +20,6 @@ export function SeoFields({ value, defaults, onChange, errors }: {
         <div><dt className="text-muted">Description</dt><dd className="whitespace-pre-wrap">{effective.description || "Not set"}</dd><dd className="text-xs text-muted">{effective.descriptionSource}</dd></div>
       </dl>
     </section>
-    <p className="text-sm text-muted">This summarizes working demo values. Live metadata is unchanged, and search engines may display different text.</p>
+    <p className="text-sm text-muted">Search engines may display different text.</p>
   </>;
 }
