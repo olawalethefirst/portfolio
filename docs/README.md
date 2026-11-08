@@ -9,6 +9,13 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/cms-ui-spec.md`](context/cms-ui-spec.md): proposed CMS UI screens,
+  reusable public previews, editing states, scope and acceptance contract.
+
+- [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): proposed
+  PostgreSQL schemas for editable content, relationships, validation boundaries,
+  and separate visitor data.
+
 - [`context/project-explanations-spec.md`](context/project-explanations-spec.md):
   What/How project content, native HeroUI popovers and acceptance requirements.
 
