@@ -129,3 +129,94 @@ it("offers recovery for missing IDs and keeps never-saved records free of deleti
   rerender(<SeoProvider><SeoEditor id="new" /></SeoProvider>);
   expect(screen.queryByRole("button", { name: "Delete override" })).toBeNull();
 });
+
+it("revalidates the override relationship from either field without exposing untouched path errors", () => {
+  render(<SeoProvider><SeoEditor id="new" /></SeoProvider>);
+  const title = screen.getByRole("textbox", { name: "SEO title override" });
+  const description = screen.getByRole("textbox", { name: "SEO description override" });
+  const path = screen.getByRole("textbox", { name: "Path" });
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(description);
+  fireEvent.blur(description);
+  expect(title.getAttribute("aria-invalid")).toBe("true");
+  const ids = title.getAttribute("aria-describedby")?.split(" ") ?? [];
+  expect(ids.some((id) => document.getElementById(id)?.textContent === "Enter at least one title or description override.")).toBe(true);
+  expect(path.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(description, { target: { value: "Description only" } });
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(description, { target: { value: " " } });
+  expect(title.getAttribute("aria-invalid")).toBe("true");
+  fireEvent.change(title, { target: { value: "Title only" } });
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+});
+
+it("uses defaults-only form validation and resets independent blur errors on discard", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  render(<SeoProvider request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
+  const title = screen.getByRole("textbox", { name: "Default title" });
+  const description = screen.getByRole("textbox", { name: "Default description" });
+  fireEvent.change(title, { target: { value: "" } });
+  fireEvent.change(description, { target: { value: "" } });
+  fireEvent.focus(description);
+  fireEvent.blur(description);
+  expect(description.getAttribute("aria-invalid")).toBe("true");
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+  const form = title.closest("form");
+  expect(form).toBeTruthy();
+  expect(form!.noValidate).toBe(true);
+  fireEvent.submit(form!);
+  await waitFor(() => expect(document.activeElement).toBe(title));
+  expect(screen.queryByRole("textbox", { name: "Path" })).toBeNull();
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  fireEvent.change(description, { target: { value: "" } });
+  expect(description.getAttribute("aria-invalid")).not.toBe("true");
+});
+
+it("clears contextual path errors during correction and retains a newer path after submission", async () => {
+  let finish!: () => void;
+  const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  render(<SeoProvider request={request}><SeoEditor id="new" /></SeoProvider>);
+  const path = screen.getByRole("textbox", { name: "Path" }) as HTMLInputElement;
+  fireEvent.change(path, { target: { value: "/%63ontact/" } });
+  fireEvent.focus(path);
+  fireEvent.blur(path);
+  expect(path.getAttribute("aria-invalid")).toBe("true");
+  fireEvent.change(path, { target: { value: "/notes/" } });
+  expect(path.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(screen.getByRole("textbox", { name: "SEO title override" }), { target: { value: "Notes" } });
+  expect(path.closest("form")).toBeTruthy();
+  fireEvent.submit(path.closest("form")!);
+  fireEvent.change(path, { target: { value: "/later/" } });
+  await act(async () => finish());
+  expect(path.value).toBe("/later/");
+  expect(screen.getByRole("status", { name: "SEO save status" }).textContent).not.toContain("Saved.");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(path.value).toBe("/notes");
+});
+
+it("suppresses obsolete save errors and retries the current metadata", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { fail = reject; })).mockResolvedValue(undefined);
+  render(<SeoProvider request={request}><SeoEditor id="defaults" /><Saved /></SeoProvider>);
+  const title = screen.getByRole("textbox", { name: "Default title" });
+  fireEvent.change(title, { target: { value: "Submitted" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  fireEvent.change(title, { target: { value: "Newer" } });
+  await act(async () => fail(new Error("Obsolete failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(screen.getByLabelText("Saved default title").textContent).toBe("Newer"));
+});
+
+it("allows discarding validation feedback on an untouched new override", async () => {
+  render(<SeoProvider><SeoEditor id="new" /></SeoProvider>);
+  const path = screen.getByRole("textbox", { name: "Path" });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(path.getAttribute("aria-invalid")).toBe("true"));
+  const discard = screen.getByRole("button", { name: "Discard changes" });
+  expect(discard.hasAttribute("disabled")).toBe(false);
+  fireEvent.click(discard);
+  expect(path.getAttribute("aria-invalid")).not.toBe("true");
+  expect(screen.getByRole("textbox", { name: "SEO title override" }).getAttribute("aria-invalid")).not.toBe("true");
+});

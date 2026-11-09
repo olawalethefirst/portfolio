@@ -3,7 +3,7 @@
 import { useDraftStore, type DraftStore } from "./working-drafts";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialSocial, type SocialDraft } from "./social";
+import { socialSchema, initialSocial, type SocialDraft } from "./social";
 
 type SocialRequest = () => Promise<void>;
 async function demoRequest() {
@@ -23,8 +23,8 @@ export function SocialProvider({ children, request = demoRequest }: { children: 
   const saving = useRef(false);
   async function save(value: SocialDraft) {
     if (saving.current) throw new Error("A save is already in progress.");
+    const submitted = socialSchema.parse({ ...value });
     saving.current = true;
-    const submitted = { ...value };
     setPending(true);
     try {
       await request();

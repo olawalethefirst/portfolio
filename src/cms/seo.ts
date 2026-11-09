@@ -1,5 +1,13 @@
-export interface SeoValues { title: string; description: string }
-export interface SeoRecord extends SeoValues { id: string; path: string }
+import { z } from "zod";
+
+const seoValuesSchema = z.object({ title: z.string(), description: z.string() });
+export const seoDefaultsSchema = seoValuesSchema.extend({
+  title: z.string().refine((value) => Boolean(value.trim()), "Enter a default SEO title."),
+  description: z.string().refine((value) => Boolean(value.trim()), "Enter a default SEO description."),
+});
+const seoRecordSchema = seoValuesSchema.extend({ id: z.string(), path: z.string() });
+export type SeoValues = z.infer<typeof seoValuesSchema>;
+export type SeoRecord = z.infer<typeof seoRecordSchema>;
 export interface SeoState { defaults: SeoValues; records: SeoRecord[] }
 export type SeoErrors = Partial<Record<"path" | "title" | "description", string>>;
 export const emptySeoOverride = (): SeoValues => ({ title: "", description: "" });
@@ -40,17 +48,37 @@ export function normalizeSeoPath(value: string): string | undefined {
     return /[A-Za-z0-9._~-]/.test(character) ? character : `%${hex.toUpperCase()}`;
   });
 }
+export function createSeoRecordSchema(records: readonly SeoRecord[]) {
+  return seoRecordSchema.superRefine((value, context) => {
+    const path = normalizeSeoPath(value.path);
+    if (!path) {
+      context.addIssue({ code: "custom", path: ["path"], message: "Enter an exact site path starting with /, without a query, fragment or route pattern." });
+    } else if (records.some((record) => record.id !== value.id && normalizeSeoPath(record.path) === path)) {
+      context.addIssue({ code: "custom", path: ["path"], message: "An SEO override already exists for this path." });
+    }
+    if (!value.title.trim() && !value.description.trim()) {
+      context.addIssue({ code: "custom", path: ["title"], message: "Enter at least one title or description override." });
+    }
+  });
+}
+
 export function validateSeoDefaults(value: SeoValues): SeoErrors {
+  const result = seoDefaultsSchema.safeParse(value);
+  if (result.success) return {};
+  const { fieldErrors } = z.flattenError(result.error);
   const errors: SeoErrors = {};
-  if (!value.title.trim()) errors.title = "Enter a default SEO title.";
-  if (!value.description.trim()) errors.description = "Enter a default SEO description.";
+  if (fieldErrors.title?.[0]) errors.title = fieldErrors.title[0];
+  if (fieldErrors.description?.[0]) errors.description = fieldErrors.description[0];
   return errors;
 }
 export function validateSeoRecord(value: SeoRecord, records: SeoRecord[]): SeoErrors {
+  const result = createSeoRecordSchema(records).safeParse(value);
+  if (result.success) return {};
+  const { fieldErrors } = z.flattenError(result.error);
   const errors: SeoErrors = {};
-  const path = normalizeSeoPath(value.path);
-  if (!path) errors.path = "Enter an exact site path starting with /, without a query, fragment or route pattern.";
-  else if (records.some((record) => record.id !== value.id && normalizeSeoPath(record.path) === path)) errors.path = "An SEO override already exists for this path.";
-  if (!value.title.trim() && !value.description.trim()) errors.title = "Enter at least one title or description override.";
+  for (const field of ["path", "title", "description"] as const) {
+    const message = fieldErrors[field]?.[0];
+    if (message) errors[field] = message;
+  }
   return errors;
 }

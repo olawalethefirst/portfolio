@@ -1,7 +1,7 @@
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
 import { HeroProvider } from "@/src/cms/HeroProvider";
-import { fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { HeroEditor } from "./HeroEditor";
 
@@ -74,15 +74,15 @@ it("preserves edits after a failed save and retries", async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
   render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
   const headline = screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement;
-  fireEvent.change(headline, { target: { value: "Keep through failed save" } });
+  fireEvent.change(headline, { target: { value: "Keep failed save" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
-  expect(headline.value).toBe("Keep through failed save");
+  expect(headline.value).toBe("Keep failed save");
   expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toContain("Unsaved changes");
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("No unsaved changes"));
   expect(screen.queryByRole("alert")).toBeNull();
-  expect(headline.value).toBe("Keep through failed save");
+  expect(headline.value).toBe("Keep failed save");
 });
 
 it("blocks incomplete Hero saves, focuses the first error and clears errors on discard", async () => {
@@ -117,4 +117,72 @@ it.each([["Work", "/#work"], ["Hire", "/contact"]])("uses the public %s destinat
   fireEvent.click(screen.getByRole("button", { name: "Exit preview" }));
   expect((screen.getByRole("textbox", { name: "Headline" }) as HTMLInputElement).value).toBe("Keep while opening links");
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview" }));
+});
+
+it("shows nested length errors on blur, corrects them live and retains over-limit drafts in preview", async () => {
+  const request = vi.fn();
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
+  const idea = () => within(screen.getByRole("region", { name: "Idea" }));
+  const tagline = idea().getByRole("textbox", { name: "Tagline" });
+  fireEvent.change(tagline, { target: { value: "x".repeat(27) } });
+  expect(tagline.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(tagline);
+  fireEvent.blur(tagline);
+  expect(tagline.getAttribute("aria-invalid")).toBe("true");
+  expect(idea().getByText("Use 26 characters or fewer.")).toBeTruthy();
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Exit preview" }));
+  expect((idea().getByRole("textbox", { name: "Tagline" }) as HTMLInputElement).value).toBe("x".repeat(27));
+  fireEvent.change(idea().getByRole("textbox", { name: "Tagline" }), { target: { value: "Corrected" } });
+  expect(idea().getByRole("textbox", { name: "Tagline" }).getAttribute("aria-invalid")).not.toBe("true");
+});
+
+it("submits the owning form and suppresses request failures after newer edits", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
+  const headline = screen.getByRole("textbox", { name: "Headline" });
+  fireEvent.change(headline, { target: { value: "Submitted" } });
+  expect(headline.closest("form")).toBeTruthy();
+  fireEvent.submit(headline.closest("form")!);
+  expect(request).toHaveBeenCalledTimes(1);
+  fireEvent.change(headline, { target: { value: "Newer edit" } });
+  await act(async () => fail(new Error("Old failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("keeps newer nested edits after a pending save and discards to the submitted snapshot", async () => {
+  let finish!: () => void;
+  const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
+  const description = within(screen.getByRole("region", { name: "Idea" })).getByRole("textbox", { name: "Description" }) as HTMLTextAreaElement;
+  fireEvent.change(description, { target: { value: "Submitted idea" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  fireEvent.change(description, { target: { value: "Newer idea" } });
+  await act(async () => finish());
+  expect(description.value).toBe("Newer idea");
+  expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("Unsaved changes");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(description.value).toBe("Submitted idea");
+});
+
+it("focuses the earliest invalid nested field and resets feedback on discard", async () => {
+  const request = vi.fn();
+  render(<HeroProvider request={request}><HeroEditor /></HeroProvider>);
+  const idea = within(screen.getByRole("region", { name: "Idea" })).getByRole("textbox", { name: "Description" });
+  const iterate = within(screen.getByRole("region", { name: "Iterate" })).getByRole("textbox", { name: "Tagline" });
+  fireEvent.change(iterate, { target: { value: "" } });
+  fireEvent.change(idea, { target: { value: "x".repeat(57) } });
+  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(document.activeElement).toBe(idea));
+  const ids = idea.getAttribute("aria-describedby")?.split(" ") ?? [];
+  expect(ids.some((id) => document.getElementById(id)?.textContent === "Use 56 characters or fewer.")).toBe(true);
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.change(idea, { target: { value: "Corrected" } });
+  expect(idea.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(iterate.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(iterate, { target: { value: "" } });
+  expect(iterate.getAttribute("aria-invalid")).not.toBe("true");
 });

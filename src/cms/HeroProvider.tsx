@@ -2,7 +2,7 @@
 
 import { useDraftStore, type DraftStore } from "./working-drafts";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialHero, type HeroDraft } from "./hero";
+import { heroSchema, initialHero, type HeroDraft } from "./hero";
 const HeroContext = createContext<{ saved: HeroDraft; save: (value: HeroDraft) => Promise<void>; pending: boolean; working: DraftStore<HeroDraft> } | null>(null);
 async function demoRequest() {
   await new Promise((resolve) => setTimeout(resolve, 300));
@@ -14,7 +14,7 @@ export function HeroProvider({ children, request = demoRequest }: { children: Re
   const saving = useRef(false);
   async function save(next: HeroDraft) {
     if (saving.current) throw new Error("A save is already in progress.");
-    const submitted = structuredClone(next);
+    const submitted = heroSchema.parse(structuredClone(next));
     saving.current = true;
     setPending(true);
     try {

@@ -93,13 +93,13 @@ it("validates publishing, allows incomplete drafts, and recovers from a failed s
 it("publishes, unpublishes without losing edits, and confirms deletion", async () => {
   const request = vi.fn().mockResolvedValue(undefined);
   render(<ProjectProvider request={request}><ProjectEditor id="field-notes" /><Published /></ProjectProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Updated project" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Updated app" } });
   fireEvent.click(screen.getByRole("button", { name: "Update published" }));
-  await waitFor(() => expect(screen.getByLabelText("Published name").textContent).toBe("Updated project"));
+  await waitFor(() => expect(screen.getByLabelText("Published name").textContent).toBe("Updated app"));
   fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
   fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
   await waitFor(() => expect(screen.getByLabelText("Published name").textContent).toBe("Unpublished"));
-  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Updated project");
+  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("Updated app");
   fireEvent.click(screen.getByRole("button", { name: "Delete project" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -276,4 +276,106 @@ it("shows an empty project section when every record is unpublished", async () =
   expect(await screen.findByRole("heading", { name: "No published projects" })).toBeTruthy();
   expect(screen.queryByRole("article")).toBeNull();
   expect(screen.queryByText("mobile device preview")).toBeNull();
+});
+
+it("saves an incomplete over-limit draft on implicit submission and never publishes", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  render(<ProjectProvider request={request}><ProjectEditor id="new" /><Published /></ProjectProvider>);
+  const name = screen.getByRole("textbox", { name: "Name" });
+  fireEvent.change(name, { target: { value: "Over-limit draft name" } });
+  const form = name.closest("form");
+  expect(form).toBeTruthy();
+  expect(form!.noValidate).toBe(true);
+  fireEvent.submit(form!);
+  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));
+  expect(screen.getByLabelText("Published name").textContent).toBe("Unpublished");
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("corrects blur errors without submit and saves drafts despite displayed publication errors", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  render(<ProjectProvider request={request}><ProjectEditor id="new" /></ProjectProvider>);
+  const name = screen.getByRole("textbox", { name: "Name" });
+  fireEvent.change(name, { target: { value: "a".repeat(12) } });
+  expect(name.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(name);
+  fireEvent.blur(name);
+  expect(name.getAttribute("aria-invalid")).toBe("true");
+  expect(screen.getByRole("textbox", { name: "Summary" }).getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(name, { target: { value: "a".repeat(11) } });
+  expect(name.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+});
+
+it("focuses URL before screenshot and updates conditional image-description errors", async () => {
+  render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  const url = screen.getByRole("textbox", { name: "Live URL" });
+  fireEvent.change(url, { target: { value: "http://example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update published" }));
+  await waitFor(() => expect(document.activeElement).toBe(url));
+  fireEvent.change(url, { target: { value: "https://example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Update published" }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Choose image")));
+  const alt = screen.getByRole("textbox", { name: "Image description" });
+  fireEvent.change(alt, { target: { value: "" } });
+  fireEvent.focus(alt);
+  fireEvent.blur(alt);
+  expect(alt.getAttribute("aria-invalid")).toBe("true");
+  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.queryByRole("textbox", { name: "Image description" })).toBeNull();
+  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
+});
+
+it("clears failed replacement feedback on discard without losing the saved image", () => {
+  render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["bad"], "bad.txt", { type: "text/plain" })] } });
+  expect(screen.getByRole("alert").textContent).toContain("JPEG, PNG or WebP");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.getByLabelText("Replace image")).toBeTruthy();
+});
+
+it("suppresses a failed save after newer edits and permits retry", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { fail = reject; })).mockResolvedValue(undefined);
+  render(<ProjectProvider request={request}><ProjectEditor id="new" /></ProjectProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Submitted" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Newer" } });
+  await act(async () => fail(new Error("Obsolete failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));
+});
+
+it("cancels a pending image replacement on discard so late decoding cannot replace the baseline", async () => {
+  let finish!: () => void;
+  const decode = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: decode });
+  try {
+    render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+    const original = screen.getByRole("img").getAttribute("src");
+    fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["image"], "new.png", { type: "image/png" })] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    await act(async () => finish());
+    expect(screen.getByRole("img").getAttribute("src")).toBe(original);
+    expect(screen.queryByText("new.png selected.")).toBeNull();
+    expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
+  } finally {
+    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
+  }
+});
+
+it("shows newly active image-description requirements after a publish attempt", () => {
+  render(<ProjectProvider><ProjectEditor id="new" /></ProjectProvider>);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
 });

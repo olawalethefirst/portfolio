@@ -2,14 +2,17 @@
 
 import { Maximize2, Save, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Form } from "@heroui/react";
+import { useId, useRef, useState } from "react";
 import { useCms } from "@/src/cms/CmsProvider";
 import {
   emptyPublication,
   publicationState,
+  publicationDraftSchema,
   samePublication,
   validatePublication,
   type PublicationAction,
+  type PublicationDraft,
   type PublicationErrors,
   type PublicationRecord,
 } from "@/src/cms/publications";
@@ -46,13 +49,31 @@ function PublicationEditorForm({
   const { records, commit, pending, working } = useCms();
   const { id, value, setValue } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(null);
-  const [errors, setErrors] = useState<PublicationErrors>({});
+  const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  const revision = useRef(0);
+  const [exposed, setExposed] = useState<Partial<Record<keyof PublicationDraft, boolean>>>({});
+  const [publishAttempted, setPublishAttempted] = useState(false);
+  const [imageReset, setImageReset] = useState(0);
+  const [imageSelected, setImageSelected] = useState(false);
+  const currentErrors = validatePublication(value, new Date().toISOString().slice(0, 10));
+  const errors: PublicationErrors = {};
+  for (const field of Object.keys(currentErrors) as (keyof PublicationDraft)[]) {
+    if (publishAttempted || exposed[field]) errors[field] = currentErrors[field];
+  }
   const [message, setMessage] = useState("");
   const [requestError, setRequestError] = useState("");
   const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
   const { closeRef, capture } = useCmsPreview(Boolean(previewMode), () => setPreviewMode(null));
   const record = records.find((item) => item.id === id);
   const dirty = !samePublication(value, record?.draft ?? emptyPublication());
+
+  function changeValue(next: PublicationDraft) {
+    revision.current += 1;
+    setRequestError(""); setMessage("");
+    setValue(next);
+  }
+  const expose = (field: keyof PublicationDraft) => setExposed((current) => ({ ...current, [field]: true }));
 
   function openPreview(mode: "card" | "detail") {
     capture(`publication-${mode}-trigger`);
@@ -68,20 +89,25 @@ function PublicationEditorForm({
         value,
         new Date().toISOString().slice(0, 10),
       );
-      setErrors(nextErrors);
-      const first = Object.keys(nextErrors)[0];
+      setPublishAttempted(true);
+      const order: (keyof PublicationDraft)[] = ["title", "summary", value.kind === "local" ? "bodyMarkdown" : "externalUrl", "tagsText", "coverSrc", ...(!value.decorativeCover ? ["coverAlt" as const] : []), "publishedOn"];
+      const first = order.find((field) => nextErrors[field]);
       if (first) {
         requestAnimationFrame(() =>
-          document.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(),
+          formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(),
         );
         return false;
       }
-    } else setErrors({});
+    } else if (action === "save") {
+      const result = publicationDraftSchema.safeParse(value);
+      if (!result.success) { setRequestError(result.error.issues[0].message); return false; }
+    }
+    const submittedRevision = revision.current;
     try {
       await commit(id, value, action);
       if (action === "delete") {
         router.push("/admin/publications");
-      } else setMessage(
+      } else if (revision.current === submittedRevision) setMessage(
         action === "save"
           ? "Saved."
           : action === "publish"
@@ -91,7 +117,7 @@ function PublicationEditorForm({
       setDialog(null);
       return true;
     } catch (error) {
-      setRequestError(
+      if (action === "delete" || action === "unpublish" || revision.current === submittedRevision) setRequestError(
         error instanceof Error
           ? error.message
           : "The request failed. Your edits are still here. Try again.",
@@ -108,23 +134,34 @@ function PublicationEditorForm({
       <CmsBackButton disabled={pending} onPress={() => router.push("/admin/publications")}>Publications</CmsBackButton>
       <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
       <CmsToolbar actions={<>
-        <Button variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))} onPress={() => void act("save")}>Save draft</Button>
-        <Button startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending} onPress={() => void act("publish")}>{record?.published ? "Update published" : "Publish"}</Button>
+        <Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button>
+        <Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button>
       </>}>
-        <Button id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
-        <Button id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
+        <Button type="button" id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
+        <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
       <CmsFeedback label="Publication save status" error={dialog === "delete" ? undefined : requestError}>
         <span>{pending ? "Saving…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
       </CmsFeedback>
-      <PublicationFields value={value} errors={errors} onChange={setValue} />
+      <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => {
+        event.preventDefault();
+        const submitter = (event.nativeEvent as SubmitEvent).submitter;
+        const publish = submitter instanceof HTMLButtonElement && submitter.name === "intent" && submitter.value === "publish";
+        void act(publish ? "publish" : "save");
+      }}>
+        <PublicationFields value={value} errors={errors} onChange={changeValue} onBlur={expose} imageReset={imageReset} onImageSelect={() => setImageSelected(true)} />
+      </Form>
       <CmsFooter actions={<>
         {record?.published ? <CmsLifecycleButton action="unpublish" disabled={pending} onPress={() => setDialog("unpublish")}>Unpublish</CmsLifecycleButton> : null}
         {record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setRequestError(""); setDialog("delete"); }}>Delete publication</CmsLifecycleButton> : null}
       </>}>
-        <Button variant="ghost" isDisabled={pending || !dirty} onPress={() => {
+        <Button type="button" variant="ghost" isDisabled={pending || (!dirty && !imageSelected && !publishAttempted && !Object.keys(exposed).length)} onPress={() => {
           setValue(record?.draft ?? emptyPublication());
-          setErrors({});
+          revision.current += 1;
+          setExposed({});
+          setPublishAttempted(false);
+          setImageSelected(false);
+          setImageReset((current) => current + 1);
           setMessage("");
           setRequestError("");
         }}>Discard changes</Button>
@@ -135,7 +172,7 @@ function PublicationEditorForm({
         title="Delete this publication?"
         error={requestError}
         actions={<>
-          <Button variant="ghost" isDisabled={pending} onPress={() => setDialog(null)}>Cancel</Button>
+          <Button type="button" variant="ghost" isDisabled={pending} onPress={() => setDialog(null)}>Cancel</Button>
           <CmsLifecycleButton action="delete" confirmation pending={pending} onPress={() => void act("delete")}>Delete</CmsLifecycleButton>
         </>}
       >
@@ -148,6 +185,7 @@ function PublicationEditorForm({
         actions={
           <>
             <Button
+              type="button"
               variant="ghost"
               isDisabled={pending}
               onPress={() => setDialog(null)}

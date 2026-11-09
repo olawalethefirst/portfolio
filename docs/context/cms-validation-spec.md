@@ -4,8 +4,8 @@
 
 Use Zod for typed content rules and HeroUI Form, TextField and FieldError for
 form semantics and accessible feedback across About, Hero, Contact, SEO,
-Projects and Publications. This is the target migration contract; existing
-editors have not necessarily adopted it. Preserve the content and lifecycle
+Projects and Publications. The six CMS editors and their providers share
+the action-specific schemas described below. Preserve the content and lifecycle
 contract in [cms-ui-spec.md](cms-ui-spec.md).
 
 Provider-owned working drafts remain the source of controlled values. Every edit
@@ -38,12 +38,16 @@ icons. New controls follow the [icon policy](field-and-button-icon-policy.md).
 Structural draft schemas check domain shapes, strings, booleans and enum values;
 they do not apply publication completeness or reject unfinished URL/date text.
 Keep inactive values when the publication kind or decorative-image state changes.
-Tags have no new requiredness, limits or normalization at submission.
+Tags remain optional and retain existing parsing/normalization. Publication
+publish/update applies the approved tag length and count limits in the
+[homepage text limit map](cms-homepage-text-limits.md).
 
 ### Preserve acceptance and normalization
 
 - Nonblank checks use trimmed text to determine emptiness, without trimming the
-  stored input. Do not introduce text limits or automatic coercion.
+  stored input. Apply only the approved [homepage text limits](cms-homepage-text-limits.md)
+  on Hero Save and Project/Publication Publish/Update published. Do not add
+  other text limits or automatic coercion.
 - Contact trims for link validation/resolution, requires a literal `https://`
   prefix (case insensitive), rejects whitespace within the trimmed input and
   URL credentials, and requires an HTTPS protocol and hostname. Hosts are not
@@ -69,7 +73,8 @@ Tags have no new requiredness, limits or normalization at submission.
 - Preserve the existing distinction between a nonblank Project screenshot and
   a truthy Publication cover source. File acceptance is a separate concern.
 
-No content-rule changes are proposed by this migration. Any stricter acceptance,
+The owner approved initial homepage text limits as an explicit content-rule
+change; the linked map defines their scope and action boundaries. Any other stricter acceptance,
 trimming, date or normalization policy must be identified and approved separately.
 
 ## Feedback and submission
@@ -134,6 +139,29 @@ ImagePicker retains JPEG/PNG/WebP acceptance, the 10 MiB limit, file reading and
 decode checks, cancellation and stale-result protection. Failed replacements keep
 the previous image. Integrate its existing errors and focus target without moving
 I/O into Zod refinements or triggering reads on ordinary text changes.
+
+## Implementation boundaries
+
+Entity schemas live in `src/cms/{about,hero,social,seo,projects,publications}.ts`.
+Homepage budgets come from dependency-free `src/config/content-limits.ts`, shared
+by schemas and their limit messages. Future database enforcement must follow the
+[limit map migration/counting contract](cms-homepage-text-limits.md#shared-configuration).
+Existing `validate*` functions remain local field-message interfaces backed by
+those schemas; they are used by editors and previews, not separate rule sets.
+Providers parse captured submissions before requests. Publication publish schemas
+receive UTC today; `CmsProvider` accepts an optional date supplier for tests.
+
+Each editor owns its blur/submission metadata and derives errors from current
+working values and context. Cross-field requirements use the active schema branch.
+Project and Publication forms read explicit submitter intent; missing intent saves
+a draft. `CmsField` supplies optional blur plumbing, not a shared form engine.
+
+ImagePicker owns file errors, reading/decoding and stale-result cancellation.
+Its optional blur/selection callbacks integrate editor feedback; selection includes
+failed replacement attempts so Discard can clear feedback without a content edit.
+Collection editors reset the picker instance on Discard to abort pending work and
+clear local file feedback. A failed replacement keeps the previous valid image;
+that retained image remains eligible for publication under the content schema.
 
 ## Library integration guidance
 

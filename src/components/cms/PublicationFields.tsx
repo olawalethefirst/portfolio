@@ -23,10 +23,16 @@ export function PublicationFields({
   value,
   errors,
   onChange,
+  onBlur,
+  imageReset,
+  onImageSelect,
 }: {
   value: PublicationDraft;
   errors: PublicationErrors;
   onChange: (value: PublicationDraft) => void;
+  onBlur?: (field: keyof PublicationDraft) => void;
+  imageReset?: number;
+  onImageSelect?: () => void;
 }) {
   const { records } = useCms();
   const selectedTags = publicationTags(value.tagsText).map((tag) =>
@@ -44,6 +50,9 @@ export function PublicationFields({
   const supporting = <>
         <CmsFieldSection title="Cover">
           <ImagePicker
+            key={imageReset}
+            onSelect={onImageSelect}
+            onBlur={() => onBlur?.("coverSrc")}
             value={value.coverSrc}
             alt={value.decorativeCover ? "" : value.coverAlt}
             onChange={(source) => field("coverSrc", source)}
@@ -53,6 +62,7 @@ export function PublicationFields({
           {!value.decorativeCover ? (
             <CmsField
               name="coverAlt"
+              onBlur={() => onBlur?.("coverAlt")}
               label="Image description"
               value={value.coverAlt}
               onChange={(next) => field("coverAlt", next)}
@@ -64,6 +74,7 @@ export function PublicationFields({
         <CmsFieldSection title="Publishing" separated>
           <CmsField
             name="publishedOn"
+            onBlur={() => onBlur?.("publishedOn")}
             label="Publication date"
             value={value.publishedOn}
             onChange={(next) => field("publishedOn", next)}
@@ -81,6 +92,7 @@ export function PublicationFields({
       <CmsFieldSection title="Content" description="Give your idea a title, then make it your own.">
         <CmsField
           name="title"
+          onBlur={() => onBlur?.("title")}
           label="Title"
           value={value.title}
           onChange={(next) => field("title", next)}
@@ -88,6 +100,7 @@ export function PublicationFields({
         />
         <CmsField
           name="summary"
+          onBlur={() => onBlur?.("summary")}
           label="Summary"
           value={value.summary}
           onChange={(next) => field("summary", next)}
@@ -100,6 +113,7 @@ export function PublicationFields({
         {value.kind === "local" ? (
           <CmsField
             name="bodyMarkdown"
+            onBlur={() => onBlur?.("bodyMarkdown")}
             label="Article"
             value={value.bodyMarkdown}
             onChange={(next) => field("bodyMarkdown", next)}
@@ -110,6 +124,7 @@ export function PublicationFields({
         ) : (
           <CmsField
             name="externalUrl"
+            onBlur={() => onBlur?.("externalUrl")}
             label="Publication URL"
             value={value.externalUrl}
             onChange={(next) => field("externalUrl", next)}
@@ -121,6 +136,8 @@ export function PublicationFields({
         )}
         <CmsField
           name="tagsText"
+          error={errors.tagsText}
+          onBlur={() => onBlur?.("tagsText")}
           label="Tags"
           value={value.tagsText}
           onChange={(next) => field("tagsText", next)}
@@ -130,7 +147,7 @@ export function PublicationFields({
         {selectedTags.length ? (
           <div className="flex flex-wrap gap-2" aria-label="Selected topics">
             {publicationTags(value.tagsText).map((tag) => (
-              <Button key={tag.toLowerCase()} variant="ghost" size="sm"
+              <Button type="button" key={tag.toLowerCase()} variant="ghost" size="sm"
                 aria-label={`Remove tag ${tag}`}
                 onPress={() => field("tagsText", publicationTags(value.tagsText)
                   .filter((selected) => selected.toLowerCase() !== tag.toLowerCase()).join(", "))}>
@@ -145,6 +162,7 @@ export function PublicationFields({
             <div className="flex flex-wrap gap-2">
               {suggestions.map((tag) => (
                 <Button
+                  type="button"
                   key={tag}
                   variant="ghost"
                   size="sm"

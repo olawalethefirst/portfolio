@@ -3,7 +3,7 @@
 import { useDraftStore, type DraftStore } from "./working-drafts";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialSeo, normalizeSeoPath, validateSeoDefaults, validateSeoRecord, type SeoRecord, type SeoState, type SeoValues } from "./seo";
+import { initialSeo, normalizeSeoPath, seoDefaultsSchema, createSeoRecordSchema, type SeoRecord, type SeoState, type SeoValues } from "./seo";
 
 type SeoRequest = () => Promise<void>;
 async function demoRequest() {
@@ -31,16 +31,18 @@ export function SeoProvider({ children, request = demoRequest, initialState }: {
     finally { busy.current = false; setPending(false); }
   }
   async function saveDefaults(value: SeoValues) {
-    const error = Object.values(validateSeoDefaults(value))[0];
-    if (error) throw new Error(error);
     const submitted = { title: value.title, description: value.description };
+    const result = seoDefaultsSchema.safeParse(submitted);
+    if (!result.success) throw new Error(result.error.issues[0].message);
     await run((current) => ({ ...current, defaults: submitted }));
   }
   async function saveRecord(value: SeoRecord) {
-    const error = Object.values(validateSeoRecord(value, saved.records))[0];
-    const path = normalizeSeoPath(value.path);
-    if (error || !path) throw new Error(error ?? "Enter a valid site path.");
-    const submitted = { ...value, path };
+    const captured = { ...value };
+    const result = createSeoRecordSchema(saved.records).safeParse(captured);
+    if (!result.success) throw new Error(result.error.issues[0].message);
+    const path = normalizeSeoPath(result.data.path);
+    if (!path) throw new Error("Enter a valid site path.");
+    const submitted = { ...result.data, path };
     await run((current) => ({ ...current, records: current.records.some((record) => record.id === submitted.id)
       ? current.records.map((record) => record.id === submitted.id ? submitted : record)
       : [...current.records, submitted] }));

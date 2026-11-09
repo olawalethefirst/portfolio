@@ -97,3 +97,37 @@ it("preserves About edits through the demo failure control and retries a toolbar
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByRole("status", { name: "About save status" }).textContent).toContain("Saved.");
 });
+
+it("shows associated errors on blur and corrects them without exposing untouched fields", () => {
+  render(<AboutProvider><AboutEditor /></AboutProvider>);
+  const heading = screen.getByRole("textbox", { name: "Heading" });
+  const biography = screen.getByRole("textbox", { name: "Biography" });
+  fireEvent.change(heading, { target: { value: "" } });
+  fireEvent.change(biography, { target: { value: "" } });
+  expect(heading.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(heading);
+  fireEvent.blur(heading);
+  expect(heading.getAttribute("aria-invalid")).toBe("true");
+  const ids = heading.getAttribute("aria-describedby")?.split(" ") ?? [];
+  expect(ids.some((id) => document.getElementById(id)?.textContent === "Complete this field before saving.")).toBe(true);
+  expect(biography.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(heading, { target: { value: "Corrected" } });
+  expect(heading.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(heading, { target: { value: " " } });
+  expect(heading.getAttribute("aria-invalid")).toBe("true");
+});
+
+it("submits the field-owned form and ignores failures after newer corrections", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
+  render(<AboutProvider request={request}><AboutEditor /></AboutProvider>);
+  const heading = screen.getByRole("textbox", { name: "Heading" });
+  fireEvent.change(heading, { target: { value: "Submitted heading" } });
+  const form = heading.closest("form");
+  expect(form).toBeTruthy();
+  fireEvent.submit(form!);
+  expect(request).toHaveBeenCalledTimes(1);
+  fireEvent.change(heading, { target: { value: "Newer heading" } });
+  await act(async () => fail(new Error("Old failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+});

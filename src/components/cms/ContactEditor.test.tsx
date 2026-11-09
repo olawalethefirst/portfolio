@@ -99,3 +99,38 @@ it("preserves URLs through a demo toolbar failure and retries", async () => {
   await waitFor(() => expect(screen.getByLabelText("Saved GitHub").textContent).toBe("https://github.com/retry"));
   expect(screen.queryByRole("alert")).toBeNull();
 });
+
+it("shows associated URL errors after blur and clears them during correction without exposing untouched fields", () => {
+  render(<SocialProvider><ContactEditor /></SocialProvider>);
+  const github = screen.getByRole("textbox", { name: "GitHub URL" });
+  const linkedin = screen.getByRole("textbox", { name: "LinkedIn URL" });
+  fireEvent.change(github, { target: { value: "https://user:password@example.com" } });
+  fireEvent.change(linkedin, { target: { value: "" } });
+  expect(github.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(github);
+  fireEvent.blur(github);
+  expect(github.getAttribute("aria-invalid")).toBe("true");
+  const ids = github.getAttribute("aria-describedby")?.split(" ") ?? [];
+  expect(ids.some((id) => document.getElementById(id)?.textContent === "Enter a complete HTTPS profile URL without sign-in credentials.")).toBe(true);
+  expect(linkedin.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(github, { target: { value: "https://example.com/corrected" } });
+  expect(github.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.change(github, { target: { value: "http://example.com" } });
+  expect(github.getAttribute("aria-invalid")).toBe("true");
+});
+
+it("submits its ARIA form using schema URL acceptance and suppresses obsolete request errors", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
+  render(<SocialProvider request={request}><ContactEditor /></SocialProvider>);
+  const github = screen.getByRole("textbox", { name: "GitHub URL" });
+  fireEvent.change(github, { target: { value: "  HTTPS://code.example.com/profile  " } });
+  const form = github.closest("form");
+  expect(form).toBeTruthy();
+  expect(form!.noValidate).toBe(true);
+  fireEvent.submit(form!);
+  expect(request).toHaveBeenCalledTimes(1);
+  fireEvent.change(github, { target: { value: "https://example.com/newer" } });
+  await act(async () => fail(new Error("Obsolete failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+});

@@ -36,3 +36,16 @@ it("seeds only actual overrides, leaving Homepage to inherit without a record", 
   expect(records.some((record) => record.path === "/")).toBe(false);
   for (const record of records) expect(Boolean(record.title.trim() || record.description.trim())).toBe(true);
 });
+
+it("schemas preserve raw partial override text while sharing contextual uniqueness rules", async () => {
+  const { seoDefaultsSchema, createSeoRecordSchema } = await import("./seo");
+  const defaults = { title: " Title ", description: " Description " };
+  expect(seoDefaultsSchema.parse(defaults)).toEqual(defaults);
+  const records = initialSeo().records;
+  const schema = createSeoRecordSchema(records);
+  const partial = { id: "new", path: "/new/", title: "  ", description: " Description only " };
+  expect(schema.parse(partial)).toEqual(partial);
+  expect(schema.safeParse({ ...partial, description: " " }).success).toBe(false);
+  expect(schema.safeParse({ ...partial, path: "/%63ontact/" }).success).toBe(false);
+  expect(schema.safeParse({ ...records[0], path: "/%63ontact/" }).success).toBe(true);
+});

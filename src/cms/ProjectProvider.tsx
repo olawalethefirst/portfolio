@@ -2,7 +2,7 @@
 
 import { useDraftStore, type DraftStore } from "./working-drafts";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialProjects, type ProjectAction, type ProjectDraft, type ProjectRecord } from "./projects";
+import { initialProjects, projectDraftSchema, projectPublishSchema, type ProjectAction, type ProjectDraft, type ProjectRecord } from "./projects";
 
 type Request = () => Promise<void>;
 async function demoRequest() {
@@ -23,9 +23,11 @@ export function ProjectProvider({ children, request = demoRequest }: { children:
   const busy = useRef(false);
   async function commit(id: string, draft: ProjectDraft, action: ProjectAction) {
     if (busy.current) throw new Error("Another change is still being saved.");
+    const captured = { ...draft };
+    const submitted = action === "save" ? projectDraftSchema.parse(captured)
+      : action === "publish" ? projectPublishSchema.parse(captured) : captured;
     busy.current = true;
     setPending(true);
-    const submitted = { ...draft };
     try {
       await request();
       setRecords((current) => {

@@ -1,17 +1,28 @@
+import { z } from "zod";
+import { CONTENT_LIMITS } from "@/src/config/content-limits";
 import { labProjects } from "@/src/components/project-item/lab-projects";
 import { httpsUrl } from "./publications";
 
-export interface ProjectDraft {
-  name: string;
-  summary: string;
-  what: string;
-  how: string;
-  platform: "mobile" | "web";
-  screenshot: string;
-  screenshotAlt: string;
-  decorative: boolean;
-  liveUrl: string;
-}
+const limits = CONTENT_LIMITS.project;
+export const projectDraftSchema = z.object({
+  name: z.string(), summary: z.string(), what: z.string(), how: z.string(),
+  platform: z.enum(["mobile", "web"]), screenshot: z.string(),
+  screenshotAlt: z.string(), decorative: z.boolean(), liveUrl: z.string(),
+});
+const requiredText = () => z.string().refine((value) => Boolean(value.trim()), "Complete this field before publishing.");
+export const projectPublishSchema = projectDraftSchema.extend({
+  name: requiredText().max(limits.name, `Use ${limits.name} characters or fewer.`),
+  summary: requiredText().max(limits.summary, `Use ${limits.summary} characters or fewer.`),
+  what: requiredText().max(limits.what, `Use ${limits.what} characters or fewer.`),
+  how: requiredText().max(limits.how, `Use ${limits.how} characters or fewer.`),
+  screenshot: requiredText(),
+  liveUrl: z.string().refine(httpsUrl, "Enter a complete HTTPS destination."),
+}).superRefine((value, context) => {
+  if (!value.decorative && !value.screenshotAlt.trim()) {
+    context.addIssue({ code: "custom", path: ["screenshotAlt"], message: "Describe the screenshot or mark it decorative." });
+  }
+});
+export type ProjectDraft = z.infer<typeof projectDraftSchema>;
 export interface ProjectRecord { id: string; draft: ProjectDraft; published: ProjectDraft | null }
 export type ProjectAction = "save" | "publish" | "unpublish" | "delete";
 export type ProjectErrors = Partial<Record<keyof ProjectDraft, string>>;
@@ -33,11 +44,13 @@ export function projectStatus(record: ProjectRecord) {
   return sameProject(record.draft, record.published) ? "Published" : "Published · Unpublished changes";
 }
 export function validateProject(value: ProjectDraft): ProjectErrors {
+  const result = projectPublishSchema.safeParse(value);
+  if (result.success) return {};
+  const { fieldErrors } = z.flattenError(result.error);
   const errors: ProjectErrors = {};
-  for (const key of ["name", "summary", "what", "how", "screenshot"] as const) {
-    if (!value[key].trim()) errors[key] = "Complete this field before publishing.";
+  for (const field of Object.keys(fieldErrors) as (keyof ProjectDraft)[]) {
+    const message = fieldErrors[field]?.[0];
+    if (message) errors[field] = message;
   }
-  if (!value.decorative && !value.screenshotAlt.trim()) errors.screenshotAlt = "Describe the screenshot or mark it decorative.";
-  if (!httpsUrl(value.liveUrl)) errors.liveUrl = "Enter a complete HTTPS destination.";
   return errors;
 }

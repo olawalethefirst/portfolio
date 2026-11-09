@@ -3,7 +3,7 @@
 import { useDraftStore, type DraftStore } from "./working-drafts";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialAbout, type AboutDraft } from "./about";
+import { aboutSchema, initialAbout, type AboutDraft } from "./about";
 
 type AboutRequest = () => Promise<void>;
 async function demoRequest() {
@@ -23,8 +23,8 @@ export function AboutProvider({ children, request = demoRequest }: { children: R
   const saving = useRef(false);
   async function save(value: AboutDraft) {
     if (saving.current) throw new Error("A save is already in progress.");
+    const submitted = aboutSchema.parse({ ...value });
     saving.current = true;
-    const submitted = { ...value };
     setPending(true);
     try {
       await request();

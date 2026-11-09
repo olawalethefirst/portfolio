@@ -140,7 +140,7 @@ describe("publication CMS", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await act(async () => finish());
     expect(request).toHaveBeenCalledTimes(1);
-    expect(screen.getByText("Saved.")).toBeTruthy();
+    expect(screen.queryByText("Saved.")).toBeNull();
     expect(screen.getByText("Unsaved changes")).toBeTruthy();
     expect((title as HTMLInputElement).value).toBe("Still typing");
     expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
@@ -513,4 +513,98 @@ it("keeps the unpublish confirmation open while the request is pending", async (
   await act(async () => finish());
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(screen.getByLabelText("Demo published title").textContent).toBe("Unpublished");
+});
+
+it("implicitly saves incomplete over-limit drafts without publishing", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  render(<CmsProvider request={request}><PublicationEditor id="new" /><PublishedReader /></CmsProvider>);
+  const title = screen.getByRole("textbox", { name: "Title" });
+  fireEvent.change(title, { target: { value: "a".repeat(41) } });
+  const form = title.closest("form");
+  expect(form).toBeTruthy();
+  expect(form!.noValidate).toBe(true);
+  fireEvent.submit(form!);
+  await screen.findByText("Saved.");
+  expect(screen.getByLabelText("Demo published title").textContent).toBe("Unpublished");
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("corrects title and parsed tag errors live without blocking draft saves", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+  const title = screen.getByRole("textbox", { name: "Title" });
+  fireEvent.change(title, { target: { value: "a".repeat(41) } });
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.focus(title); fireEvent.blur(title);
+  expect(title.getAttribute("aria-invalid")).toBe("true");
+  fireEvent.change(title, { target: { value: "Corrected" } });
+  expect(title.getAttribute("aria-invalid")).not.toBe("true");
+  const tags = screen.getByRole("textbox", { name: "Tags" });
+  fireEvent.change(tags, { target: { value: "one,two,three,four" } });
+  fireEvent.focus(tags); fireEvent.blur(tags);
+  expect(tags.getAttribute("aria-invalid")).toBe("true");
+  expect(screen.getByText("Use 3 tags or fewer.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Remove tag four" }));
+  expect(tags.getAttribute("aria-invalid")).not.toBe("true");
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  await screen.findByText("Saved.");
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("updates active branch errors after Publish and retains hidden content", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
+  const url = screen.getByRole("textbox", { name: "Publication URL" });
+  expect(url.getAttribute("aria-invalid")).toBe("true");
+  expect(screen.queryByRole("textbox", { name: "Article" })).toBeNull();
+  fireEvent.change(url, { target: { value: "https://example.com/story" } });
+  expect(url.getAttribute("aria-invalid")).not.toBe("true");
+  fireEvent.click(screen.getByRole("radio", { name: "Local article" }));
+  expect(screen.getByRole("textbox", { name: "Article" }).getAttribute("aria-invalid")).toBe("true");
+  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
+  expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
+});
+
+it("focuses tags before cover and excludes decorative alt requirements", async () => {
+  render(<CmsProvider><PublicationEditor id="publication-1" /></CmsProvider>);
+  const tags = screen.getByRole("textbox", { name: "Tags" });
+  fireEvent.change(tags, { target: { value: "a".repeat(17) } });
+  fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update published" }));
+  await waitFor(() => expect(document.activeElement).toBe(tags));
+  fireEvent.change(tags, { target: { value: "Valid" } });
+  fireEvent.click(screen.getByRole("button", { name: "Update published" }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText("Choose image")));
+  const alt = screen.getByRole("textbox", { name: "Image description" });
+  fireEvent.change(alt, { target: { value: "" } });
+  fireEvent.focus(alt); fireEvent.blur(alt);
+  expect(alt.getAttribute("aria-invalid")).toBe("true");
+  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.queryByRole("textbox", { name: "Image description" })).toBeNull();
+});
+
+it("discards failed cover feedback even when the saved content did not change", () => {
+  render(<CmsProvider><PublicationEditor id="publication-1" /></CmsProvider>);
+  fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["bad"], "bad.txt", { type: "text/plain" })] } });
+  expect(screen.getByRole("alert").textContent).toContain("JPEG, PNG or WebP");
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(screen.getByLabelText("Replace image")).toBeTruthy();
+});
+
+it("suppresses stale save failures after newer edits and permits retry", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { fail = reject; })).mockResolvedValue(undefined);
+  render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+  const title = screen.getByRole("textbox", { name: "Title" });
+  fireEvent.change(title, { target: { value: "Submitted" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  fireEvent.change(title, { target: { value: "Newer" } });
+  await act(async () => fail(new Error("Obsolete failure")));
+  expect(screen.queryByRole("alert")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  await screen.findByText("Saved.");
 });

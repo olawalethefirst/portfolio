@@ -12,6 +12,8 @@ import {
 import { initialPublications } from "./publication-fixtures";
 import {
   applyPublicationAction,
+  publicationDraftSchema,
+  createPublicationPublishSchema,
   type PublicationAction,
   type PublicationDraft,
   type PublicationRecord,
@@ -39,10 +41,12 @@ export function CmsProvider({
   children,
   initialRecords,
   request = demoRequest,
+  today = () => new Date().toISOString().slice(0, 10),
 }: {
   children: ReactNode;
   initialRecords?: PublicationRecord[];
   request?: DemoRequest;
+  today?: () => string;
 }) {
   const working = useDraftStore<PublicationDraft>();
   const [records, setRecords] = useState(initialRecords ?? initialPublications);
@@ -55,9 +59,11 @@ export function CmsProvider({
     action: PublicationAction | "delete",
   ) {
     if (busy.current) throw new Error("Another change is still being saved.");
+    const captured = { ...values };
+    const submitted = action === "save" ? publicationDraftSchema.parse(captured)
+      : action === "publish" ? createPublicationPublishSchema(today()).parse(captured) : captured;
     busy.current = true;
     setPending(true);
-    const submitted = { ...values };
     try {
       await request();
       setRecords((current) => {

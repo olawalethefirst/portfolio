@@ -35,3 +35,18 @@ it("releases the save lock after failure so the request can be retried", async (
   await act(async () => { await result.current.save({ ...initialHero, headline: "Retry headline" }); });
   expect(result.current.saved.headline).toBe("Retry headline");
 });
+
+it("rejects incomplete and over-limit direct saves before requesting and permits correction", async () => {
+  const request = vi.fn().mockResolvedValue(undefined);
+  const { result } = renderHook(useHero, { wrapper: ({ children }) => <HeroProvider request={request}>{children}</HeroProvider> });
+  const draft = structuredClone(initialHero);
+  draft.stages.iterate.description = "x".repeat(57);
+  await act(async () => { await expect(result.current.save(draft)).rejects.toThrow(); });
+  draft.stages.iterate.description = " ";
+  await act(async () => { await expect(result.current.save(draft)).rejects.toThrow(); });
+  expect(request).not.toHaveBeenCalled();
+  expect(result.current.saved).toEqual(initialHero);
+  expect(result.current.pending).toBe(false);
+  await act(async () => { await result.current.save(initialHero); });
+  expect(request).toHaveBeenCalledTimes(1);
+});

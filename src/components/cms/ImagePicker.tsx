@@ -7,13 +7,15 @@ import { Button } from "@/src/components/ui/Button";
 const maxBytes = 10 * 1024 * 1024;
 
 /** Local demo images use data URLs so saved previews outlive the picker. */
-export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children }: {
+export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children, onBlur, onSelect }: {
   value: string;
   alt: string;
   onChange: (source: string) => void;
   error?: string;
   name?: string;
   children?: ReactNode;
+  onBlur?: () => void;
+  onSelect?: () => void;
 }) {
   const id = useId();
   const [pending, setPending] = useState(false);
@@ -30,6 +32,7 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
 
   function select(file: File | undefined) {
     if (!file) return;
+    onSelect?.();
     const current = ++generation.current;
     reader.current?.abort();
     setPending(false);
@@ -74,7 +77,7 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
       <Image src={value} alt={alt} fill sizes="(max-width: 1279px) 80vw, 288px" className="object-cover" />
     </div> : <p className="border border-dashed border-border p-6 text-sm text-muted">No image selected</p>}
     <label htmlFor={id} className="block text-sm font-medium">{value ? "Replace image" : "Choose image"}</label>
-    <input id={id} name={name} type="file" accept="image/jpeg,image/png,image/webp"
+    <input onBlur={onBlur} id={id} name={name} type="file" accept="image/jpeg,image/png,image/webp"
       aria-invalid={Boolean(fileError || error)} aria-describedby={`${id}-hint ${id}-error`}
       className="block min-h-11 w-full min-w-0 text-sm file:mr-3 file:border-0 file:bg-default file:px-3 file:py-3 file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
       onChange={(event) => { select(event.target.files?.[0]); event.target.value = ""; }} />

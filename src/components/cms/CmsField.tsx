@@ -10,6 +10,7 @@ export function CmsField({
   label,
   value,
   onChange,
+  onBlur,
   error,
   hint,
   multiline,
@@ -20,6 +21,7 @@ export function CmsField({
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   error?: string;
   hint?: string;
   multiline?: "short" | "article";
@@ -31,6 +33,7 @@ export function CmsField({
       name={name}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
       isInvalid={Boolean(error)}
       className="w-full"
       validationBehavior="aria"

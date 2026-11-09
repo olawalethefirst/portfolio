@@ -16,6 +16,9 @@ This directory stores durable knowledge that future contributors cannot reliably
   and Zod validation contract, action-specific content rules, feedback timing,
   provider enforcement and draft/snapshot preservation.
 
+- [`context/cms-homepage-text-limits.md`](context/cms-homepage-text-limits.md):
+  approved initial Hero, Project and Publication homepage text budgets and migration enforcement.
+
 - [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): proposed
   PostgreSQL schemas for editable content, relationships, validation boundaries,
   and separate visitor data.

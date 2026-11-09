@@ -70,3 +70,37 @@ describe("publication editing contract", () => {
     ).toContain("Scheduling");
   });
 });
+
+const completePublication = () => ({ ...emptyPublication(), title: "Article", summary: "Summary", bodyMarkdown: "Article body", coverSrc: "/cover.png", coverAlt: "Cover", publishedOn: "2026-11-09" });
+
+it.each([["title", 40], ["summary", 112]] as const)("enforces %s publish budget while keeping over-limit drafts", async (field, max) => {
+  const { publicationDraftSchema, createPublicationPublishSchema } = await import("./publications");
+  const schema = createPublicationPublishSchema("2026-11-09");
+  const draft = { ...completePublication(), [field]: "a".repeat(max) };
+  expect(schema.safeParse(draft).success).toBe(true);
+  draft[field] += "a";
+  expect(validatePublication(draft, "2026-11-09")[field]).toBe(`Use ${max} characters or fewer.`);
+  expect(publicationDraftSchema.parse(draft)).toEqual(draft);
+});
+
+it("enforces parsed tag budgets without changing raw tags or existing deduplication", async () => {
+  const { createPublicationPublishSchema, publicationDraftSchema } = await import("./publications");
+  const schema = createPublicationPublishSchema("2026-11-09");
+  const draft = { ...completePublication(), tagsText: ` ${"a".repeat(16)}, second, THIRD, third, ` };
+  expect(schema.parse(draft).tagsText).toBe(draft.tagsText);
+  expect(schema.safeParse({ ...draft, tagsText: "a".repeat(17) }).success).toBe(false);
+  expect(schema.safeParse({ ...draft, tagsText: "one,two,three,four" }).success).toBe(false);
+  expect(schema.safeParse({ ...draft, tagsText: "" }).success).toBe(true);
+  expect(publicationDraftSchema.safeParse({ ...draft, tagsText: "a".repeat(500) }).success).toBe(true);
+});
+
+it("retains inactive content, permits long article bodies and preserves decorative/date/URL acceptance", async () => {
+  const { createPublicationPublishSchema } = await import("./publications");
+  const schema = createPublicationPublishSchema("2026-11-09");
+  const local = { ...completePublication(), bodyMarkdown: "Long body ".repeat(20000), externalUrl: "unfinished", coverSrc: " ", decorativeCover: true, coverAlt: "" };
+  expect(schema.parse(local)).toEqual(local);
+  const external = { ...local, kind: "external" as const, bodyMarkdown: "", externalUrl: "https://user:password@example.com" };
+  expect(schema.parse(external)).toEqual(external);
+  expect(schema.safeParse({ ...external, publishedOn: "2026-11-10" }).success).toBe(false);
+  expect(schema.safeParse({ ...external, publishedOn: "2026-02-30" }).success).toBe(false);
+});
