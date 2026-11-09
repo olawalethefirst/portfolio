@@ -1,10 +1,10 @@
 "use client";
 
 import { Drawer } from "@heroui/react/drawer";
-import { BookOpen, FolderKanban, Menu, Moon, PanelTop, Sun, UserRound, MessagesSquare, Search } from "lucide-react";
+import { BookOpen, FolderKanban, Menu, PanelTop, UserRound, MessagesSquare, Search } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import { setGlobalMode, useActiveTheme } from "@/src/theme/active-theme";
+import { CmsAppearanceControls } from "./CmsAppearanceControls";
 import { Button } from "@/src/components/ui/Button";
 
 const navigationItems = [
@@ -25,7 +25,6 @@ export function CmsShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const navigate = (path: string) => router.push(path);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { mode } = useActiveTheme();
   const navigation = (
     <nav aria-label="Content navigation" className="mt-10">
       <p className="mb-3 px-3 text-xs font-medium uppercase tracking-widest text-muted">
@@ -91,20 +90,7 @@ export function CmsShell({ children }: { children: ReactNode }) {
               </Drawer>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onPress={() => setGlobalMode(mode === "dark" ? "light" : "dark")}
-            startContent={
-              mode === "dark" ? (
-                <Sun aria-hidden="true" className="size-4" />
-              ) : (
-                <Moon aria-hidden="true" className="size-4" />
-              )
-            }
-          >
-            {mode === "dark" ? "Light mode" : "Dark mode"}
-          </Button>
+          <CmsAppearanceControls />
         </header>}
         <main
           id="cms-main"

@@ -79,3 +79,37 @@ Generated monitor textures belong solely to the monitor request owner; the
 original fallback clone belongs to the office builder. Finished requests clear
 their cancellation bookkeeping. Previous-texture cleanup errors are reported
 without disposing the newly installed replacement.
+
+## CMS appearance controls
+
+The studio header uses `CmsAppearanceControls` beside the navigation controls.
+The light/dark action is icon-only (Sun/Moon) with an accessible action label.
+The adjacent tone trigger shows the current accent as a bordered swatch and
+names the current tone in its accessible label. A palette icon was considered;
+the selected swatch is preferred because it also communicates the active tone.
+
+The trigger opens a compact HeroUI popover containing the existing internal
+`ColorSwatchPicker`, using its `sm` (24 px, 1.5× the 16 px `xs` size) circular
+swatches in one horizontal row. The shared component owns selected indicators, keyboard behavior, and
+hover/focus tooltips; no custom list items or indicator positioning are added.
+Tone names are available to screen readers and in tooltips, without persistent
+visible labels. Panel padding is 4 px.
+
+`useThemeAccents` resolves the existing CSS palette into the hex values required
+by the picker, and `themeForAccent` maps selections back to theme names.
+Palette reading mounts only while the popover is open. Choosing a swatch calls
+`setGlobalTheme`, applies immediately, and closes the popover. HeroUI handles
+Escape/outside dismissal and focus restoration.
+Changing mode preserves the selected tone, and changing tone preserves mode.
+The controls retain the global navigation/reload behavior above and are hidden
+along with the studio header during previews. No login-page controls or theme
+persistence are added.
+
+The swatch and mode toggle intentionally use icon-only ghost buttons with
+accessible names; the shared picker supplies named color options and keeps
+its visual checkmarks and tooltip copies hidden from assistive technology.
+This records the exceptions requested by the owner under the field/button
+icon policy. Performance classification: none. Automated
+interaction coverage is Level 2 for selection, keyboard operation, dismissal,
+and preserving the independent theme dimensions. Browser/theme/keyboard visual
+verification and the production build remain controller-run per CONSTRAINTS.md.
