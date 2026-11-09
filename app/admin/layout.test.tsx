@@ -1,3 +1,5 @@
+import { render, screen } from "@testing-library/react";
+import AdminLoginPage from "./login/page";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminLayout from "./layout";
 
@@ -17,4 +19,18 @@ describe("CMS prototype access", () => {
     vi.stubEnv("CMS_DEMO_ENABLED", "true");
     expect(() => AdminLayout({ children: "CMS" })).not.toThrow();
   });
+});
+
+
+it("renders the login without editor navigation or draft storage access", () => {
+  vi.stubEnv("NODE_ENV", "development");
+  const readStorage = vi.spyOn(Storage.prototype, "length", "get");
+  try {
+    render(AdminLayout({ children: <AdminLoginPage /> }));
+    expect(screen.getByRole("heading", { name: "Content Studio" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
+    expect(readStorage).not.toHaveBeenCalled();
+  } finally {
+    readStorage.mockRestore();
+  }
 });

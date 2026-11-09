@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/admin-login-spec.md`](context/admin-login-spec.md): minimal
+  Google login UI, layout isolation, and deferred authentication boundary.
+
 - [`context/cms-local-drafts.md`](context/cms-local-drafts.md): automatic browser
   draft recovery, shared integration, storage lifecycle, persistence boundaries,
   and the deferred API reconciliation contract.
@@ -79,3 +82,7 @@ Contact social marks use local GitHub, LinkedIn, and Twitter X paths from
 [Bootstrap Icons](https://icons.getbootstrap.com/), with a shared 16×16 viewBox
 and inherited accent color. The [MIT license](licenses/bootstrap-icons.txt)
 is retained with the vendored paths in `src/components/contact-conversation/social-icons.ts`.
+
+Google sign-in artwork in `public/brand/google-signin.png` comes from Google's
+[official sign-in asset bundle](https://developers.google.com/static/identity/images/signin-assets.zip).
+Its use is subject to [Google's identity branding guidelines](https://developers.google.com/identity/branding-guidelines).
