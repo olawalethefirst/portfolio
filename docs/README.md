@@ -12,6 +12,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/cms-ui-spec.md`](context/cms-ui-spec.md): proposed CMS UI screens,
   reusable public previews, editing states, scope and acceptance contract.
 
+- [`context/cms-validation-spec.md`](context/cms-validation-spec.md): HeroUI Form
+  and Zod validation contract, action-specific content rules, feedback timing,
+  provider enforcement and draft/snapshot preservation.
+
 - [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): proposed
   PostgreSQL schemas for editable content, relationships, validation boundaries,
   and separate visitor data.

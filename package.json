@@ -26,7 +26,8 @@
     "remark-gfm": "^4.0.1",
     "remark-parse": "^11.0.0",
     "three": "0.159.0",
-    "unified": "^11.0.5"
+    "unified": "^11.0.5",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
