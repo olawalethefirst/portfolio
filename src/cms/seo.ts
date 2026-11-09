@@ -5,7 +5,7 @@ export const seoDefaultsSchema = seoValuesSchema.extend({
   title: z.string().refine((value) => Boolean(value.trim()), "Enter a default SEO title."),
   description: z.string().refine((value) => Boolean(value.trim()), "Enter a default SEO description."),
 });
-const seoRecordSchema = seoValuesSchema.extend({ id: z.string(), path: z.string() });
+export const seoRecordSchema = seoValuesSchema.extend({ id: z.string(), path: z.string() });
 export type SeoValues = z.infer<typeof seoValuesSchema>;
 export type SeoRecord = z.infer<typeof seoRecordSchema>;
 export interface SeoState { defaults: SeoValues; records: SeoRecord[] }

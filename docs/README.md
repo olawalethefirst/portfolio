@@ -9,6 +9,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/cms-local-drafts.md`](context/cms-local-drafts.md): automatic browser
+  draft recovery, shared integration, storage lifecycle, persistence boundaries,
+  and the deferred API reconciliation contract.
+
 - [`context/cms-ui-spec.md`](context/cms-ui-spec.md): proposed CMS UI screens,
   reusable public previews, editing states, scope and acceptance contract.
 

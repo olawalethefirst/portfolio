@@ -11,6 +11,7 @@ import { Button } from "@/src/components/ui/Button";
 import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
+import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 
 const ContactPreview = dynamic(() => import("./ContactPreview").then((module) => module.ContactPreview), {
@@ -20,7 +21,7 @@ const ContactPreview = dynamic(() => import("./ContactPreview").then((module) =>
 
 export function ContactEditor() {
   const { saved, save, pending, working } = useSocial();
-  const { value, setValue } = useWorkingDraft(working, "contact", () => saved);
+  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, "contact", () => saved);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const revision = useRef(0);
@@ -68,18 +69,20 @@ export function ContactEditor() {
     }
   }
 
+  if (!ready) return <p role="status">Restoring local draft…</p>;
   if (preview) return <CmsPreviewFrame label="Contact preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><ContactPreview value={value} /></CmsPreviewFrame>;
   return <>
     <CmsPageHeader title="Contact" description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed." />
     <CmsToolbar actions={<Button type="submit" form={formId} variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>}>
       <Button type="button" id="social-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("social-preview-trigger"); setPreview(true); }}>Preview contact</Button>
     </CmsToolbar>
+    <CmsDraftFeedback status={persistenceStatus} />
     <CmsFeedback label="Contact save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => { event.preventDefault(); void saveChanges(); }}>
     <CmsEditorContent><CmsFieldSection title="Content">
       {SOCIAL_PROFILES.map(({ id, label }) => <CmsField key={id} name={id} label={`${label} URL`} type="url" icon={<Link aria-hidden="true" className="size-4" />} hint="Enter a complete HTTPS profile URL." value={value[id]} error={errors[id]} onBlur={() => setExposed((current) => ({ ...current, [id]: true }))} onChange={(url) => changeField(id, url)} />)}
     </CmsFieldSection></CmsEditorContent>
     </Form>
-    <CmsFooter><Button type="button" variant="ghost" isDisabled={pending || !dirty} onPress={() => { revision.current += 1; setValue(saved); setExposed({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
+    <CmsFooter><Button type="button" variant="ghost" isDisabled={pending || !dirty} onPress={() => { revision.current += 1; reset(saved); setExposed({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
   </>;
 }

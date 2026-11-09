@@ -1,5 +1,10 @@
 # CMS UI technical specification
 
+Persistence update: [CMS local drafts](cms-local-drafts.md) supersedes the
+in-memory-only/reload-persistence deferrals below for working drafts. Explicitly
+saved collections remain memory-only until API integration; the linked document
+also defines the deferred reconciliation contract.
+
 Scope: CMS UI with mock interactions. Review each iteration before extending
 to other content areas; task status belongs in the local CMS UI tracker.
 

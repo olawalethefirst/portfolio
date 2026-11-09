@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ABOUT_DEFAULT_CONTENT } from "@/src/components/about-cta/about-content";
 
 const nonblank = z.string().refine((value) => Boolean(value.trim()), "Complete this field before saving.");
+export const aboutDraftSchema = z.object({ heading: z.string(), biography: z.string() });
 export const aboutSchema = z.object({ heading: nonblank, biography: nonblank });
 export type AboutDraft = z.infer<typeof aboutSchema>;
 export type AboutErrors = Partial<Record<keyof AboutDraft, string>>;

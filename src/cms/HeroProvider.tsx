@@ -2,13 +2,13 @@
 
 import { useDraftStore, type DraftStore } from "./working-drafts";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { heroSchema, initialHero, type HeroDraft } from "./hero";
+import { heroDraftSchema, heroSchema, initialHero, type HeroDraft } from "./hero";
 const HeroContext = createContext<{ saved: HeroDraft; save: (value: HeroDraft) => Promise<void>; pending: boolean; working: DraftStore<HeroDraft> } | null>(null);
 async function demoRequest() {
   await new Promise((resolve) => setTimeout(resolve, 300));
 }
 export function HeroProvider({ children, request = demoRequest }: { children: ReactNode; request?: () => Promise<void> }) {
-  const working = useDraftStore<HeroDraft>();
+  const working = useDraftStore<HeroDraft>({ namespace: "hero", schema: heroDraftSchema });
   const [saved, setSaved] = useState(initialHero);
   const [pending, setPending] = useState(false);
   const saving = useRef(false);

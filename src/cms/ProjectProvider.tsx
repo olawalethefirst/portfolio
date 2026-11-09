@@ -17,7 +17,7 @@ interface ProjectContextValue {
 }
 const Context = createContext<ProjectContextValue | null>(null);
 export function ProjectProvider({ children, request = demoRequest }: { children: ReactNode; request?: Request }) {
-  const working = useDraftStore<ProjectDraft>();
+  const working = useDraftStore<ProjectDraft>({ namespace: "projects", schema: projectDraftSchema });
   const [records, setRecords] = useState(initialProjects);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -30,6 +30,7 @@ export function ProjectProvider({ children, request = demoRequest }: { children:
     setPending(true);
     try {
       await request();
+      if (action === "delete") working.clear(id);
       setRecords((current) => {
         if (action === "delete") return current.filter((item) => item.id !== id);
         const previous = current.find((item) => item.id === id);

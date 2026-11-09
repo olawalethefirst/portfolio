@@ -3,7 +3,7 @@
 import { useDraftStore, type DraftStore } from "./working-drafts";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { initialSeo, normalizeSeoPath, seoDefaultsSchema, createSeoRecordSchema, type SeoRecord, type SeoState, type SeoValues } from "./seo";
+import { seoRecordSchema, initialSeo, normalizeSeoPath, seoDefaultsSchema, createSeoRecordSchema, type SeoRecord, type SeoState, type SeoValues } from "./seo";
 
 type SeoRequest = () => Promise<void>;
 async function demoRequest() {
@@ -19,7 +19,7 @@ const SeoContext = createContext<{
 } | null>(null);
 
 export function SeoProvider({ children, request = demoRequest, initialState }: { children: ReactNode; request?: SeoRequest; initialState?: SeoState }) {
-  const working = useDraftStore<SeoRecord>();
+  const working = useDraftStore<SeoRecord>({ namespace: "seo", schema: seoRecordSchema });
   const [saved, setSaved] = useState(initialState ?? initialSeo);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -50,6 +50,7 @@ export function SeoProvider({ children, request = demoRequest, initialState }: {
   }
   async function deleteRecord(id: string) {
     await run((current) => ({ ...current, records: current.records.filter((record) => record.id !== id) }));
+    working.clear(id);
   }
   return <SeoContext value={{ working, saved, saveDefaults, saveRecord, deleteRecord, pending }}>{children}</SeoContext>;
 }

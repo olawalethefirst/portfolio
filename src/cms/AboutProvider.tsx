@@ -3,7 +3,7 @@
 import { useDraftStore, type DraftStore } from "./working-drafts";
 
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
-import { aboutSchema, initialAbout, type AboutDraft } from "./about";
+import { aboutDraftSchema, aboutSchema, initialAbout, type AboutDraft } from "./about";
 
 type AboutRequest = () => Promise<void>;
 async function demoRequest() {
@@ -17,7 +17,7 @@ const AboutContext = createContext<{
 } | null>(null);
 
 export function AboutProvider({ children, request = demoRequest }: { children: ReactNode; request?: AboutRequest }) {
-  const working = useDraftStore<AboutDraft>();
+  const working = useDraftStore<AboutDraft>({ namespace: "about", schema: aboutDraftSchema });
   const [saved, setSaved] = useState(initialAbout);
   const [pending, setPending] = useState(false);
   const saving = useRef(false);

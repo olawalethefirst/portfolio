@@ -48,7 +48,7 @@ export function CmsProvider({
   request?: DemoRequest;
   today?: () => string;
 }) {
-  const working = useDraftStore<PublicationDraft>();
+  const working = useDraftStore<PublicationDraft>({ namespace: "publications", schema: publicationDraftSchema });
   const [records, setRecords] = useState(initialRecords ?? initialPublications);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
@@ -66,6 +66,7 @@ export function CmsProvider({
     setPending(true);
     try {
       await request();
+      if (action === "delete") working.clear(id);
       setRecords((current) => {
         if (action === "delete") return current.filter((item) => item.id !== id);
         const existing = current.find((item) => item.id === id);

@@ -12,9 +12,11 @@ Provider-owned working drafts remain the source of controlled values. Every edit
 updates them immediately, including invalid and incomplete values. Validation
 must never gate draft retention, rewrite input on each keystroke, or create a
 second draft store. Editor validation metadata may reset on remount; content
-survives editor unmounts for the provider session. Reload persistence is deferred.
+survives editor unmounts and reloads through the shared
+[local draft store](cms-local-drafts.md). Shape-only restoration schemas accept
+invalid and incomplete input without weakening action-specific validation.
 
-Backend/API implementation, authentication, databases and persistence remain out
+Backend/API implementation, authentication, databases and remote persistence remain out
 of scope, as do public contact/comment forms. Do not add React Hook Form,
 TanStack Form, a generic form engine, navigation guards, unload warnings,
 mock notices or testing controls. Preserve layouts and existing field/button

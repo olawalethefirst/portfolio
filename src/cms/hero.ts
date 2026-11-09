@@ -6,6 +6,11 @@ const limits = CONTENT_LIMITS.hero;
 const text = (max: number) => z.string()
   .refine((value) => Boolean(value.trim()), "Complete this field before saving.")
   .max(max, `Use ${max} characters or fewer.`);
+const draftStageSchema = z.object({ tagline: z.string(), description: z.string() });
+export const heroDraftSchema = z.object({
+  eyebrow: z.string(), headline: z.string(),
+  stages: z.object({ idea: draftStageSchema, iterate: draftStageSchema, solution: draftStageSchema }),
+});
 const stageSchema = z.object({ tagline: text(limits.stage.tagline), description: text(limits.stage.description) });
 export const heroSchema = z.object({
   eyebrow: text(limits.eyebrow),

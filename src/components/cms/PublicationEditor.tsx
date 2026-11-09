@@ -22,6 +22,7 @@ import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
+import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
@@ -47,7 +48,7 @@ function PublicationEditorForm({
 }) {
   const router = useRouter();
   const { records, commit, pending, working } = useCms();
-  const { id, value, setValue } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
+  const { id, value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(null);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -127,6 +128,7 @@ function PublicationEditorForm({
     }
   }
 
+  if (!ready) return <p role="status">Restoring local draft…</p>;
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
@@ -140,6 +142,7 @@ function PublicationEditorForm({
         <Button type="button" id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
         <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
+      <CmsDraftFeedback status={persistenceStatus} />
       <CmsFeedback label="Publication save status" error={dialog === "delete" ? undefined : requestError}>
         <span>{pending ? "Saving…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"}</span> {message ? <span className="text-accent">{message}</span> : null}
       </CmsFeedback>
@@ -156,7 +159,7 @@ function PublicationEditorForm({
         {record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setRequestError(""); setDialog("delete"); }}>Delete publication</CmsLifecycleButton> : null}
       </>}>
         <Button type="button" variant="ghost" isDisabled={pending || (!dirty && !imageSelected && !publishAttempted && !Object.keys(exposed).length)} onPress={() => {
-          setValue(record?.draft ?? emptyPublication());
+          reset(record?.draft ?? emptyPublication());
           revision.current += 1;
           setExposed({});
           setPublishAttempted(false);

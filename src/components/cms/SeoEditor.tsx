@@ -12,6 +12,7 @@ import { CmsDialog } from "./CmsDialog";
 import { CmsField } from "./CmsField";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
+import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { SeoFields } from "./SeoFields";
 
@@ -29,7 +30,7 @@ export function SeoEditor({ id }: { id: string }) {
 function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean; initialRecord?: SeoRecord }) {
   const router = useRouter();
   const { saved, saveDefaults, saveRecord, deleteRecord, pending, working } = useSeo();
-  const { id, value, setValue } = useWorkingDraft(working, defaultsMode ? "defaults" : initialRecord?.id ?? "new", () => defaultsMode ? { id: "defaults", path: "", ...saved.defaults } : initialRecord ?? { id: "", path: "", ...emptySeoOverride() }, initialRecord?.id ?? (defaultsMode ? "defaults" : undefined));
+  const { id, value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, defaultsMode ? "defaults" : initialRecord?.id ?? "new", () => defaultsMode ? { id: "defaults", path: "", ...saved.defaults } : initialRecord ?? { id: "", path: "", ...emptySeoOverride() }, initialRecord?.id ?? (defaultsMode ? "defaults" : undefined));
   const record = saved.records.find((item) => item.id === id);
   const baseline = defaultsMode ? { id, path: "", ...saved.defaults } : record ?? { id, path: "", ...emptySeoOverride() };
   const dirty = defaultsMode ? !sameSeoValues(value, baseline) : !sameSeoRecord(value, baseline);
@@ -94,10 +95,12 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
     try { await deleteRecord(id); router.push("/admin/seo"); }
     catch (failure) { setError(failure instanceof Error ? failure.message : "Delete failed. Your changes are still here."); }
   }
+  if (!ready) return <p role="status">Restoring local draft…</p>;
   return <>
     <CmsBackButton disabled={pending} onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
     <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
     <CmsToolbar actions={<Button type="submit" form={formId} variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>}>{null}</CmsToolbar>
+    <CmsDraftFeedback status={persistenceStatus} />
     <CmsFeedback label="SEO save status" error={!deleting ? error : undefined}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => { event.preventDefault(); void saveChanges(); }}>
     <CmsEditorContent><CmsFieldSection title="Content" description={defaultsMode ? "Both defaults are required." : "Provide at least one override. A blank individual field inherits its default."}>
@@ -106,7 +109,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
     </CmsFieldSection></CmsEditorContent>
     </Form>
     <CmsFooter actions={!defaultsMode && record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setError(""); setDeleting(true); }}>Delete override</CmsLifecycleButton> : undefined}>
-      <Button type="button" variant="ghost" isDisabled={pending || (!dirty && !Object.keys(exposed).length && !error && !message)} onPress={() => { revision.current += 1; setValue(baseline); setExposed({}); setError(""); setMessage(""); }}>Discard changes</Button>
+      <Button type="button" variant="ghost" isDisabled={pending || (!dirty && !Object.keys(exposed).length && !error && !message)} onPress={() => { revision.current += 1; reset(baseline); setExposed({}); setError(""); setMessage(""); }}>Discard changes</Button>
     </CmsFooter>
     <CmsDialog open={deleting} onClose={() => { if (!pending) setDeleting(false); }} title="Delete this override?" error={error} actions={<>
       <Button type="button" variant="ghost" isDisabled={pending} onPress={() => setDeleting(false)}>Cancel</Button>

@@ -12,6 +12,7 @@ import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
+import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { ProjectFields } from "./ProjectFields";
 
@@ -30,7 +31,7 @@ export function ProjectEditor({ id }: { id: string }) {
 function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord }) {
   const router = useRouter();
   const { records, commit, pending, working } = useProjects();
-  const { id, value, setValue } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyProject(), initialRecord?.id);
+  const { id, value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyProject(), initialRecord?.id);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const revision = useRef(0);
@@ -83,6 +84,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
       return false;
     }
   }
+  if (!ready) return <p role="status">Restoring local draft…</p>;
   if (preview) return <CmsPreviewFrame label="Project preview" exitLabel="Exit project preview" closeRef={closeRef} onExit={() => setPreview(false)}><ProjectPreview value={value} /></CmsPreviewFrame>;
   return <>
     <CmsBackButton disabled={pending} onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton>
@@ -90,6 +92,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
     <CmsToolbar actions={<><Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button><Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button></>}>
       <Button type="button" id="project-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("project-preview-trigger"); setPreview(true); }}>Preview project</Button>
     </CmsToolbar>
+    <CmsDraftFeedback status={persistenceStatus} />
     <CmsFeedback label="Project save status" error={!dialog ? error : undefined}>{pending ? "Saving…" : dirty ? "Unsaved changes" : record ? "No unsaved changes" : "Not saved yet"} {message}</CmsFeedback>
     <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => {
       event.preventDefault();
@@ -104,7 +107,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
       {record ? <CmsLifecycleButton action="delete" disabled={pending} onPress={() => { setError(""); setDialog("delete"); }}>Delete project</CmsLifecycleButton> : null}
     </>}>
       <Button type="button" variant="ghost" isDisabled={pending || (!dirty && !imageSelected && !publishAttempted && !Object.keys(exposed).length)} onPress={() => {
-        setValue(record?.draft ?? emptyProject());
+        reset(record?.draft ?? emptyProject());
         revision.current += 1;
         setExposed({});
         setPublishAttempted(false);

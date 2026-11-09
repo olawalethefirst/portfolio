@@ -6,6 +6,7 @@ import { useId, useRef, useState } from "react";
 import { useHero } from "@/src/cms/HeroProvider";
 import { sameHero, validateHero, type HeroDraft, type HeroErrors, type HeroField } from "@/src/cms/hero";
 import { Button } from "@/src/components/ui/Button";
+import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { CmsField } from "./CmsField";
 import { CmsEditorContent, CmsFieldSection, CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
@@ -14,7 +15,7 @@ const HeroPreview = dynamic(() => import("./HeroPreview").then((m) => m.HeroPrev
 const stages = [["idea", "Idea"], ["iterate", "Iterate"], ["solution", "Solution"]] as const;
 export function HeroEditor() {
   const { saved, save, pending, working } = useHero();
-  const { value, setValue } = useWorkingDraft(working, "hero", () => saved);
+  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, "hero", () => saved);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
   const [error, setError] = useState("");
@@ -58,12 +59,14 @@ export function HeroEditor() {
     }
   }
   const update = (patch: Partial<HeroDraft>) => edit((current) => ({ ...current, ...patch }));
+  if (!ready) return <p role="status">Restoring local draft…</p>;
   if (preview) return <CmsPreviewFrame label="Hero preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><HeroPreview value={value} /></CmsPreviewFrame>;
   return <>
     <CmsPageHeader title="Hero" description="Edit the introduction and the copy shown for each fixed stage." />
     <CmsToolbar actions={<Button type="submit" form={formId} variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>}>
       <Button type="button" id="hero-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("hero-preview-trigger"); setPreview(true); }}>Preview</Button>
     </CmsToolbar>
+    <CmsDraftFeedback status={persistenceStatus} />
     <CmsFeedback label="Hero save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}</CmsFeedback>
     <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => { event.preventDefault(); void saveChanges(); }}>
     <CmsEditorContent><CmsFieldSection title="Content">
@@ -75,6 +78,6 @@ export function HeroEditor() {
       </CmsFieldSection>)}</div>
     </CmsFieldSection></CmsEditorContent>
     </Form>
-    <CmsFooter><Button type="button" variant="ghost" isDisabled={pending || !dirty} onPress={() => { revision.current += 1; setValue(saved); setError(""); setExposed({}); }}>Discard changes</Button></CmsFooter>
+    <CmsFooter><Button type="button" variant="ghost" isDisabled={pending || !dirty} onPress={() => { revision.current += 1; reset(saved); setError(""); setExposed({}); }}>Discard changes</Button></CmsFooter>
   </>;
 }

@@ -3,6 +3,7 @@ import { SOCIAL_DEFAULT_DESTINATIONS, SOCIAL_PROFILES } from "@/src/components/c
 
 const profileUrl = z.string().refine((value) => Boolean(socialProfileHref(value)),
   "Enter a complete HTTPS profile URL without sign-in credentials.");
+export const socialDraftSchema = z.object({ github: z.string(), linkedin: z.string(), x: z.string() });
 export const socialSchema = z.object({ github: profileUrl, linkedin: profileUrl, x: profileUrl });
 export type SocialDraft = z.infer<typeof socialSchema>;
 export type SocialErrors = Partial<Record<keyof SocialDraft, string>>;
