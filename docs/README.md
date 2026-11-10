@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/database-setup.md`](context/database-setup.md): single hosted database,
+  SQL-first migration ownership, configuration boundaries, and Supabase CLI workflow.
+
 - [`context/admin-login-spec.md`](context/admin-login-spec.md): minimal
   Google login UI, layout isolation, and deferred authentication boundary.
 
