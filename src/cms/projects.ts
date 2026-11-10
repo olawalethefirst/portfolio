@@ -7,7 +7,7 @@ const limits = CONTENT_LIMITS.project;
 export const projectDraftSchema = z.object({
   name: z.string(), summary: z.string(), what: z.string(), how: z.string(),
   platform: z.enum(["mobile", "web"]), screenshot: z.string(),
-  screenshotAlt: z.string(), decorative: z.boolean(), liveUrl: z.string(),
+  screenshotAlt: z.string(), liveUrl: z.string(),
 });
 const requiredText = () => z.string().refine((value) => Boolean(value.trim()), "Complete this field before publishing.");
 export const projectPublishSchema = projectDraftSchema.extend({
@@ -18,8 +18,8 @@ export const projectPublishSchema = projectDraftSchema.extend({
   screenshot: requiredText(),
   liveUrl: z.string().refine(httpsUrl, "Enter a complete HTTPS destination."),
 }).superRefine((value, context) => {
-  if (!value.decorative && !value.screenshotAlt.trim()) {
-    context.addIssue({ code: "custom", path: ["screenshotAlt"], message: "Describe the screenshot or mark it decorative." });
+  if (!value.screenshotAlt.trim()) {
+    context.addIssue({ code: "custom", path: ["screenshotAlt"], message: "Describe the screenshot." });
   }
 });
 export type ProjectDraft = z.infer<typeof projectDraftSchema>;
@@ -27,12 +27,12 @@ export interface ProjectRecord { id: string; draft: ProjectDraft; published: Pro
 export type ProjectAction = "save" | "publish" | "unpublish" | "delete";
 export type ProjectErrors = Partial<Record<keyof ProjectDraft, string>>;
 export function emptyProject(): ProjectDraft {
-  return { name: "", summary: "", what: "", how: "", platform: "web", screenshot: "", screenshotAlt: "", decorative: false, liveUrl: "" };
+  return { name: "", summary: "", what: "", how: "", platform: "web", screenshot: "", screenshotAlt: "", liveUrl: "" };
 }
 export function initialProjects(): ProjectRecord[] {
   return labProjects.map((item) => {
     const draft: ProjectDraft = { name: item.name, summary: item.summary, what: item.what, how: item.how,
-      platform: item.platform, screenshot: item.screenTextureSrc ?? "", screenshotAlt: `${item.name} interface`, decorative: false, liveUrl: item.liveHref };
+      platform: item.platform, screenshot: item.screenTextureSrc ?? "", screenshotAlt: `${item.name} interface`, liveUrl: item.liveHref };
     return { id: item.id, draft, published: { ...draft } };
   });
 }

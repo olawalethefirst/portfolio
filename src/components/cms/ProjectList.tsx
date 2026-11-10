@@ -46,7 +46,7 @@ export function ProjectList() {
           move(item.id, direction);
           setAnnouncement(`${item.draft.name || "Untitled project"} moved to position ${index + direction + 1} of ${records.length}.`);
         }} />}>
-        <CmsRecordLink href={`/admin/projects/${item.id}`} title={item.draft.name || "Untitled project"} summary={item.draft.summary || "Add a summary to introduce this project."} metadata={item.draft.platform === "mobile" ? "Mobile" : "Web"} status={projectStatus(item)} thumbnail={item.draft.screenshot ? <div className="relative h-24 w-36 shrink-0 overflow-hidden border border-border"><Image src={item.draft.screenshot} alt={item.draft.decorative ? "" : item.draft.screenshotAlt} fill sizes="144px" className="object-cover" /></div> : null} />
+        <CmsRecordLink href={`/admin/projects/${item.id}`} title={item.draft.name || "Untitled project"} summary={item.draft.summary || "Add a summary to introduce this project."} metadata={item.draft.platform === "mobile" ? "Mobile" : "Web"} status={projectStatus(item)} thumbnail={item.draft.screenshot ? <div className="relative h-24 w-36 shrink-0 overflow-hidden border border-border"><Image src={item.draft.screenshot} alt={item.draft.screenshotAlt} fill sizes="144px" className="object-cover" /></div> : null} />
       </CmsRecordRow>)}
     </ul>
     {!shown.length ? <CmsEmptyState title={records.length ? "No matching projects" : "Your first project starts here"} description={records.length ? "Try a different search or choose another status." : "Create a project to start sharing your work."} action={records.length ? <Button variant="ghost" onPress={() => { setSearch(""); setStatus("all"); }}>Clear filters</Button> : null} /> : null}

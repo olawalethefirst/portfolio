@@ -1,7 +1,6 @@
 "use client";
 
 import { CmsRadioGroup } from "./CmsRadioGroup";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { ImagePicker } from "./ImagePicker";
 import { Link, Tags } from "lucide-react";
 import {
@@ -54,22 +53,19 @@ export function PublicationFields({
             onSelect={onImageSelect}
             onBlur={() => onBlur?.("coverSrc")}
             value={value.coverSrc}
-            alt={value.decorativeCover ? "" : value.coverAlt}
+            alt={value.coverAlt}
             onChange={(source) => field("coverSrc", source)}
             error={errors.coverSrc}
           />
-          <CmsCheckbox value={value.decorativeCover} onChange={(next) => field("decorativeCover", next)}>Decorative image</CmsCheckbox>
-          {!value.decorativeCover ? (
-            <CmsField
-              name="coverAlt"
-              onBlur={() => onBlur?.("coverAlt")}
-              label="Image description"
-              value={value.coverAlt}
-              onChange={(next) => field("coverAlt", next)}
-              hint="Describe the image for readers who cannot see it."
-              error={errors.coverAlt}
-            />
-          ) : null}
+          <CmsField
+            name="coverAlt"
+            onBlur={() => onBlur?.("coverAlt")}
+            label="Image description"
+            value={value.coverAlt}
+            onChange={(next) => field("coverAlt", next)}
+            hint="Describe the image for readers who cannot see it."
+            error={errors.coverAlt}
+          />
         </CmsFieldSection>
         <CmsFieldSection title="Publishing" separated>
           <CmsField

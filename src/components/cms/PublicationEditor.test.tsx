@@ -330,9 +330,7 @@ it("deduplicates removable tags and preserves hidden content when changing publi
   expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
   const description = screen.getByRole("textbox", { name: "Image description" }) as HTMLInputElement;
   const originalAlt = description.value;
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
-  expect(screen.queryByRole("textbox", { name: "Image description" })).toBeNull();
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.queryByRole("checkbox", { name: "Decorative image" })).toBeNull();
   expect((screen.getByRole("textbox", { name: "Image description" }) as HTMLInputElement).value).toBe(originalAlt);
 });
 
@@ -568,7 +566,7 @@ it("updates active branch errors after Publish and retains hidden content", asyn
   expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
 });
 
-it("focuses tags before cover and excludes decorative alt requirements", async () => {
+it("focuses tags before cover and requires an image description", async () => {
   render(<CmsProvider><PublicationEditor id="publication-1" /></CmsProvider>);
   const tags = screen.getByRole("textbox", { name: "Tags" });
   fireEvent.change(tags, { target: { value: "a".repeat(17) } });
@@ -582,8 +580,7 @@ it("focuses tags before cover and excludes decorative alt requirements", async (
   fireEvent.change(alt, { target: { value: "" } });
   fireEvent.focus(alt); fireEvent.blur(alt);
   expect(alt.getAttribute("aria-invalid")).toBe("true");
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
-  expect(screen.queryByRole("textbox", { name: "Image description" })).toBeNull();
+  expect(screen.queryByRole("checkbox", { name: "Decorative image" })).toBeNull();
 });
 
 it("discards failed cover feedback even when the saved content did not change", () => {

@@ -209,7 +209,7 @@ TextField/Label/Description/FieldError and CloseButton usage stays library-owned
 | CMS control | Shared implementation | Preserve |
 | --- | --- | --- |
 | Status filter in CmsCollectionToolbar | HeroUI Select, composed once for both lists | Visible Status label, choices, combined filtering and disabled-ordering rules |
-| Decorative-image and demo-failure checkboxes | CmsCheckbox composes HeroUI Checkbox | Accessible labels, controlled values, disabled state and failure recovery |
+| Demo-failure checkboxes | CmsCheckbox composes HeroUI Checkbox | Accessible labels, controlled values, disabled state and failure recovery |
 | Publication-type and Project-platform choices | CmsRadioGroup composes HeroUI RadioGroup / Radio | Group labels, keyboard operation, selected values and hidden-field preservation |
 | Publication/project status badges | Existing HeroUI-backed Chip wrapper | Status wording, wrapping and semantic theme colors |
 
@@ -355,8 +355,8 @@ remain controller-owned under CONSTRAINTS.md.
 4. Draft save permits incomplete content. Publish requires nonblank title,
    summary, selected cover, publication date, and either nonblank local body or
    a valid HTTPS external destination. Future dates show a scheduling-not-supported
-   error rather than suggesting scheduled publishing. Required image descriptions
-   have an explicit decorative-image opt-out. Do not invent arbitrary text limits.
+   error rather than suggesting scheduled publishing. Image descriptions
+   are required before publishing. Do not invent arbitrary text limits.
 5. Request states: idle, pending, success, error. Disable duplicate submissions.
    Capture the submitted snapshot: changes typed during a pending save remain
    dirty after completion. Failures preserve values and provide retry. Tests inject
@@ -816,11 +816,11 @@ existing Tags input icon (rather than Hash) to match the established field.
 platform and saved publication status. Search matches name/summary and combines
 with the shared All/Published/Drafts status filter. Create and
 edit routes expose name, summary, What, How, mobile/web platform, screenshot,
-image description/decorative choice and live URL. Fixture image descriptions use
+image description and live URL. Fixture image descriptions use
 “[project name] interface” as editable demo defaults.
 
 Draft saves permit incomplete content. Publishing requires name, summary, What,
-How, screenshot, image description unless decorative, and a complete HTTPS URL.
+How, screenshot, image description, and a complete HTTPS URL.
 Mock saved drafts and published values are distinct. Request failures preserve
 edits; changes typed during saving remain dirty. Unpublish preserves the draft.
 Delete requires confirmation, removes both demo versions and returns to the list;

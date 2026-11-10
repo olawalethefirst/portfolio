@@ -10,7 +10,7 @@ export function PublicationCollectionPreview({ records }: { records: readonly Pu
     title: published.title,
     summary: published.summary,
     date: validDate(published.publishedOn) ? published.publishedOn : "2026-09-18",
-    cover: { src: published.coverSrc || "/publication-cover.svg", alt: published.decorativeCover ? "" : published.coverAlt },
+    cover: { src: published.coverSrc || "/publication-cover.svg", alt: published.coverAlt },
     tags: publicationTags(published.tagsText),
     href: published.kind === "local" ? "/publication-details-lab" : published.externalUrl,
   }] : []);

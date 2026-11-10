@@ -69,7 +69,7 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
       const result = projectDraftSchema.safeParse(value);
       if (!result.success) { setError(result.error.issues[0].message); return false; }
     }
-    const order: (keyof ProjectDraft)[] = ["name", "summary", "what", "how", "platform", "liveUrl", "screenshot", ...(!value.decorative ? ["screenshotAlt" as const] : [])];
+    const order: (keyof ProjectDraft)[] = ["name", "summary", "what", "how", "platform", "liveUrl", "screenshot", "screenshotAlt"];
     const first = order.find((field) => nextErrors[field]);
     if (first) { requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()); return false; }
     const submittedRevision = revision.current;

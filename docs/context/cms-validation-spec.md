@@ -32,14 +32,14 @@ icons. New controls follow the [icon policy](field-and-button-icon-policy.md).
 | SEO defaults | Save requires nonblank `title` and `description`. |
 | SEO override | Save requires a valid exact normalized `path`, unique among current records excluding the current ID, and at least one nonblank title/description. Individual blank fields inherit. |
 | Project draft | Save accepts structurally valid incomplete content, including blank or unfinished publication fields. |
-| Project publish/update | Require nonblank `name`, `summary`, `what`, `how`, `screenshot`; require `screenshotAlt` unless `decorative`; require an HTTPS `liveUrl`. |
+| Project publish/update | Require nonblank `name`, `summary`, `what`, `how`, `screenshot`; require `screenshotAlt`; require an HTTPS `liveUrl`. |
 | Publication draft | Save accepts structurally valid incomplete content, including blank or unfinished publication fields. |
-| Publication publish/update | Require nonblank `title`/`summary`, a cover, a valid date no later than today, `coverAlt` unless `decorativeCover`, and either nonblank `bodyMarkdown` for `local` or an HTTPS `externalUrl` for `external`. |
+| Publication publish/update | Require nonblank `title`/`summary`, a cover, a valid date no later than today, `coverAlt`, and either nonblank `bodyMarkdown` for `local` or an HTTPS `externalUrl` for `external`. |
 | Delete/unpublish | Preserve existing confirmations and request coordination; publication completeness must not block either action. Unpublish retains saved draft and current edits. |
 
 Structural draft schemas check domain shapes, strings, booleans and enum values;
 they do not apply publication completeness or reject unfinished URL/date text.
-Keep inactive values when the publication kind or decorative-image state changes.
+Keep inactive values when the publication kind changes.
 Tags remain optional and retain existing parsing/normalization. Publication
 publish/update applies the approved tag length and count limits in the
 [homepage text limit map](cms-homepage-text-limits.md).
@@ -90,7 +90,7 @@ trimming, date or normalization policy must be identified and approved separatel
    forms globally. An inactive field must neither block the action nor take focus.
 3. Revalidate cross-field errors whenever any dependency changes. This includes
    SEO title/description and contextual path uniqueness, publication kind/date,
-   and decorative-image alternatives. Do not require a second submit to clear
+   and required image descriptions. Do not require a second submit to clear
    corrected errors. Correcting a displayed error must not expose unrelated
    untouched errors.
 4. Save draft remains available despite publication errors. Publish and Update

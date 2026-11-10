@@ -3,7 +3,7 @@ import { expect, it, vi } from "vitest";
 import { CmsProvider, useCms } from "./CmsProvider";
 import { emptyPublication } from "./publications";
 
-const complete = () => ({ ...emptyPublication(), title: "Article", summary: "Summary", bodyMarkdown: "Body", coverSrc: "/cover.png", decorativeCover: true, publishedOn: "2026-11-09" });
+const complete = () => ({ ...emptyPublication(), title: "Article", summary: "Summary", bodyMarkdown: "Body", coverSrc: "/cover.png", coverAlt: "Cover description", publishedOn: "2026-11-09" });
 const today = () => "2026-11-09";
 
 it("enforces action schemas with injected today, while incomplete/over-limit drafts remain saveable", async () => {

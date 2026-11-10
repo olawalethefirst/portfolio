@@ -91,7 +91,7 @@ function PublicationEditorForm({
         new Date().toISOString().slice(0, 10),
       );
       setPublishAttempted(true);
-      const order: (keyof PublicationDraft)[] = ["title", "summary", value.kind === "local" ? "bodyMarkdown" : "externalUrl", "tagsText", "coverSrc", ...(!value.decorativeCover ? ["coverAlt" as const] : []), "publishedOn"];
+      const order: (keyof PublicationDraft)[] = ["title", "summary", value.kind === "local" ? "bodyMarkdown" : "externalUrl", "tagsText", "coverSrc", "coverAlt", "publishedOn"];
       const first = order.find((field) => nextErrors[field]);
       if (first) {
         requestAnimationFrame(() =>

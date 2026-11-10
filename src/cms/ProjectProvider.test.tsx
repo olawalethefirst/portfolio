@@ -20,7 +20,7 @@ it("allows over-limit incomplete saves but rejects incomplete and over-limit pub
 it("rejects malformed draft structure", async () => {
   const request = vi.fn();
   const { result } = renderHook(useProjects, { wrapper: ({ children }) => <ProjectProvider request={request}>{children}</ProjectProvider> });
-  const malformed = JSON.parse(JSON.stringify({ ...emptyProject(), decorative: "yes" }));
+  const malformed = JSON.parse(JSON.stringify({ ...emptyProject(), platform: "invalid" }));
   await act(async () => { await expect(result.current.commit("new", malformed, "save")).rejects.toThrow(); });
   expect(request).not.toHaveBeenCalled();
 });

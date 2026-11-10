@@ -325,9 +325,7 @@ it("focuses URL before screenshot and updates conditional image-description erro
   fireEvent.focus(alt);
   fireEvent.blur(alt);
   expect(alt.getAttribute("aria-invalid")).toBe("true");
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
-  expect(screen.queryByRole("textbox", { name: "Image description" })).toBeNull();
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
+  expect(screen.queryByRole("checkbox", { name: "Decorative image" })).toBeNull();
   expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
 });
 
@@ -372,10 +370,8 @@ it("cancels a pending image replacement on discard so late decoding cannot repla
   }
 });
 
-it("shows newly active image-description requirements after a publish attempt", () => {
+it("requires an image description after a publish attempt", () => {
   render(<ProjectProvider><ProjectEditor id="new" /></ProjectProvider>);
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
   fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-  fireEvent.click(screen.getByRole("checkbox", { name: "Decorative image" }));
   expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
 });
