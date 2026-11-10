@@ -9,7 +9,6 @@ import { emptyProject, projectDraftSchema, projectStatus, sameProject, validateP
 import { Button } from "@/src/components/ui/Button";
 import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
@@ -25,7 +24,7 @@ export function ProjectEditor({ id }: { id: string }) {
   const { records } = useProjects();
   const router = useRouter();
   const record = records.find((item) => item.id === id);
-  if (id !== "new" && !record) return <><CmsBackButton onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton><CmsPageHeader title="Project unavailable" description="Return to projects to start again." /></>;
+  if (id !== "new" && !record) return <><CmsPageHeader onBack={() => router.push("/admin/projects")} backLabel="Back to projects" title="Project unavailable" description="Return to projects to start again." /></>;
   return <ProjectEditorForm initialRecord={record} />;
 }
 function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord }) {
@@ -87,9 +86,8 @@ function ProjectEditorForm({ initialRecord }: { initialRecord?: ProjectRecord })
   if (!ready) return <p role="status">Restoring local draft…</p>;
   if (preview) return <CmsPreviewFrame label="Project preview" exitLabel="Exit project preview" closeRef={closeRef} onExit={() => setPreview(false)}><ProjectPreview value={value} /></CmsPreviewFrame>;
   return <>
-    <CmsBackButton disabled={pending} onPress={() => router.push("/admin/projects")}>Back to projects</CmsBackButton>
-    <CmsPageHeader title={initialRecord ? "Edit project" : "New project"} description="Shape your project, then preview it as visitors will see it." status={record ? projectStatus({ ...record, draft: value }) : "New draft"} />
-    <CmsToolbar actions={<><Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button><Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button></>}>
+    <CmsPageHeader onBack={() => router.push("/admin/projects")} backLabel="Back to projects" backDisabled={pending} title={initialRecord ? "Edit project" : "New project"} description="Shape your project, then preview it as visitors will see it." status={record ? projectStatus({ ...record, draft: value }) : "New draft"} action={<><Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button><Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button></>} />
+    <CmsToolbar>
       <Button type="button" id="project-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("project-preview-trigger"); setPreview(true); }}>Preview project</Button>
     </CmsToolbar>
     <CmsDraftFeedback status={persistenceStatus} />

@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
 import { Button } from "@/src/components/ui/Button";
 
 const maxBytes = 10 * 1024 * 1024;
 
 /** Local demo images use data URLs so saved previews outlive the picker. */
-export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children, onBlur, onSelect }: {
+export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children, onBlur, onSelect, inputRef, presentation = "picker" }: {
   value: string;
   alt: string;
   onChange: (source: string) => void;
@@ -16,6 +16,8 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
   children?: ReactNode;
   onBlur?: () => void;
   onSelect?: () => void;
+  inputRef?: Ref<HTMLInputElement>;
+  presentation?: "picker" | "insertion";
 }) {
   const id = useId();
   const [pending, setPending] = useState(false);
@@ -52,7 +54,9 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
     function fail() {
       if (current !== generation.current) return;
       setPending(false);
-      setFileError("This image could not be read. Try another file. Your previous image is unchanged.");
+      setFileError(presentation === "insertion"
+        ? "This image could not be read. Try another file. Your article is unchanged."
+        : "This image could not be read. Try another file. Your previous image is unchanged.");
     }
     next.onerror = fail;
     next.onload = async () => {
@@ -72,19 +76,20 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
     next.readAsDataURL(file);
   }
 
-  return <div className="space-y-3">
-    {value ? children ?? <div className="relative aspect-[16/10] overflow-hidden border border-border">
+  const insertion = presentation === "insertion";
+  return <div className={insertion ? "text-sm" : "space-y-3"}>
+    {!insertion ? value ? children ?? <div className="relative aspect-[16/10] overflow-hidden border border-border">
       <Image src={value} alt={alt} fill sizes="(max-width: 1279px) 80vw, 288px" className="object-cover" />
-    </div> : <p className="border border-dashed border-border p-6 text-sm text-muted">No image selected</p>}
-    <label htmlFor={id} className="block text-sm font-medium">{value ? "Replace image" : "Choose image"}</label>
-    <input onBlur={onBlur} id={id} name={name} type="file" accept="image/jpeg,image/png,image/webp"
-      aria-invalid={Boolean(fileError || error)} aria-describedby={`${id}-hint ${id}-error`}
+    </div> : <p className="border border-dashed border-border p-6 text-sm text-muted">No image selected</p> : null}
+    {!insertion ? <label htmlFor={id} className="block text-sm font-medium">{value ? "Replace image" : "Choose image"}</label> : null}
+    <input ref={inputRef} hidden={insertion} aria-label={insertion ? "Article image" : undefined} onBlur={onBlur} id={id} name={name} type="file" accept="image/jpeg,image/png,image/webp"
+      aria-invalid={Boolean(fileError || error)} aria-describedby={insertion ? `${id}-error` : `${id}-hint ${id}-error`}
       className="block min-h-11 w-full min-w-0 text-sm file:mr-3 file:border-0 file:bg-default file:px-3 file:py-3 file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
       onChange={(event) => { select(event.target.files?.[0]); event.target.value = ""; }} />
-    <p id={`${id}-hint`} className="text-xs text-muted">JPEG, PNG or WebP · up to 10 MiB.</p>
+    {!insertion ? <p id={`${id}-hint`} className="text-xs text-muted">JPEG, PNG or WebP · up to 10 MiB.</p> : null}
     <p role="status" className="text-xs text-muted">{pending ? "Reading image…" : feedback}</p>
     <p id={`${id}-error`} role={fileError || error ? "alert" : undefined} className="text-sm text-danger">{fileError || error}</p>
-    {value ? <Button variant="ghost" size="sm" onPress={() => {
+    {!insertion && value ? <Button variant="ghost" size="sm" onPress={() => {
       generation.current += 1;
       reader.current?.abort();
       setPending(false);

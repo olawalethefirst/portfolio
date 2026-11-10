@@ -1,5 +1,9 @@
 # Markdown field and comment rendering
 
+Publication authoring uses the separate
+[article workspace](publication-writing.md) and full article renderer. The
+shared MarkdownField described here retains its restricted comment behavior.
+
 `src/components/markdown-field/MarkdownField.tsx` composes HeroUI field and toolbar
 controls with the shared TextArea. Use it when Markdown authoring and preview are
 needed; ordinary TextArea consumers remain plain text.

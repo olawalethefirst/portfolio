@@ -19,13 +19,13 @@ import {
 import { Button } from "@/src/components/ui/Button";
 import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
+import { PublicationWriting } from "./PublicationWriting";
 
 export function PublicationEditor({ id }: { id: string }) {
   const { records } = useCms();
@@ -34,8 +34,7 @@ export function PublicationEditor({ id }: { id: string }) {
   if (id !== "new" && !record)
     return (
       <>
-        <CmsBackButton onPress={() => router.push("/admin/publications")}>Back to publications</CmsBackButton>
-        <CmsPageHeader title="Publication unavailable" description="Return to publications to start again." />
+        <CmsPageHeader onBack={() => router.push("/admin/publications")} backLabel="Back to publications" title="Publication unavailable" description="Return to publications to start again." />
       </>
     );
   return <PublicationEditorForm initialRecord={record} />;
@@ -50,6 +49,7 @@ function PublicationEditorForm({
   const { records, commit, pending, working } = useCms();
   const { id, value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(null);
+  const [writing, setWriting] = useState(false);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const revision = useRef(0);
@@ -65,7 +65,7 @@ function PublicationEditorForm({
   const [message, setMessage] = useState("");
   const [requestError, setRequestError] = useState("");
   const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
-  const { closeRef, capture } = useCmsPreview(Boolean(previewMode), () => setPreviewMode(null));
+  const { closeRef, capture } = useCmsPreview(Boolean(previewMode) || writing, () => { setPreviewMode(null); setWriting(false); });
   const record = records.find((item) => item.id === id);
   const dirty = !samePublication(value, record?.draft ?? emptyPublication());
 
@@ -129,16 +129,20 @@ function PublicationEditorForm({
   }
 
   if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (writing) return <PublicationWriting title={value.title} value={value.bodyMarkdown}
+    onChange={(bodyMarkdown) => changeValue({ ...value, bodyMarkdown })} onBlur={() => expose("bodyMarkdown")}
+    onBack={() => setWriting(false)} onSave={() => void act("save")} closeRef={closeRef}
+    pending={pending} dirty={dirty} canSave={dirty || !record} message={message} error={requestError}
+    articleError={errors.bodyMarkdown} persistenceStatus={persistenceStatus} />;
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
     <>
-      <CmsBackButton disabled={pending} onPress={() => router.push("/admin/publications")}>Publications</CmsBackButton>
-      <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
-      <CmsToolbar actions={<>
+      <CmsPageHeader onBack={() => router.push("/admin/publications")} backLabel="Back to publications" backDisabled={pending} title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} action={<>
         <Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button>
         <Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button>
-      </>}>
+      </>} />
+      <CmsToolbar>
         <Button type="button" id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
         <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
@@ -152,7 +156,7 @@ function PublicationEditorForm({
         const publish = submitter instanceof HTMLButtonElement && submitter.name === "intent" && submitter.value === "publish";
         void act(publish ? "publish" : "save");
       }}>
-        <PublicationFields value={value} errors={errors} onChange={changeValue} onBlur={expose} imageReset={imageReset} onImageSelect={() => setImageSelected(true)} />
+        <PublicationFields articleDirty={value.bodyMarkdown !== (record?.draft.bodyMarkdown ?? "")} onWriteArticle={() => { capture("publication-body-trigger"); setWriting(true); }} value={value} errors={errors} onChange={changeValue} onBlur={expose} imageReset={imageReset} onImageSelect={() => setImageSelected(true)} />
       </Form>
       <CmsFooter actions={<>
         {record?.published ? <CmsLifecycleButton action="unpublish" disabled={pending} onPress={() => setDialog("unpublish")}>Unpublish</CmsLifecycleButton> : null}

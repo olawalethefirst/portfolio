@@ -1,14 +1,12 @@
-import { Typography } from "@heroui/react/typography";
 import Image from "next/image";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 import { Chip } from "@/src/components/ui/Chip";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { ReadingProgress } from "./ReadingProgress";
 import { PublicationTableOfContents } from "./PublicationTableOfContents";
-import { getPublicationHeadings, remarkPublicationHeadings } from "./publication-headings";
+import { PublicationMarkdown } from "./PublicationMarkdown";
+import { getPublicationHeadings } from "./publication-headings";
 
 export interface PublicationDetailsData {
   bodyMarkdown: string;
@@ -95,11 +93,9 @@ export function PublicationDetails({ publication }: PublicationDetailsProps) {
 
           <div className={`mt-14 grid min-w-0 gap-10 sm:mt-16 ${headings.length ? "lg:grid-cols-[minmax(0,1fr)_14rem] lg:gap-12" : ""}`}>
             <PublicationTableOfContents headings={headings} />
-            <Typography.Prose className="flex min-w-0 w-full max-w-none flex-col gap-5 [&_h2]:scroll-mt-8 [&_h3]:scroll-mt-8 lg:col-start-1 lg:row-start-1">
-              <Markdown remarkPlugins={[remarkGfm, remarkPublicationHeadings]}>
-                {publication.bodyMarkdown}
-              </Markdown>
-            </Typography.Prose>
+            <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+              <PublicationMarkdown>{publication.bodyMarkdown}</PublicationMarkdown>
+            </div>
           </div>
         </div>
       </Surface>
