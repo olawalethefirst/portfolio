@@ -3,14 +3,21 @@
 import { Chip } from "@/src/components/ui/Chip";
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
+import { HeaderActionBar } from "@/src/components/ui/header-action-bar";
 
-export function CmsPageHeader({ title, description, status, action }: { title: string; description: string; status?: ReactNode; action?: ReactNode }) {
-  return <header className="mb-8 flex flex-wrap items-start justify-between gap-5">
-    <div className="min-w-0">
+export function CmsPageHeader({ title, description, status, action, onBack, backLabel, backDisabled }: {
+  title: string; description: string; status?: ReactNode; action?: ReactNode;
+  onBack?: () => void; backLabel?: string; backDisabled?: boolean;
+}) {
+  const content = <>
       {status ? <p className="mb-2 text-xs uppercase tracking-widest text-muted">{status}</p> : null}
       <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-3 max-w-xl text-sm leading-6 text-muted">{description}</p>
-    </div>
+  </>;
+  if (onBack) return <HeaderActionBar onBack={onBack} backLabel={backLabel} backDisabled={backDisabled}
+    actions={action} className="mb-8 items-start" buttonClassName="mt-1">{content}</HeaderActionBar>;
+  return <header className="mb-8 flex flex-wrap items-start justify-between gap-5">
+    <div className="min-w-0">{content}</div>
     {action}
   </header>;
 }

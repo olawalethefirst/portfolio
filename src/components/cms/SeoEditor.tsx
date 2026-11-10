@@ -7,11 +7,10 @@ import { useId, useRef, useState } from "react";
 import { useSeo } from "@/src/cms/SeoProvider";
 import { emptySeoOverride, sameSeoRecord, sameSeoValues, validateSeoDefaults, validateSeoRecord, type SeoErrors, type SeoRecord } from "@/src/cms/seo";
 import { Button } from "@/src/components/ui/Button";
-import { CmsBackButton } from "./CmsBackButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsField } from "./CmsField";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
-import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
+import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader } from "./CmsLayout";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { SeoFields } from "./SeoFields";
@@ -21,8 +20,7 @@ export function SeoEditor({ id }: { id: string }) {
   const router = useRouter();
   const record = saved.records.find((item) => item.id === id);
   if (id !== "defaults" && id !== "new" && !record) return <>
-    <CmsBackButton onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
-    <CmsPageHeader title="SEO override unavailable" description="Return to SEO to start again." />
+    <CmsPageHeader onBack={() => router.push("/admin/seo")} backLabel="Back to SEO" title="SEO override unavailable" description="Return to SEO to start again." />
   </>;
   return <SeoEditorForm key={id} defaultsMode={id === "defaults"} initialRecord={record} />;
 }
@@ -97,9 +95,7 @@ function SeoEditorForm({ defaultsMode, initialRecord }: { defaultsMode: boolean;
   }
   if (!ready) return <p role="status">Restoring local draft…</p>;
   return <>
-    <CmsBackButton disabled={pending} onPress={() => router.push("/admin/seo")}>Back to SEO</CmsBackButton>
-    <CmsPageHeader title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} />
-    <CmsToolbar actions={<Button type="submit" form={formId} variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>}>{null}</CmsToolbar>
+    <CmsPageHeader onBack={() => router.push("/admin/seo")} backLabel="Back to SEO" backDisabled={pending} title={defaultsMode ? "SEO defaults" : record ? "Edit SEO override" : "New SEO override"} description={defaultsMode ? "Used by paths without a title or description override." : "Override an exact site path. Adding an override does not create a public page."} action={<Button type="submit" form={formId} variant="outline" isDisabled={pending || (!dirty && (defaultsMode || Boolean(record)))} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>} />
     <CmsDraftFeedback status={persistenceStatus} />
     <CmsFeedback label="SEO save status" error={!deleting ? error : undefined}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
     <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => { event.preventDefault(); void saveChanges(); }}>

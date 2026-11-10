@@ -1,9 +1,24 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { createRef } from "react";
 
 import { HeaderActionBar } from "./HeaderActionBar";
 
 describe("HeaderActionBar", () => {
+  it("exposes the back button for focus restoration and respects a disabled back action", () => {
+    const backButtonRef = createRef<HTMLButtonElement>();
+    const onBack = vi.fn();
+    const { rerender } = render(<HeaderActionBar onBack={onBack} backLabel="Return to editor" backButtonRef={backButtonRef} backDisabled />);
+    const back = screen.getByRole("button", { name: "Return to editor" });
+    expect(backButtonRef.current).toBe(back);
+    fireEvent.click(back);
+    expect(onBack).not.toHaveBeenCalled();
+    rerender(<HeaderActionBar onBack={onBack} backLabel="Return to editor" backButtonRef={backButtonRef} />);
+    act(() => backButtonRef.current?.focus());
+    expect(document.activeElement).toBe(back);
+    fireEvent.click(back);
+    expect(onBack).toHaveBeenCalledTimes(1);
+  });
   it("keeps the back action available when middle content is omitted", () => {
     const onBack = vi.fn();
 

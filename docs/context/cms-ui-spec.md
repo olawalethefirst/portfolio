@@ -132,8 +132,8 @@ publication filters and other entity-specific
 controls remain optional without changing the overall arrangement.
 
 Fullscreen previews share one presentation frame: hide the shared shell chrome,
-show only the edited section/view, use the public rendering components, and
-position the unstyled HeroUI CloseButton top-right through its wrapper. Share
+use public rendering components, and show HeaderActionBar above the edited
+section/view. Share
 Escape handling, editor focus/scroll restoration and unsaved-value continuity.
 Publications retain separate card and article/destination actions. Heavy scenes
 mount only when preview opens. Public component admin props retain their explicit
@@ -204,7 +204,7 @@ a new form engine, state layer, dependency or changes to public rendering.
 
 HeroUI controls are composed as below. Existing wrappers for Button,
 Input, TextArea and Chip remain the first reuse point; existing Modal, Drawer,
-TextField/Label/Description/FieldError and CloseButton usage stays library-owned.
+TextField/Label/Description/FieldError usage stays library-owned.
 
 | CMS control | Shared implementation | Preserve |
 | --- | --- | --- |
@@ -214,10 +214,13 @@ TextField/Label/Description/FieldError and CloseButton usage stays library-owned
 | Publication/project status badges | Existing HeroUI-backed Chip wrapper | Status wording, wrapping and semantic theme colors |
 
 `CmsRadioGroup` owns label typography, option wrapping/gaps and radio target
-sizing; callers supply typed options, values and handlers. `CmsBackButton` owns
-the ghost treatment, leading ArrowLeft and spacing above the header for both
-editors and unavailable-record recovery. ArrowLeft remains the existing
-navigation exception to the icon-free ghost-button default. `CmsShell` renders
+sizing; callers supply typed options, values and handlers. Nested editors and
+unavailable-record recovery use `CmsPageHeader` with `onBack`, which composes
+the shared `HeaderActionBar`. Its icon-only ArrowLeft button, title/content and
+trailing actions are also used by writing and full-screen preview screens.
+The back action sits on its own row above the title/content and trailing actions.
+Save/Publish actions belong in that header; preview-launch actions remain in the
+editor toolbar. Pending editor saves disable the back action. `CmsShell` renders
 navigation entries through one shared button composition with shared spacing,
 active treatment and icon sizing.
 
@@ -471,7 +474,7 @@ Title fields consider Type/TextCursorInput and omit icons because labels suffice
 description textareas and ghost Discard follow the icon-free default. Path
 uses leading Route over Link to identify a site pathname; search retains Search.
 New override uses Plus over FilePlus2 and Save retains Save over Check. Defaults
-navigation uses Settings2 over SlidersHorizontal. Back reuses CmsBackButton.
+navigation uses Settings2 over SlidersHorizontal. Back uses HeaderActionBar.
 Delete reuses CmsLifecycleButton/CmsDialog and the existing footer/confirmation
 icon decisions. SEO navigation
 retains Search over FileSearch under the existing ghost-navigation exception.
@@ -630,9 +633,8 @@ rendering. Article images, code, tables, headings, and links must remain support
 Publication previews are fullscreen only. Full-screen preview stays in the current
 editing session, shows only the section or publication view being edited, hides
 CMS chrome, and restores the editor on exit without losing values or staged
-images. Keep the public component's responsive rendition. Show only a subtle
-fixed HeroUI CloseButton using its default appearance without style overrides; do not
-add a fixed toolbar or other persistent preview UI.
+images. Keep the public component's responsive rendition. Use the shared sticky
+HeaderActionBar with an icon-only back action and readable preview label.
 Publications have separate card and detail previews (external items use a
 destination summary in place of a local article). Use the actual viewport and a
 document scroll context compatible with public components. Verify sticky
@@ -700,10 +702,10 @@ Leading icons unless stated otherwise. Retain visible labels; icons are decorati
 | Choose/replace image | Upload, ImagePlus | Omit; native file chooser already identifies the action |
 | Remove image (ghost) | Not needed | No icon; default policy |
 | Navigation drawer | Menu, PanelLeft | Menu; conventional mobile navigation |
-| Back to publications (ghost) | ArrowLeft, ChevronLeft | ArrowLeft exception; identifies navigation out of the editor |
+| Nested-screen back navigation | ArrowLeft, ChevronLeft | Shared HeaderActionBar tertiary ArrowLeft button on its own row |
 | Light/dark mode (ghost) | Sun/Moon, SunMoon | Sun/Moon exception; identifies the destination mode |
 | Add existing tag (ghost) | Not needed | Text-only default; the tag label is sufficient |
-| Back to editor / Discard | ArrowLeft, RotateCcw | Omit; explicit text already identifies the destination/action |
+| Discard | RotateCcw, Undo2 | Omit; explicit text identifies the action |
 | Open link | ArrowUpRight, ExternalLink | ArrowUpRight trailing; confirms navigation to a separate tab |
 
 Textareas and ghost buttons are icon-free by default. Edit/Preview tabs are text

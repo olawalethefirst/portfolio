@@ -1,6 +1,6 @@
 "use client";
 
-import { CloseButton } from "@heroui/react/close-button";
+import { HeaderActionBar } from "@/src/components/ui/header-action-bar";
 import { useContext, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 
 import { CmsPreviewVisibility } from "./CmsShell";
@@ -44,7 +44,10 @@ export function CmsPreviewFrame({ label, exitLabel, closeRef, onExit, children }
     return () => setPreview?.(false);
   }, [setPreview]);
   return <section aria-label={label} className="min-h-dvh bg-surface text-foreground">
+    <HeaderActionBar onBack={onExit} backLabel={exitLabel} backButtonRef={closeRef}
+      className="sticky top-0 z-[120] border-b border-border bg-surface px-5 py-3 sm:px-8">
+      <p className="text-sm font-medium">{label}</p>
+    </HeaderActionBar>
     {children}
-    <div className="fixed right-3 top-3 z-[120]"><CloseButton ref={closeRef} aria-label={exitLabel} onPress={onExit} /></div>
   </section>;
 }

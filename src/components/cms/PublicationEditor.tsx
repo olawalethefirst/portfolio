@@ -19,7 +19,6 @@ import {
 import { Button } from "@/src/components/ui/Button";
 import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { CmsBackButton } from "./CmsBackButton";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
@@ -34,8 +33,7 @@ export function PublicationEditor({ id }: { id: string }) {
   if (id !== "new" && !record)
     return (
       <>
-        <CmsBackButton onPress={() => router.push("/admin/publications")}>Back to publications</CmsBackButton>
-        <CmsPageHeader title="Publication unavailable" description="Return to publications to start again." />
+        <CmsPageHeader onBack={() => router.push("/admin/publications")} backLabel="Back to publications" title="Publication unavailable" description="Return to publications to start again." />
       </>
     );
   return <PublicationEditorForm initialRecord={record} />;
@@ -133,12 +131,11 @@ function PublicationEditorForm({
 
   return (
     <>
-      <CmsBackButton disabled={pending} onPress={() => router.push("/admin/publications")}>Publications</CmsBackButton>
-      <CmsPageHeader title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} />
-      <CmsToolbar actions={<>
+      <CmsPageHeader onBack={() => router.push("/admin/publications")} backLabel="Back to publications" backDisabled={pending} title={initialRecord ? "Edit publication" : "New publication"} description="Shape your story, then see it through your readers’ eyes." status={record ? publicationState({ ...record, draft: value }) : "New draft"} action={<>
         <Button type="submit" form={formId} name="intent" value="save" variant="outline" startContent={<Save aria-hidden="true" className="size-4" />} isDisabled={pending || (!dirty && Boolean(record))}>Save draft</Button>
         <Button type="submit" form={formId} name="intent" value="publish" startContent={<Send aria-hidden="true" className="size-4" />} isLoading={pending}>{record?.published ? "Update published" : "Publish"}</Button>
-      </>}>
+      </>} />
+      <CmsToolbar>
         <Button type="button" id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
         <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
       </CmsToolbar>
