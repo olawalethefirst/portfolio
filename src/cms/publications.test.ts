@@ -94,10 +94,11 @@ it("enforces parsed tag budgets without changing raw tags or existing deduplicat
   expect(publicationDraftSchema.safeParse({ ...draft, tagsText: "a".repeat(500) }).success).toBe(true);
 });
 
-it("retains inactive content, permits long article bodies and preserves decorative/date/URL acceptance", async () => {
+it("retains inactive content, permits long article bodies and requires cover descriptions", async () => {
   const { createPublicationPublishSchema } = await import("./publications");
   const schema = createPublicationPublishSchema("2026-11-09");
-  const local = { ...completePublication(), bodyMarkdown: "Long body ".repeat(20000), externalUrl: "unfinished", coverSrc: " ", decorativeCover: true, coverAlt: "" };
+  const local = { ...completePublication(), bodyMarkdown: "Long body ".repeat(20000), externalUrl: "unfinished", coverSrc: " " };
+  expect(schema.safeParse({ ...local, coverAlt: "   ", decorativeCover: true }).success).toBe(false);
   expect(schema.parse(local)).toEqual(local);
   const external = { ...local, kind: "external" as const, bodyMarkdown: "", externalUrl: "https://user:password@example.com" };
   expect(schema.parse(external)).toEqual(external);

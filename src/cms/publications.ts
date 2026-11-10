@@ -5,7 +5,7 @@ const limits = CONTENT_LIMITS.publication;
 export const publicationDraftSchema = z.object({
   title: z.string(), summary: z.string(), kind: z.enum(["local", "external"]),
   bodyMarkdown: z.string(), externalUrl: z.string(), coverSrc: z.string(),
-  coverAlt: z.string(), decorativeCover: z.boolean(), tagsText: z.string(), publishedOn: z.string(),
+  coverAlt: z.string(), tagsText: z.string(), publishedOn: z.string(),
 });
 export type PublicationDraft = z.infer<typeof publicationDraftSchema>;
 
@@ -27,7 +27,6 @@ export function emptyPublication(): PublicationDraft {
     externalUrl: "",
     coverSrc: "",
     coverAlt: "",
-    decorativeCover: false,
     tagsText: "",
     publishedOn: "",
   };
@@ -101,7 +100,7 @@ export function createPublicationPublishSchema(today: string) {
     if (tags.some((tag) => tag.length > limits.tagLength)) issue("tagsText", `Use ${limits.tagLength} characters or fewer per tag.`);
     if (tags.length > limits.tagCount) issue("tagsText", `Use ${limits.tagCount} tags or fewer.`);
     if (!value.coverSrc) issue("coverSrc", "Choose a cover image.");
-    if (!value.decorativeCover && !value.coverAlt.trim()) issue("coverAlt", "Describe the cover, or mark it as decorative.");
+    if (!value.coverAlt.trim()) issue("coverAlt", "Describe the cover.");
     if (!validDate(value.publishedOn)) issue("publishedOn", "Choose a valid publication date.");
     else if (value.publishedOn > today) issue("publishedOn", "Scheduling is not supported. Choose today or an earlier date.");
   });
@@ -112,7 +111,7 @@ export function validatePublication(value: PublicationDraft, today: string): Pub
   if (result.success) return {};
   const { fieldErrors } = z.flattenError(result.error);
   const errors: PublicationErrors = {};
-  for (const field of ["title", "summary", "bodyMarkdown", "externalUrl", "tagsText", "coverSrc", "coverAlt", "publishedOn", "kind", "decorativeCover"] as const) {
+  for (const field of ["title", "summary", "bodyMarkdown", "externalUrl", "tagsText", "coverSrc", "coverAlt", "publishedOn", "kind"] as const) {
     const message = fieldErrors[field]?.[0];
     if (message) errors[field] = message;
   }

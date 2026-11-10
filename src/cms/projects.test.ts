@@ -7,7 +7,7 @@ it("requires content, screenshot description and an HTTPS destination for publis
   expect(validateProject({ ...draft, liveUrl: "javascript:alert(1)" }).liveUrl).toBeTruthy();
   expect(validateProject({ ...draft, screenshot: "" }).screenshot).toBeTruthy();
   expect(validateProject({ ...draft, screenshotAlt: "" }).screenshotAlt).toBeTruthy();
-  expect(validateProject({ ...draft, screenshotAlt: "", decorative: true })).toEqual({});
+  expect(validateProject({ ...draft, screenshotAlt: "   " }).screenshotAlt).toBeTruthy();
 });
 
 it.each([["name", 11], ["summary", 92], ["what", 228], ["how", 294]] as const)("enforces the %s publish budget while preserving over-limit drafts", async (field, max) => {

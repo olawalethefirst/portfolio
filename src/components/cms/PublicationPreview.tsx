@@ -19,7 +19,7 @@ export function PublicationPreview({
   const title = value.title.trim() || "Untitled publication";
   const cover = {
     src: value.coverSrc || "/publication-cover.svg",
-    alt: value.decorativeCover ? "" : value.coverAlt,
+    alt: value.coverAlt,
   };
   const date = validDate(value.publishedOn) ? value.publishedOn : "2026-09-18";
   const tags = publicationTags(value.tagsText);

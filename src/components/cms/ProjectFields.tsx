@@ -1,6 +1,5 @@
 "use client";
 import { CmsRadioGroup } from "./CmsRadioGroup";
-import { CmsCheckbox } from "./CmsCheckbox";
 import { Link } from "lucide-react";
 import type { ProjectDraft, ProjectErrors } from "@/src/cms/projects";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
@@ -15,9 +14,8 @@ const platforms = [
 export function ProjectFields({ value, errors, onChange, onBlur, imageReset, onImageSelect }: { value: ProjectDraft; errors: ProjectErrors; onChange: (value: ProjectDraft) => void; onBlur?: (field: keyof ProjectDraft) => void; imageReset?: number; onImageSelect?: () => void }) {
   function field<K extends keyof ProjectDraft>(key: K, next: ProjectDraft[K]) { onChange({ ...value, [key]: next }); }
   const supporting = <CmsFieldSection title="Screenshot">
-      <ImagePicker key={imageReset} onSelect={onImageSelect} onBlur={() => onBlur?.("screenshot")} name="screenshot" value={value.screenshot} alt={value.decorative ? "" : value.screenshotAlt} onChange={(source) => field("screenshot", source)} error={errors.screenshot} />
-      <CmsCheckbox value={value.decorative} onChange={(next) => field("decorative", next)}>Decorative image</CmsCheckbox>
-      {!value.decorative ? <CmsField name="screenshotAlt" onBlur={() => onBlur?.("screenshotAlt")} label="Image description" value={value.screenshotAlt} onChange={(next) => field("screenshotAlt", next)} error={errors.screenshotAlt} /> : null}
+      <ImagePicker key={imageReset} onSelect={onImageSelect} onBlur={() => onBlur?.("screenshot")} name="screenshot" value={value.screenshot} alt={value.screenshotAlt} onChange={(source) => field("screenshot", source)} error={errors.screenshot} />
+      <CmsField name="screenshotAlt" onBlur={() => onBlur?.("screenshotAlt")} label="Image description" value={value.screenshotAlt} onChange={(next) => field("screenshotAlt", next)} error={errors.screenshotAlt} />
     </CmsFieldSection>;
   return <CmsEditorContent supporting={supporting}>
     <CmsFieldSection title="Content">

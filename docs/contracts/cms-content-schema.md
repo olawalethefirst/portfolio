@@ -1,222 +1,263 @@
 # CMS content schema
 
-Status: superseded proposal for UI scope; not an applied migration.
+Status: current content-field contract with a first SQL migration prepared for
+review; not applied to the hosted database.
 
-Use [CMS UI specification](../context/cms-ui-spec.md) for current scope. This
-proposal predates the decisions to keep contact intents static, edit Hero
-taglines, and replace project solutions with What/How. Do not implement this SQL
-without a separately reviewed backend specification.
+This replaces the earlier SQL proposal, which predated the current CMS fields.
+The inventories below describe implemented inputs and behavior. The SQL mapping
+below records the selected storage structure. See the
+[CMS UI specification](../context/cms-ui-spec.md) and
+[database setup](../context/database-setup.md).
 
-Scope: editable editorial content only. Layout, behavior, navigation, control
-labels, form copy, and validation messages remain in code. Supabase PostgreSQL
-stores content; Supabase Storage stores uploaded files.
+## Scope
 
-The SQL below specifies entity fields and database constraints. UUIDs and
-timestamps are system fields. Slugs, publication status, and list positions are
-proposed CMS additions. Length limits beyond non-empty text remain a product
-decision; this contract does not invent editorial limits.
+Editorial content includes Hero, About, Projects, Publications, social links and
+SEO. Layout, navigation, control labels, contact-intent descriptions, form copy,
+validation messages and appearance settings remain in code. Visitor submissions
+are separate from editorial content.
 
-## Editorial entities
+Field names below use current application names, not finalized SQL column names.
+The confirmed default SEO path is an addition to the current application shape,
+as noted in the SEO section.
+The authoritative input shapes are in `src/cms/`; text budgets are in
+`src/config/content-limits.ts`.
 
-```sql
--- NULL represents an absent optional value; required text cannot be blank.
-create domain cms_text as text
-  check (length(btrim(value)) > 0);
+## Hero
 
--- Internal records, populated by the upload service, not manual CMS inputs.
--- Files must be uploaded successfully before a media record is created.
-create table media_assets (
-  id uuid primary key default gen_random_uuid(),
-  bucket_id cms_text not null,
-  object_key cms_text not null,
-  default_alt_text text not null default '',
-  created_at timestamptz not null default now(),
-  unique (bucket_id, object_key)
-);
+One content record with three fixed stages.
 
-create table homepage_content (
-  id boolean primary key default true check (id),
-  hero_eyebrow cms_text not null,
-  hero_headline cms_text not null
-);
+| Field | Type | Explicit Save requirement |
+|---|---|---|
+| `eyebrow` | Text | Nonblank; at most 16 characters |
+| `headline` | Text | Nonblank; at most 20 characters |
+| `stages.idea.tagline` | Text | Nonblank; at most 26 characters |
+| `stages.idea.description` | Text | Nonblank; at most 56 characters |
+| `stages.iterate.tagline` | Text | Nonblank; at most 26 characters |
+| `stages.iterate.description` | Text | Nonblank; at most 56 characters |
+| `stages.solution.tagline` | Text | Nonblank; at most 26 characters |
+| `stages.solution.description` | Text | Nonblank; at most 56 characters |
 
--- Fixed keys correspond to existing frontend states; labels/taglines stay in code.
-create table hero_stage_content (
-  stage_key text primary key
-    check (stage_key in ('idea', 'iterate', 'solution')),
-  description cms_text not null
-);
+Stage keys stay fixed; both taglines and descriptions are editable.
 
-create table about_content (
-  id boolean primary key default true check (id),
-  heading cms_text not null,
-  biography cms_text not null
-);
+## About
 
-create table projects (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique
-    check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  name cms_text not null,
-  summary cms_text not null,
-  platform text not null check (platform in ('mobile', 'web')),
-  screenshot_asset_id uuid not null references media_assets(id) on delete restrict,
-  screenshot_alt_text text,
-  live_url cms_text,
-  status text not null default 'draft' check (status in ('draft', 'published')),
-  position integer not null default 0 check (position >= 0),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+One content record.
 
--- Ordered labels owned by a project, rather than a new services catalogue.
-create table project_solutions (
-  project_id uuid not null references projects(id) on delete cascade,
-  position integer not null check (position >= 0),
-  label cms_text not null,
-  primary key (project_id, position),
-  unique (project_id, label)
-);
+| Field | Type | Explicit Save requirement |
+|---|---|---|
+| `heading` | Text | Nonblank |
+| `biography` | Text | Nonblank |
 
-create table publications (
-  id uuid primary key default gen_random_uuid(),
-  slug text not null unique
-    check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  title cms_text not null,
-  summary cms_text not null,
-  body_markdown cms_text,
-  external_url cms_text,
-  cover_asset_id uuid not null references media_assets(id) on delete restrict,
-  cover_alt_text text,
-  published_on date,
-  status text not null default 'draft' check (status in ('draft', 'published')),
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  check (status <> 'published' or published_on is not null),
-  check (status <> 'published' or
-    ((body_markdown is not null) <> (external_url is not null)))
-);
+## Projects
 
-create table tags (
-  id uuid primary key default gen_random_uuid(),
-  name cms_text not null
-);
-create unique index tags_name_unique on tags (lower(btrim(name)));
+An ordered collection. Each record has an `id`, saved `draft` and nullable
+`published` content snapshot. Both snapshots contain these fields:
 
-create table publication_tags (
-  publication_id uuid not null references publications(id) on delete cascade,
-  tag_id uuid not null references tags(id) on delete restrict,
-  position integer not null check (position >= 0),
-  primary key (publication_id, tag_id),
-  unique (publication_id, position)
-);
+| Field | Type | Publish requirement |
+|---|---|---|
+| `name` | Text | Nonblank; at most 11 characters |
+| `summary` | Text | Nonblank; at most 92 characters |
+| `what` | Text | Nonblank; at most 228 characters |
+| `how` | Text | Nonblank; at most 294 characters |
+| `platform` | Enum | `web` or `mobile` |
+| `screenshot` | Image source string | Required |
+| `screenshotAlt` | Text | Nonblank |
+| `liveUrl` | URL string | Complete HTTPS destination |
 
-create table social_profiles (
-  platform text primary key check (platform in ('github', 'linkedin', 'twitter-x')),
-  profile_url cms_text not null,
-  position integer not null default 0 check (position >= 0)
-);
+Save accepts unfinished strings while preserving the platform enum
+shape. What/How replace the former project solution labels. There is no current
+slug input or project-solutions catalogue.
 
-create table contact_intent_content (
-  intent_key text primary key check (intent_key in ('hire', 'collaborate', 'contact')),
-  description cms_text not null
-);
+## Publications
 
-create table site_seo (
-  id boolean primary key default true check (id),
-  default_title cms_text not null,
-  default_description cms_text not null
-);
+An ordered collection. Each record has an `id`, saved `draft` and nullable
+`published` content snapshot. Both snapshots contain these fields:
 
--- Static page keys stay tied to implemented routes, not arbitrary CMS pages.
-create table page_seo (
-  page_key text primary key check (page_key in ('home', 'contact')),
-  title cms_text,
-  description cms_text
-);
+| Field | Type | Publish requirement |
+|---|---|---|
+| `title` | Text | Nonblank; at most 40 characters |
+| `summary` | Text | Nonblank; at most 112 characters |
+| `kind` | Enum | `local` or `external` |
+| `bodyMarkdown` | Markdown text | Nonblank when kind is `local` |
+| `externalUrl` | URL string | Complete HTTPS destination when kind is `external` |
+| `coverSrc` | Image source string | Required |
+| `coverAlt` | Text | Nonblank |
+| `tagsText` | Comma-separated editor input | At most 3 distinct tags; at most 16 characters each |
+| `publishedOn` | Date input string | Valid `YYYY-MM-DD`, today or earlier |
 
--- Publication SEO has a real FK, avoiding an unvalidated polymorphic page ID.
-create table publication_seo (
-  publication_id uuid primary key references publications(id) on delete cascade,
-  title cms_text,
-  description cms_text
-);
-```
+The current editor accepts unfinished strings while preserving the kind enum
+shape. For database persistence, the publication date is a nullable `date`:
+store a valid date or NULL, never unfinished date text. Server integration must
+map the editor's empty date to NULL and report invalid nonempty dates before
+saving. Browser working drafts may retain unfinished input.
+Tags are trimmed, empty entries discarded, and duplicates removed ignoring case
+while retaining the first spelling and order. `tagsText` is the editor format;
+physical tag storage is a schema decision.
 
-## Relationships and interpretation
+Switching kind preserves the inactive body or external URL. Do not require one
+of those stored values to be absent: only the selected kind determines the
+published destination. Scheduling is not currently supported. The date field
+is editorial content, separate from system creation/update timestamps.
 
-- Homepage, About, and site SEO are singletons: the boolean key permits at most
-  one row. Initial setup must create their rows.
-- Hero stages and contact intents each need all three fixed-key rows. Their
-  checks restrict allowed keys; seed/setup verification ensures completeness.
-- Each project owns an ordered list of solution labels. Each publication has an
-  ordered set of shared tags. Cards and detail pages read the same record.
-- A published publication has either a local Markdown body or an external URL.
-  Drafts can omit both. External publications link out instead of rendering a
-  local article. Future dates do not imply scheduling in this contract.
-- Alt-text overrides are optional. NULL uses the asset default; an empty string
-  explicitly marks a decorative usage. The upload form requests default alt text;
-  the publication/project editor can override it where appropriate.
-- Reading time, table of contents, formatted dates, and comment counts are
-  derived. Storage URLs are generated from bucket/object keys, not persisted
-  expiring signed URLs. File properties remain automatic storage metadata.
-- Position controls ordering within content lists, not section order or layout.
-  Use ID/platform as a stable tie-breaker when positions match.
-- Missing SEO overrides inherit the relevant publication title/summary or site
-  defaults. Existing lab route labels are not new editorial entities.
+## Contact / social
 
-## Validation and access contract
+One saved set of fixed profile destinations.
 
-- Server validation parses URLs and permits HTTPS for project, social, and
-  external publication destinations. Public links must never execute scripts.
-- Markdown is content, not executable MDX. Rendering must preserve the existing
-  restricted rendering policy and validate links and image destinations.
-- `updated_at` requires a trigger or explicit server assignment on each update;
-  its default alone does not update existing rows.
-- File references restrict deleting referenced media records. Storage deletion
-  must go through the service, checking references before deleting the object.
-  SQL cannot make an object upload/delete atomic with a content transaction.
-- Enable RLS before exposing tables through Supabase APIs. Only authorized CMS
-  editors may write. Public content queries must expose published projects and
-  publications only, including equivalent filtering of their relationships and
-  SEO. Public Storage buckets are suitable only for intentionally public files;
-  draft-only uploads require private access or an explicit promotion strategy.
-- Draft rows are not a revision system. Preserving a live version while editing
-  requires a separate revision/publication design before implementing that flow.
+| Field | Type | Explicit Save requirement |
+|---|---|---|
+| `github` | URL string | Complete HTTPS URL with hostname, no whitespace or embedded credentials |
+| `linkedin` | URL string | Same URL rules |
+| `x` | URL string | Same URL rules |
 
-## Visitor data: separate proposed schemas
+Profile labels, icons and order stay fixed in code. Current validation does not
+restrict each URL to its platform's domain. The current application key is `x`,
+not the former proposal's `twitter-x` database key. Contact-intent descriptions
+are static; no editable contact-intent content table is required.
 
-These records support the existing comment and contact interfaces. They are not
-editorial content. Persistence, moderation, retention, and access policies are
-separate decisions and are not authorized by this content contract.
+## SEO
 
-```sql
-create table publication_comments (
-  id uuid primary key default gen_random_uuid(),
-  publication_id uuid not null references publications(id) on delete restrict,
-  parent_id uuid,
-  author_name cms_text not null,
-  body_markdown cms_text not null,
-  created_at timestamptz not null default now(),
-  unique (id, publication_id),
-  foreign key (parent_id, publication_id)
-    references publication_comments(id, publication_id) on delete restrict,
-  check (parent_id is null or parent_id <> id)
-);
+| Record | Fields | Explicit Save requirement |
+|---|---|---|
+| Default record in shared SEO table | `id`, `path`, `title`, `description` | Path fixed to `/`; title and description both nonblank |
+| Override records in shared SEO table | `id`, `path`, `title`, `description` | Unique normalized site path; at least one nonblank override |
 
-create table contact_inquiries (
-  id uuid primary key default gen_random_uuid(),
-  intent_key text not null check (intent_key in ('hire', 'collaborate', 'contact')),
-  goal text not null check (length(btrim(goal)) between 10 and 2000),
-  name text not null check (length(btrim(name)) between 1 and 100),
-  email text not null check (length(btrim(email)) between 1 and 254),
-  created_at timestamptz not null default now()
-);
-```
+The default SEO record has the fixed path `/`. Its title and description also
+remain the fallback for paths without overrides. Defaults and overrides share
+one table with a unique path. Default updates target `/`; its path cannot change
+and the record cannot be deleted. Homepage metadata and global fallback values
+are therefore the same record. The current application defaults
+model contains only title/description and its editor hides the path; aligning
+that implementation with this confirmed contract remains application work.
 
-Server validation must validate email syntax. Comment parent links must remain
-immutable after creation and server validation must enforce the supported reply
-depth; the FK prevents cross-publication replies but not longer cycles. Neither
-visitor table should allow unrestricted public reads/writes. Contact inquiries
-contain private data. Moderation status and abuse protection must be specified
-before comment submission is enabled.
+Override paths start with `/` and identify exact routes, including local article routes.
+They are not restricted to a fixed home/contact enum. Query strings, fragments,
+route patterns, whitespace and traversal segments are rejected. Path
+normalization and uniqueness follow `normalizeSeoPath` in `src/cms/seo.ts`.
+
+Each blank override field inherits its corresponding site default, independently.
+The current resolver does not automatically substitute publication title/summary.
+Separate page and publication SEO tables are not required by the current editor.
+
+## Persistence and lifecycle requirements
+
+- Hero, About, social and SEO use explicit Save operations; they do not currently
+  expose separate Publish/Unpublish operations.
+- Projects and publications preserve separate saved drafts and published
+  snapshots. Save updates only the draft; Publish replaces both with submitted
+  values; Unpublish removes the published snapshot while retaining the draft.
+  A single mutable row with only a status flag cannot preserve this behavior.
+- Project and publication ordering is explicit and separate from content
+  snapshots. Persist collection order and use a stable tie-breaker if positions
+  can coincide. Ordering is not a content field typed into an editor.
+- Draft/Published/Published-with-unpublished-changes is derived from snapshot
+  presence and comparison. It need not be a separately editable status field.
+- Browser working drafts are distinct from explicitly saved server drafts. The
+  [local-draft contract](../context/cms-local-drafts.md) covers future server
+  reconciliation and revision checks.
+- Draft persistence permits unfinished text such as a blank title or unfinished
+  URL. Dates are the exception: a saved draft stores a valid date or NULL;
+  unfinished date input belongs only to the browser working draft. Publishing
+  requires a valid, non-NULL date.
+- Text budgets currently count JavaScript UTF-16 code units. PostgreSQL character
+  counts are not equivalent for all Unicode characters; do not silently change
+  the validation contract when translating limits into SQL.
+- Preserve the restricted Markdown rendering policy; content is not executable
+  MDX. Validate destinations when integrating server reads and writes.
+
+## SQL mapping
+
+The first migration is
+[`20261110094331_create_cms_content.sql`](../../supabase/migrations/20261110094331_create_cms_content.sql).
+
+| Content | Storage |
+|---|---|
+| Hero | `hero_content`, fixed `id = 1`; all three stages stored as columns in that row |
+| About | `about_content`, fixed `id = 1` |
+| Social | `social_content`, fixed `id = 1`; GitHub, LinkedIn and X URL columns |
+| Project saved draft and identity | `projects`, including position and nullable screenshot asset reference |
+| Project live snapshot | `published_projects`, keyed by its parent project ID |
+| Publication saved draft and identity | `publications`, including position, raw tag input, nullable date and nullable cover asset reference |
+| Publication live snapshot | `published_publications`, keyed by its parent publication ID; publication date stored as `date` |
+| Inline Markdown images | Image destinations remain in `body_markdown`; no separate usage-reference tables |
+| SEO defaults and overrides | `seo`, with unique canonical path; `/` identifies the protected default |
+| Uploaded images | `media_assets`, with stable UUID and unique bucket/object-key pair |
+
+Published rows require nonblank content and image descriptions, media references
+and (for publications) a date. The selected publication kind determines whether
+body or external destination is required; inactive content is preserved. Exact
+URL validation, UTC no-future-date validation, tag rules, Markdown safety, SEO
+path normalization and UTF-16 budgets remain server responsibilities. The SQL
+constraints do not replace those application validators.
+
+Create/edit operations write saved draft rows. Publish must validate the captured
+submission, update the draft and upsert its published snapshot in one transaction.
+Unpublish deletes only the published row. Delete removes the parent and
+its published snapshot. Media metadata is retained until
+explicit asset cleanup. Public reads must use published content, joining the
+parent only for identity/order, never for editable draft fields.
+
+Order by `position, id`. Positions are nonnegative but may coincide; reordering
+multiple records must be transactional. `updated_at` is maintained on updates
+by triggers. Timestamp-based optimistic locking is not supplied by this schema;
+the revision-token/concurrent-save contract must be addressed during server
+integration before using local-draft reconciliation.
+
+Fixed singleton keys permit at most one row per table. Delete/truncate triggers
+protect initialized singleton records. The SEO default also cannot be deleted,
+truncated or have its identity/path changed. The migration creates no content
+rows: required singleton/default initialization is a separate data step, before
+application integration. Projects and publications start empty.
+
+## Media references
+
+Image inputs currently hold source strings, including prototype data URLs. A
+production upload integration must map these to asset IDs. Files belong in
+object storage; application-owned `media_assets` records hold bucket/object
+keys without referencing Supabase's managed `storage` tables. This keeps content
+references stable when files move providers. Storage host/provider selection
+belongs to server configuration. Do not persist prototype data URLs or expiring
+signed URLs in media records.
+
+Alt text belongs to each image usage and is required for publishing. Asset-level default
+alt text and an upload metadata catalogue are not currently editable CMS fields;
+add them only with an explicit upload contract. Screenshot and cover foreign
+keys block asset-record deletion while referenced by saved drafts or published
+snapshots. Inline images are recorded only in Markdown, so those uses are not
+protected by foreign keys. Before gallery deletion or orphan cleanup is enabled,
+the service must scan both saved draft and published Markdown for asset usage
+and account for concurrent edits. Unsaved browser drafts are not visible to the
+database; unreferenced uploads need a grace period rather than immediate cleanup.
+Foreign keys protect metadata, not the physical object: upload/delete services
+must coordinate storage operations with database changes. Upload cleanup,
+Markdown asset resolution and storage bucket policies are separate work.
+
+Database IDs are UUIDs except for singleton keys. Parent project/publication
+rows own creation timestamps. Slugs are not current inputs and are not added;
+route identity is addressed during application integration. No seed content is
+included in this migration.
+
+Permissions remain deferred. The hosted Data API and automatic table exposure
+are disabled. All new tables have RLS enabled without policies; no client access
+grants are introduced. Owners and bypass-RLS roles are not restricted by those
+policies. This content contract does not replace server-side authorization for
+later application integration.
+
+## Visitor data: separate scope
+
+These fields exist in visitor interfaces; persistence is not authorized by the
+editorial schema contract.
+
+| Submission | Current data |
+|---|---|
+| Contact inquiry | `intent` (`hire`, `collaborate`, `contact`), `goal`, `name`, `email` |
+| Publication comment/reply | Author name, Markdown body, publication association, optional parent-comment association |
+
+The contact form accepts a trimmed goal of at least 10 characters (input maximum
+2000), nonblank name (input maximum 100), and validated email (input maximum
+254). Comment inputs require nonblank name/body, with input maxima of 80 and
+5000 respectively. These UI limits must be enforced server-side if submission
+persistence is implemented.
+
+Comment IDs/timestamps and relationships need database design; a displayed
+comment count is derived. Moderation, reply rules, abuse protection, retention
+and visitor permissions remain separate decisions before enabling persistence.

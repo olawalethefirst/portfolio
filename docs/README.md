@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/database-setup.md`](context/database-setup.md): single hosted database,
+  SQL-first migration ownership, configuration boundaries, and Supabase CLI workflow.
+
 - [`context/admin-login-spec.md`](context/admin-login-spec.md): minimal
   Google login UI, layout isolation, and deferred authentication boundary.
 
@@ -26,9 +29,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/cms-homepage-text-limits.md`](context/cms-homepage-text-limits.md):
   approved initial Hero, Project and Publication homepage text budgets and migration enforcement.
 
-- [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): proposed
-  PostgreSQL schemas for editable content, relationships, validation boundaries,
-  and separate visitor data.
+- [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): current
+  CMS fields, validation and lifecycle requirements, with database-design
+  decisions and visitor persistence kept explicit before SQL migrations.
 
 - [`context/project-explanations-spec.md`](context/project-explanations-spec.md):
   What/How project content, native HeroUI popovers and acceptance requirements.

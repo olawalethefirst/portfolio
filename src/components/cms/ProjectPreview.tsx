@@ -21,7 +21,7 @@ export function ProjectPreview({ value }: { value: ProjectDraft }) {
   return <>
     {incomplete ? <p role="status" className="mb-4 text-sm text-muted">Missing content uses preview placeholders and an untextured device. These are not saved.</p> : null}
     {!validLink ? <p className="mb-4 text-sm text-muted">Add a complete HTTPS live URL in the editor to open the project.</p> : null}
-    {!value.decorative && value.screenshotAlt ? <p className="sr-only">{value.screenshotAlt}</p> : null}
+    {value.screenshotAlt ? <p className="sr-only">{value.screenshotAlt}</p> : null}
       <ProjectPreviewBoundary>
         <ProjectItem
           id="cms-project-preview"
