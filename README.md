@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Portfolio
 
-## Getting Started
+Interactive portfolio built with Next.js, React, HeroUI, and React Three Fiber.
 
-First, run the development server:
+## Development
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+```sh
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- `/` renders the portfolio preview with the Prism hero, projects, publications, and about section.
+- `/contact` previews the contact form; inquiries are not sent or stored.
+- `/publication-details-lab` previews a Markdown publication and its comment threads.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Pages share global theme and display controls. Their sample data and referenced assets are retained alongside reusable components.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Checks
 
-## Learn More
+```sh
+pnpm exec tsc --noEmit
+pnpm lint
+pnpm test
+```
 
-To learn more about Next.js, take a look at the following resources:
+Read [CONSTRAINTS.md](CONSTRAINTS.md) before changing code. Production builds and browser verification belong to the human controller unless explicitly delegated.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Durable architecture, contracts, and decisions are indexed in [docs/README.md](docs/README.md).

@@ -1,0 +1,14 @@
+@layer utilities {
+  .outlined-field {
+    background-color: transparent;
+    box-shadow: none;
+    --field-border: color-mix(in oklab, var(--field-foreground) 45%, transparent);
+    --field-border-hover: color-mix(in oklab, var(--field-foreground) 65%, transparent);
+    --field-border-focus: var(--focus);
+  }
+
+  .outlined-field:is(.input--secondary, .textarea--secondary, .markdown-field--secondary) {
+    --field-border: color-mix(in oklab, var(--field-foreground) 25%, transparent);
+    --field-border-hover: color-mix(in oklab, var(--field-foreground) 45%, transparent);
+  }
+}
