@@ -12,7 +12,14 @@ Drizzle is the selected application query layer; its server integration is
 separate work. Do not introduce a second migration history through Drizzle Kit.
 
 The CLI is pinned as a development dependency. Run it with `pnpm exec supabase`.
-No initial schema migrations or seed data have been defined yet.
+The first content schema migration is prepared under `supabase/migrations/`.
+See the [content contract](../contracts/cms-content-schema.md) for its table map
+and integration boundaries. No initial content or seed data is included.
+
+Application permissions and initial data are explicitly deferred to separate
+work. This migration enables RLS without policies and supplies no application
+role grants. Required Hero, About, social and `/` SEO records must be initialized
+before the application relies on them; no sample projects/publications are planned.
 
 ## Configuration boundaries
 
@@ -58,6 +65,12 @@ Commit migration SQL with the change it supports. Once applied to the shared
 database, preserve the migration and add a new corrective migration for changes.
 Avoid untracked schema edits through the dashboard. Database resets are not part
 of this workflow because the target is the shared hosted database.
+
+## Schema verification
+
+The first migration has not been executed as part of preparation. Runtime
+verification is controller-owned. Do not apply it to the shared hosted database
+until the SQL and initialization plan have been reviewed.
 
 ## References
 

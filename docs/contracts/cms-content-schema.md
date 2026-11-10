@@ -1,11 +1,12 @@
 # CMS content schema
 
-Status: current content-field contract for schema review; not an applied migration.
+Status: current content-field contract with a first SQL migration prepared for
+review; not applied to the hosted database.
 
 This replaces the earlier SQL proposal, which predated the current CMS fields.
-The inventories below describe implemented inputs and behavior. Physical table
-layout, keys and lifecycle operations must be reviewed before writing the first
-SQL migration. See the [CMS UI specification](../context/cms-ui-spec.md) and
+The inventories below describe implemented inputs and behavior. The SQL mapping
+below records the selected storage structure. See the
+[CMS UI specification](../context/cms-ui-spec.md) and
 [database setup](../context/database-setup.md).
 
 ## Scope
@@ -84,7 +85,11 @@ An ordered collection. Each record has an `id`, saved `draft` and nullable
 | `tagsText` | Comma-separated editor input | At most 3 distinct tags; at most 16 characters each |
 | `publishedOn` | Date input string | Valid `YYYY-MM-DD`, today or earlier |
 
-Save accepts unfinished strings while preserving the kind enum shape.
+The current editor accepts unfinished strings while preserving the kind enum
+shape. For database persistence, the publication date is a nullable `date`:
+store a valid date or NULL, never unfinished date text. Server integration must
+map the editor's empty date to NULL and report invalid nonempty dates before
+saving. Browser working drafts may retain unfinished input.
 Tags are trimmed, empty entries discarded, and duplicates removed ignoring case
 while retaining the first spelling and order. `tagsText` is the editor format;
 physical tag storage is a schema decision.
@@ -149,36 +154,93 @@ Separate page and publication SEO tables are not required by the current editor.
 - Browser working drafts are distinct from explicitly saved server drafts. The
   [local-draft contract](../context/cms-local-drafts.md) covers future server
   reconciliation and revision checks.
-- Draft persistence must permit unfinished input. Publish-only requirements must
-  not prevent saving a draft, including a blank title or unfinished date/URL.
+- Draft persistence permits unfinished text such as a blank title or unfinished
+  URL. Dates are the exception: a saved draft stores a valid date or NULL;
+  unfinished date input belongs only to the browser working draft. Publishing
+  requires a valid, non-NULL date.
 - Text budgets currently count JavaScript UTF-16 code units. PostgreSQL character
   counts are not equivalent for all Unicode characters; do not silently change
   the validation contract when translating limits into SQL.
 - Preserve the restricted Markdown rendering policy; content is not executable
   MDX. Validate destinations when integrating server reads and writes.
 
-## Media and system fields: decisions before migration
+## SQL mapping
+
+The first migration is
+[`20261110094331_create_cms_content.sql`](../../supabase/migrations/20261110094331_create_cms_content.sql).
+
+| Content | Storage |
+|---|---|
+| Hero | `hero_content`, fixed `id = 1`; all three stages stored as columns in that row |
+| About | `about_content`, fixed `id = 1` |
+| Social | `social_content`, fixed `id = 1`; GitHub, LinkedIn and X URL columns |
+| Project saved draft and identity | `projects`, including position and nullable screenshot asset reference |
+| Project live snapshot | `published_projects`, keyed by its parent project ID |
+| Publication saved draft and identity | `publications`, including position, raw tag input, nullable date and nullable cover asset reference |
+| Publication live snapshot | `published_publications`, keyed by its parent publication ID; publication date stored as `date` |
+| Inline Markdown images | Image destinations remain in `body_markdown`; no separate usage-reference tables |
+| SEO defaults and overrides | `seo`, with unique canonical path; `/` identifies the protected default |
+| Uploaded images | `media_assets`, with stable UUID and unique bucket/object-key pair |
+
+Published rows require nonblank content and image descriptions, media references
+and (for publications) a date. The selected publication kind determines whether
+body or external destination is required; inactive content is preserved. Exact
+URL validation, UTC no-future-date validation, tag rules, Markdown safety, SEO
+path normalization and UTF-16 budgets remain server responsibilities. The SQL
+constraints do not replace those application validators.
+
+Create/edit operations write saved draft rows. Publish must validate the captured
+submission, update the draft and upsert its published snapshot in one transaction.
+Unpublish deletes only the published row. Delete removes the parent and
+its published snapshot. Media metadata is retained until
+explicit asset cleanup. Public reads must use published content, joining the
+parent only for identity/order, never for editable draft fields.
+
+Order by `position, id`. Positions are nonnegative but may coincide; reordering
+multiple records must be transactional. `updated_at` is maintained on updates
+by triggers. Timestamp-based optimistic locking is not supplied by this schema;
+the revision-token/concurrent-save contract must be addressed during server
+integration before using local-draft reconciliation.
+
+Fixed singleton keys permit at most one row per table. Delete/truncate triggers
+protect initialized singleton records. The SEO default also cannot be deleted,
+truncated or have its identity/path changed. The migration creates no content
+rows: required singleton/default initialization is a separate data step, before
+application integration. Projects and publications start empty.
+
+## Media references
 
 Image inputs currently hold source strings, including prototype data URLs. A
-production upload design must map these to durable storage references. Files
-belong in object storage, with any database asset records holding bucket/object
-keys and metadata. Do not carry prototype data URLs or expiring signed URLs into
-permanent media records by default.
+production upload integration must map these to asset IDs. Files belong in
+object storage; application-owned `media_assets` records hold bucket/object
+keys without referencing Supabase's managed `storage` tables. This keeps content
+references stable when files move providers. Storage host/provider selection
+belongs to server configuration. Do not persist prototype data URLs or expiring
+signed URLs in media records.
 
 Alt text belongs to each image usage and is required for publishing. Asset-level default
 alt text and an upload metadata catalogue are not currently editable CMS fields;
-add them only with an explicit upload contract. Media deletion must account for
-references from both saved drafts and published snapshots.
+add them only with an explicit upload contract. Screenshot and cover foreign
+keys block asset-record deletion while referenced by saved drafts or published
+snapshots. Inline images are recorded only in Markdown, so those uses are not
+protected by foreign keys. Before gallery deletion or orphan cleanup is enabled,
+the service must scan both saved draft and published Markdown for asset usage
+and account for concurrent edits. Unsaved browser drafts are not visible to the
+database; unreferenced uploads need a grace period rather than immediate cleanup.
+Foreign keys protect metadata, not the physical object: upload/delete services
+must coordinate storage operations with database changes. Upload cleanup,
+Markdown asset resolution and storage bucket policies are separate work.
 
-Database IDs, created/updated timestamps, collection positions, revision tokens,
-physical snapshot storage and route identifiers are implementation decisions.
-Slugs are not current inputs. Decide route identity before adding slug columns.
-No seed content is approved yet. Singleton/fixed-stage initialization and empty
-collection behavior must be agreed before application integration.
+Database IDs are UUIDs except for singleton keys. Parent project/publication
+rows own creation timestamps. Slugs are not current inputs and are not added;
+route identity is addressed during application integration. No seed content is
+included in this migration.
 
 Permissions remain deferred. The hosted Data API and automatic table exposure
-are disabled. This content contract does not grant access or replace server-side
-authorization for later application integration.
+are disabled. All new tables have RLS enabled without policies; no client access
+grants are introduced. Owners and bypass-RLS roles are not restricted by those
+policies. This content contract does not replace server-side authorization for
+later application integration.
 
 ## Visitor data: separate scope
 
