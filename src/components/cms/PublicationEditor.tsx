@@ -25,6 +25,7 @@ import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
+import { PublicationWriting } from "./PublicationWriting";
 
 export function PublicationEditor({ id }: { id: string }) {
   const { records } = useCms();
@@ -48,6 +49,7 @@ function PublicationEditorForm({
   const { records, commit, pending, working } = useCms();
   const { id, value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, initialRecord?.id ?? "new", () => initialRecord?.draft ?? emptyPublication(), initialRecord?.id);
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(null);
+  const [writing, setWriting] = useState(false);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const revision = useRef(0);
@@ -63,7 +65,7 @@ function PublicationEditorForm({
   const [message, setMessage] = useState("");
   const [requestError, setRequestError] = useState("");
   const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
-  const { closeRef, capture } = useCmsPreview(Boolean(previewMode), () => setPreviewMode(null));
+  const { closeRef, capture } = useCmsPreview(Boolean(previewMode) || writing, () => { setPreviewMode(null); setWriting(false); });
   const record = records.find((item) => item.id === id);
   const dirty = !samePublication(value, record?.draft ?? emptyPublication());
 
@@ -127,6 +129,11 @@ function PublicationEditorForm({
   }
 
   if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (writing) return <PublicationWriting title={value.title} value={value.bodyMarkdown}
+    onChange={(bodyMarkdown) => changeValue({ ...value, bodyMarkdown })} onBlur={() => expose("bodyMarkdown")}
+    onBack={() => setWriting(false)} onSave={() => void act("save")} closeRef={closeRef}
+    pending={pending} dirty={dirty} canSave={dirty || !record} message={message} error={requestError}
+    articleError={errors.bodyMarkdown} persistenceStatus={persistenceStatus} />;
   if (previewMode) return <CmsPreviewFrame label={previewMode === "card" ? "Publication card preview" : "Publication detail preview"} exitLabel="Exit publication preview" closeRef={closeRef} onExit={() => setPreviewMode(null)}><PublicationPreview value={value} mode={previewMode} /></CmsPreviewFrame>;
 
   return (
@@ -149,7 +156,7 @@ function PublicationEditorForm({
         const publish = submitter instanceof HTMLButtonElement && submitter.name === "intent" && submitter.value === "publish";
         void act(publish ? "publish" : "save");
       }}>
-        <PublicationFields value={value} errors={errors} onChange={changeValue} onBlur={expose} imageReset={imageReset} onImageSelect={() => setImageSelected(true)} />
+        <PublicationFields articleDirty={value.bodyMarkdown !== (record?.draft.bodyMarkdown ?? "")} onWriteArticle={() => { capture("publication-body-trigger"); setWriting(true); }} value={value} errors={errors} onChange={changeValue} onBlur={expose} imageReset={imageReset} onImageSelect={() => setImageSelected(true)} />
       </Form>
       <CmsFooter actions={<>
         {record?.published ? <CmsLifecycleButton action="unpublish" disabled={pending} onPress={() => setDialog("unpublish")}>Unpublish</CmsLifecycleButton> : null}

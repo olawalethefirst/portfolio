@@ -12,6 +12,7 @@ import { useCms } from "@/src/cms/CmsProvider";
 import { Button } from "@/src/components/ui/Button";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
 import { CmsField } from "./CmsField";
+import { PublicationArticleTrigger } from "./PublicationArticleTrigger";
 
 const publicationKinds = [
   { value: "local", label: "Local article" },
@@ -25,6 +26,8 @@ export function PublicationFields({
   onBlur,
   imageReset,
   onImageSelect,
+  onWriteArticle,
+  articleDirty,
 }: {
   value: PublicationDraft;
   errors: PublicationErrors;
@@ -32,6 +35,8 @@ export function PublicationFields({
   onBlur?: (field: keyof PublicationDraft) => void;
   imageReset?: number;
   onImageSelect?: () => void;
+  onWriteArticle: () => void;
+  articleDirty: boolean;
 }) {
   const { records } = useCms();
   const selectedTags = publicationTags(value.tagsText).map((tag) =>
@@ -107,16 +112,7 @@ export function PublicationFields({
         <CmsRadioGroup name="publication-kind" label="Publication type" value={value.kind}
           options={publicationKinds} onChange={(next) => field("kind", next)} />
         {value.kind === "local" ? (
-          <CmsField
-            name="bodyMarkdown"
-            onBlur={() => onBlur?.("bodyMarkdown")}
-            label="Article"
-            value={value.bodyMarkdown}
-            onChange={(next) => field("bodyMarkdown", next)}
-            multiline="article"
-            hint="Write in Markdown. Headings, links, images, tables and code are supported. Use Preview to see the finished article."
-            error={errors.bodyMarkdown}
-          />
+          <PublicationArticleTrigger value={value.bodyMarkdown} dirty={articleDirty} error={errors.bodyMarkdown} onOpen={onWriteArticle} />
         ) : (
           <CmsField
             name="externalUrl"

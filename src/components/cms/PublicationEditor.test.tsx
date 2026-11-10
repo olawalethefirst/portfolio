@@ -320,11 +320,15 @@ it("deduplicates removable tags and preserves hidden content when changing publi
   expect(screen.getAllByRole("button", { name: "Remove tag React" })).toHaveLength(1);
   fireEvent.click(screen.getByRole("button", { name: "Remove tag React" }));
   expect((screen.getByRole("textbox", { name: "Tags" }) as HTMLInputElement).value).toBe("Writing");
+  fireEvent.click(screen.getByRole("button", { name: "Edit article" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Article" }), { target: { value: "Keep my article" } });
+  fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
   fireEvent.click(screen.getByRole("radio", { name: "External link" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Publication URL" }), { target: { value: "https://example.com/story" } });
   fireEvent.click(screen.getByRole("radio", { name: "Local article" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit article" }));
   expect((screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement).value).toBe("Keep my article");
+  fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
   fireEvent.click(screen.getByRole("radio", { name: "External link" }));
   expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
   expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
@@ -561,7 +565,8 @@ it("updates active branch errors after Publish and retains hidden content", asyn
   fireEvent.change(url, { target: { value: "https://example.com/story" } });
   expect(url.getAttribute("aria-invalid")).not.toBe("true");
   fireEvent.click(screen.getByRole("radio", { name: "Local article" }));
-  expect(screen.getByRole("textbox", { name: "Article" }).getAttribute("aria-invalid")).toBe("true");
+  expect(screen.getByRole("button", { name: "Write article" }).getAttribute("aria-describedby")).toBe("publication-body-error");
+  expect(screen.getByText("Write your article before publishing.")).toBeTruthy();
   fireEvent.click(screen.getByRole("radio", { name: "External link" }));
   expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
 });
@@ -604,4 +609,178 @@ it("suppresses stale save failures after newer edits and permits retry", async (
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   await screen.findByText("Saved.");
+});
+
+it("writes before the first save and returns to the form with edits, focus and scroll intact", async () => {
+  const request = vi.fn(async () => {});
+  render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+  expect(screen.queryByRole("textbox", { name: "Article" })).toBeNull();
+  vi.stubGlobal("scrollY", 400);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  expect(screen.getByRole("region", { name: "Article writing workspace" })).toBeTruthy();
+  expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Publish" })).toBeNull();
+  fireEvent.change(screen.getByRole("textbox", { name: "Article" }), { target: { value: "## My heading\n\nA **clear** story." } });
+  fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit article" }));
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 400, behavior: "instant" });
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Edit article" }));
+  expect((screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement).value).toContain("## My heading");
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(screen.getByRole("status", { name: "Publication save status" }).textContent).toContain("Saved."));
+  expect(screen.getByRole("region", { name: "Article writing workspace" })).toBeTruthy();
+});
+
+it("formats the remembered selection and restores it after article preview", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const editor = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+  fireEvent.change(editor, { target: { value: "Hello world" } });
+  editor.setSelectionRange(6, 11); fireEvent.select(editor);
+  fireEvent.click(screen.getByRole("button", { name: "Bold" }));
+  expect(editor.value).toBe("Hello **world**");
+  expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe("world");
+  vi.stubGlobal("scrollY", 250);
+  fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+  expect(screen.queryByRole("textbox", { name: "Article" })).toBeNull();
+  expect(screen.getByRole("region", { name: "Article preview" }).textContent).toContain("Hello world");
+  fireEvent.click(screen.getByRole("tab", { name: "Write" }));
+  expect(screen.getByRole("textbox", { name: "Article" })).toBe(editor);
+  expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe("world");
+  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 250, behavior: "instant" });
+});
+
+it("inserts a validated link at the selection and cancels insertion without changing content", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const editor = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+  fireEvent.change(editor, { target: { value: "Read guide" } });
+  editor.setSelectionRange(5, 10); fireEvent.select(editor);
+  fireEvent.click(screen.getByRole("button", { name: "Insert link" }));
+  const dialog = await screen.findByRole("dialog", { name: "Insert link" });
+  expect((within(dialog).getByRole("textbox", { name: "Link text" }) as HTMLInputElement).value).toBe("guide");
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Link destination" }), { target: { value: "javascript:alert(1)" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Insert link" }));
+  expect(editor.value).toBe("Read guide");
+  expect(within(dialog).getByText("Enter a complete HTTPS destination.")).toBeTruthy();
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Link destination" }), { target: { value: "https://example.com" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Insert link" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(editor.value).toBe("Read [guide](<https://example.com>)");
+  fireEvent.click(screen.getByRole("button", { name: "Insert code block" }));
+  fireEvent.click(within(await screen.findByRole("dialog", { name: "Insert code block" })).getByRole("button", { name: "Cancel" }));
+  expect(editor.value).toBe("Read [guide](<https://example.com>)");
+});
+
+it("opens the file picker directly and selects the image description for inline editing", async () => {
+  const request = vi.fn(async () => {});
+  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: vi.fn(async () => {}) });
+  try {
+    render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+    const input = screen.getByLabelText("Article image");
+    const openPicker = vi.spyOn(input, "click");
+    fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
+    expect(openPicker).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.change(input, { target: { files: [new File(["pixels"], "chart.png", { type: "image/png" })] } });
+    await screen.findByText("chart.png selected.");
+    const editor = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+    expect(editor.value).toContain("![Image description](<data:image/png;base64,");
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe("Image description");
+    fireEvent.change(editor, { target: { value: editor.value.replace("Image description", "A chart") } });
+    fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+    expect(screen.getByRole("img", { name: "A chart" }).getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+    expect(request).not.toHaveBeenCalled();
+  } finally { Reflect.deleteProperty(HTMLImageElement.prototype, "decode"); }
+});
+
+it("inserts a code block with a language without requiring a publication save", async () => {
+  const request = vi.fn(async () => {});
+  render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  fireEvent.click(screen.getByRole("button", { name: "Insert code block" }));
+  const dialog = await screen.findByRole("dialog", { name: "Insert code block" });
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Code" }), { target: { value: "const answer = 42;" } });
+  fireEvent.change(within(dialog).getByRole("textbox", { name: "Language (optional)" }), { target: { value: "ts" } });
+  fireEvent.click(within(dialog).getByRole("button", { name: "Insert code block" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect((screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement).value).toBe("```ts\nconst answer = 42;\n```");
+  fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+  expect(screen.getByText("const answer = 42;").closest("pre")).toBeTruthy();
+  expect(request).not.toHaveBeenCalled();
+});
+
+it("closes insertion dialogs before Escape can leave the writing workspace", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  fireEvent.click(screen.getByRole("button", { name: "Insert link" }));
+  const dialog = await screen.findByRole("dialog", { name: "Insert link" });
+  fireEvent.keyDown(dialog, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByRole("region", { name: "Article writing workspace" })).toBeTruthy();
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("region", { name: "Article writing workspace" })).toBeNull();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Write article" }));
+});
+
+it("offers all heading levels in a popover and separate inline list commands", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const editor = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+  fireEvent.change(editor, { target: { value: "Selected title" } });
+  editor.setSelectionRange(0, 14); fireEvent.select(editor);
+  fireEvent.click(screen.getByRole("button", { name: "Headings" }));
+  const headings = await screen.findByRole("dialog", { name: "Heading level" });
+  expect(within(headings).getAllByRole("button").map((button) => button.getAttribute("aria-label")))
+    .toEqual(["Heading 1", "Heading 2", "Heading 3", "Heading 4", "Heading 5", "Heading 6"]);
+  fireEvent.click(within(headings).getByRole("button", { name: "Heading 1" }));
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Heading level" })).toBeNull());
+  await waitFor(() => expect(editor.value).toBe("# Selected title"));
+  await waitFor(() => expect(document.activeElement).toBe(editor));
+  fireEvent.change(editor, { target: { value: "one\ntwo" } });
+  editor.setSelectionRange(0, 7); fireEvent.select(editor);
+  fireEvent.click(screen.getByRole("button", { name: "Bulleted list" }));
+  expect(editor.value).toBe("- one\n- two");
+  fireEvent.click(screen.getByRole("button", { name: "Numbered list" }));
+  expect(editor.value).toBe("1. one\n2. two");
+});
+
+it("provides formatting tooltips on keyboard focus and semantic writing tabs", async () => {
+  render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const lists = screen.getByRole("button", { name: "Bulleted list" });
+  fireEvent.keyDown(document, { key: "Tab" });
+  act(() => lists.focus());
+  expect(await screen.findByRole("tooltip", { name: "Bulleted list" })).toBeTruthy();
+  act(() => lists.blur());
+  expect(screen.getByRole("tablist", { name: "Article view" })).toBeTruthy();
+  expect(screen.getByRole("tab", { name: "Write" }).getAttribute("aria-selected")).toBe("true");
+  fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+  expect(screen.getByRole("tab", { name: "Preview" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("tabpanel", { name: "Preview" })).toBeTruthy();
+  expect(screen.queryByRole("group", { name: "Article formatting" })).toBeNull();
+});
+
+it("preserves edits typed while an article image is being decoded", async () => {
+  let finish!: () => void;
+  const decode = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
+  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: decode });
+  try {
+    render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+    const editor = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+    fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
+    const input = screen.getByLabelText("Article image");
+    fireEvent.change(input, { target: { files: [new File(["pixels"], "chart.png", { type: "image/png" })] } });
+    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
+    fireEvent.change(editor, { target: { value: "Newer text" } });
+    editor.setSelectionRange(10, 10); fireEvent.select(editor);
+    await act(async () => finish());
+    await screen.findByText("chart.png selected.");
+    expect(editor.value).toMatch(/^Newer text\n\n!\[Image description\]/);
+    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe("Image description");
+  } finally { Reflect.deleteProperty(HTMLImageElement.prototype, "decode"); }
 });

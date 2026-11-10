@@ -9,6 +9,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/publication-writing.md`](context/publication-writing.md): dedicated
+  article workspace, formatting and image insertion, draft lifecycle, and shared
+  article preview rendering.
+
 - [`context/database-setup.md`](context/database-setup.md): single hosted database,
   SQL-first migration ownership, configuration boundaries, and Supabase CLI workflow.
 

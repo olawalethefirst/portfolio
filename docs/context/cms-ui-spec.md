@@ -1,5 +1,9 @@
 # CMS UI technical specification
 
+Authoring update: [Publication writing](publication-writing.md) supersedes the
+inline article textarea presentation below with an Article card and dedicated
+Markdown workspace. Save/Publish semantics and metadata fields remain as specified.
+
 Persistence update: [CMS local drafts](cms-local-drafts.md) supersedes the
 in-memory-only/reload-persistence deferrals below for working drafts. Explicitly
 saved collections remain memory-only until API integration; the linked document
