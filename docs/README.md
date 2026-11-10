@@ -29,9 +29,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/cms-homepage-text-limits.md`](context/cms-homepage-text-limits.md):
   approved initial Hero, Project and Publication homepage text budgets and migration enforcement.
 
-- [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): proposed
-  PostgreSQL schemas for editable content, relationships, validation boundaries,
-  and separate visitor data.
+- [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): current
+  CMS fields, validation and lifecycle requirements, with database-design
+  decisions and visitor persistence kept explicit before SQL migrations.
 
 - [`context/project-explanations-spec.md`](context/project-explanations-spec.md):
   What/How project content, native HeroUI popovers and acceptance requirements.
