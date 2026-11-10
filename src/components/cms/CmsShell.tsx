@@ -58,14 +58,9 @@ export function CmsShell({ children }: { children: ReactNode }) {
         </p>
         <p className="mt-1 text-sm text-muted">Your portfolio, in words.</p>
         {navigation}
-        <div className="mt-auto border-t border-border pt-5 text-xs leading-5 text-muted">
-          A space to shape your writing.
-          <br />
-          Preview it as your readers will see it.
-        </div>
       </aside>}
       <div className="min-w-0">
-        {!preview && <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3 sm:px-8">
+        {!preview && <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background px-5 py-3 sm:px-8">
           <div className="flex items-center gap-3">
             <div className="lg:hidden">
               <Drawer isOpen={menuOpen} onOpenChange={setMenuOpen}>
