@@ -3,8 +3,8 @@ import { CONTENT_LIMITS } from "@/src/config/content-limits";
 
 const limits = CONTENT_LIMITS.publication;
 export const publicationDraftSchema = z.object({
-  title: z.string(), summary: z.string(), kind: z.enum(["local", "external"]),
-  bodyMarkdown: z.string(), externalUrl: z.string(), coverSrc: z.string(),
+  title: z.string(), summary: z.string(),
+  bodyMarkdown: z.string(), coverSrc: z.string(),
   coverAlt: z.string(), tagsText: z.string(), publishedOn: z.string(),
 });
 export type PublicationDraft = z.infer<typeof publicationDraftSchema>;
@@ -22,9 +22,7 @@ export function emptyPublication(): PublicationDraft {
   return {
     title: "",
     summary: "",
-    kind: "local",
     bodyMarkdown: "",
-    externalUrl: "",
     coverSrc: "",
     coverAlt: "",
     tagsText: "",
@@ -94,8 +92,7 @@ export function createPublicationPublishSchema(today: string) {
       .max(limits.summary, `Use ${limits.summary} characters or fewer.`),
   }).superRefine((value, context) => {
     const issue = (field: keyof PublicationDraft, message: string) => context.addIssue({ code: "custom", path: [field], message });
-    if (value.kind === "local" && !value.bodyMarkdown.trim()) issue("bodyMarkdown", "Write your article before publishing.");
-    if (value.kind === "external" && !httpsUrl(value.externalUrl)) issue("externalUrl", "Enter a complete HTTPS destination.");
+    if (!value.bodyMarkdown.trim()) issue("bodyMarkdown", "Write your article before publishing.");
     const tags = publicationTags(value.tagsText);
     if (tags.some((tag) => tag.length > limits.tagLength)) issue("tagsText", `Use ${limits.tagLength} characters or fewer per tag.`);
     if (tags.length > limits.tagCount) issue("tagsText", `Use ${limits.tagCount} tags or fewer.`);
@@ -111,7 +108,7 @@ export function validatePublication(value: PublicationDraft, today: string): Pub
   if (result.success) return {};
   const { fieldErrors } = z.flattenError(result.error);
   const errors: PublicationErrors = {};
-  for (const field of ["title", "summary", "bodyMarkdown", "externalUrl", "tagsText", "coverSrc", "coverAlt", "publishedOn", "kind"] as const) {
+  for (const field of ["title", "summary", "bodyMarkdown", "tagsText", "coverSrc", "coverAlt", "publishedOn"] as const) {
     const message = fieldErrors[field]?.[0];
     if (message) errors[field] = message;
   }

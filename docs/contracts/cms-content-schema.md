@@ -77,16 +77,14 @@ An ordered collection. Each record has an `id`, saved `draft` and nullable
 |---|---|---|
 | `title` | Text | Nonblank; at most 40 characters |
 | `summary` | Text | Nonblank; at most 112 characters |
-| `kind` | Enum | `local` or `external` |
-| `bodyMarkdown` | Markdown text | Nonblank when kind is `local` |
-| `externalUrl` | URL string | Complete HTTPS destination when kind is `external` |
+| `bodyMarkdown` | Markdown text | Nonblank |
 | `coverSrc` | Image source string | Required |
 | `coverAlt` | Text | Nonblank |
 | `tagsText` | Comma-separated editor input | At most 3 distinct tags; at most 16 characters each |
 | `publishedOn` | Date input string | Valid `YYYY-MM-DD`, today or earlier |
 
-The current editor accepts unfinished strings while preserving the kind enum
-shape. For database persistence, the publication date is a nullable `date`:
+Publications are always internal articles; no kind or external destination is tracked.
+The current editor accepts unfinished strings. For database persistence, the publication date is a nullable `date`:
 store a valid date or NULL, never unfinished date text. Server integration must
 map the editor's empty date to NULL and report invalid nonempty dates before
 saving. Browser working drafts may retain unfinished input.
@@ -94,9 +92,9 @@ Tags are trimmed, empty entries discarded, and duplicates removed ignoring case
 while retaining the first spelling and order. `tagsText` is the editor format;
 physical tag storage is a schema decision.
 
-Switching kind preserves the inactive body or external URL. Do not require one
-of those stored values to be absent: only the selected kind determines the
-published destination. Scheduling is not currently supported. The date field
+Legacy browser drafts restore article text and other retained fields while discarding
+obsolete kind/external URL fields. An empty recovered article can be saved, but
+requires body content before publishing. Scheduling is not currently supported. The date field
 is editorial content, separate from system creation/update timestamps.
 
 ## Contact / social
@@ -183,8 +181,7 @@ The first migration is
 | Uploaded images | `media_assets`, with stable UUID and unique bucket/object-key pair |
 
 Published rows require nonblank content and image descriptions, media references
-and (for publications) a date. The selected publication kind determines whether
-body or external destination is required; inactive content is preserved. Exact
+and (for publications) a date and nonblank article body. Exact
 URL validation, UTC no-future-date validation, tag rules, Markdown safety, SEO
 path normalization and UTF-16 budgets remain server responsibilities. The SQL
 constraints do not replace those application validators.
@@ -234,7 +231,9 @@ Markdown asset resolution and storage bucket policies are separate work.
 Database IDs are UUIDs except for singleton keys. Parent project/publication
 rows own creation timestamps. Slugs are not current inputs and are not added;
 route identity is addressed during application integration. No seed content is
-included in this migration.
+included in this migration. Required singleton/default values are prepared
+separately in `supabase/seed.sql` from current application defaults, preserving
+existing records on rerun. Projects, publications, media and overrides start empty.
 
 Permissions remain deferred. The hosted Data API and automatic table exposure
 are disabled. All new tables have RLS enabled without policies; no client access

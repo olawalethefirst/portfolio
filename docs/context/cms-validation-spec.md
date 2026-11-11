@@ -34,12 +34,14 @@ icons. New controls follow the [icon policy](field-and-button-icon-policy.md).
 | Project draft | Save accepts structurally valid incomplete content, including blank or unfinished publication fields. |
 | Project publish/update | Require nonblank `name`, `summary`, `what`, `how`, `screenshot`; require `screenshotAlt`; require an HTTPS `liveUrl`. |
 | Publication draft | Save accepts structurally valid incomplete content, including blank or unfinished publication fields. |
-| Publication publish/update | Require nonblank `title`/`summary`, a cover, a valid date no later than today, `coverAlt`, and either nonblank `bodyMarkdown` for `local` or an HTTPS `externalUrl` for `external`. |
+| Publication publish/update | Require nonblank `title`/`summary`, a cover, a valid date no later than today, `coverAlt`, and nonblank `bodyMarkdown`. All publications are internal articles. |
 | Delete/unpublish | Preserve existing confirmations and request coordination; publication completeness must not block either action. Unpublish retains saved draft and current edits. |
 
 Structural draft schemas check domain shapes, strings, booleans and enum values;
 they do not apply publication completeness or reject unfinished URL/date text.
-Keep inactive values when the publication kind changes.
+Publications have no kind or external destination; article content is always the
+publishing target. Legacy draft restoration strips obsolete fields without
+dropping retained article text.
 Tags remain optional and retain existing parsing/normalization. Publication
 publish/update applies the approved tag length and count limits in the
 [homepage text limit map](cms-homepage-text-limits.md).
@@ -89,7 +91,7 @@ trimming, date or normalization policy must be identified and approved separatel
    Do not derive focus order from schema issue insertion order or query unrelated
    forms globally. An inactive field must neither block the action nor take focus.
 3. Revalidate cross-field errors whenever any dependency changes. This includes
-   SEO title/description and contextual path uniqueness, publication kind/date,
+   SEO title/description and contextual path uniqueness, publication date,
    and required image descriptions. Do not require a second submit to clear
    corrected errors. Correcting a displayed error must not expose unrelated
    untouched errors.

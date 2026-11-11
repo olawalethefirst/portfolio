@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  httpsUrl,
   publicationTags,
   validDate,
   type PublicationDraft,
@@ -28,7 +27,7 @@ export function PublicationPreview({
     !value.summary.trim() ||
     !value.coverSrc ||
     !validDate(value.publishedOn) ||
-    (value.kind === "local" && !value.bodyMarkdown.trim());
+    !value.bodyMarkdown.trim();
 
   return (
     <>
@@ -41,7 +40,7 @@ export function PublicationPreview({
             and cover. They are not saved.
           </p>
         ) : null}
-        {mode === "detail" && value.kind === "local" ? (
+        {mode === "detail" ? (
           <PublicationDetails
             publication={{
               title,
@@ -59,13 +58,6 @@ export function PublicationPreview({
               ),
             }}
           />
-        ) : mode === "detail" ? (
-          <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8">
-            <p className="text-xs font-medium uppercase tracking-widest text-muted">External publication</p>
-            <h1 className="mt-3 text-3xl font-semibold">{title}</h1>
-            <p className="mt-4 text-muted">Readers follow this publication to its original article.</p>
-            {httpsUrl(value.externalUrl) ? <a className="mt-4 block break-all underline" href={value.externalUrl}>{value.externalUrl}</a> : <p className="mt-4">Add a publication URL in the editor.</p>}
-          </div>
         ) : (
           <div className="mx-auto max-w-3xl space-y-6 py-6">
             <div className="px-5 py-8 sm:px-8">
@@ -78,13 +70,7 @@ export function PublicationPreview({
               date={date}
               cover={cover}
               tags={tags}
-              href={
-                value.kind === "local"
-                  ? "/publication-details-lab"
-                  : httpsUrl(value.externalUrl)
-                    ? value.externalUrl
-                    : "#external-destination"
-              }
+              href="/publication-details-lab"
             />
             </div>
           </div>

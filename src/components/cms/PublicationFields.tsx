@@ -1,8 +1,7 @@
 "use client";
 
-import { CmsRadioGroup } from "./CmsRadioGroup";
 import { ImagePicker } from "./ImagePicker";
-import { Link, Tags } from "lucide-react";
+import { Tags } from "lucide-react";
 import {
   publicationTags,
   type PublicationDraft,
@@ -13,11 +12,6 @@ import { Button } from "@/src/components/ui/Button";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
 import { CmsField } from "./CmsField";
 import { PublicationArticleTrigger } from "./PublicationArticleTrigger";
-
-const publicationKinds = [
-  { value: "local", label: "Local article" },
-  { value: "external", label: "External link" },
-] as const;
 
 export function PublicationFields({
   value,
@@ -109,23 +103,7 @@ export function PublicationFields({
           hint="The introduction readers see on your publication card."
           error={errors.summary}
         />
-        <CmsRadioGroup name="publication-kind" label="Publication type" value={value.kind}
-          options={publicationKinds} onChange={(next) => field("kind", next)} />
-        {value.kind === "local" ? (
-          <PublicationArticleTrigger value={value.bodyMarkdown} dirty={articleDirty} error={errors.bodyMarkdown} onOpen={onWriteArticle} />
-        ) : (
-          <CmsField
-            name="externalUrl"
-            onBlur={() => onBlur?.("externalUrl")}
-            label="Publication URL"
-            value={value.externalUrl}
-            onChange={(next) => field("externalUrl", next)}
-            type="url"
-            icon={<Link />}
-            hint="A complete HTTPS link to the published story."
-            error={errors.externalUrl}
-          />
-        )}
+        <PublicationArticleTrigger value={value.bodyMarkdown} dirty={articleDirty} error={errors.bodyMarkdown} onOpen={onWriteArticle} />
         <CmsField
           name="tagsText"
           error={errors.tagsText}

@@ -91,7 +91,7 @@ function PublicationEditorForm({
         new Date().toISOString().slice(0, 10),
       );
       setPublishAttempted(true);
-      const order: (keyof PublicationDraft)[] = ["title", "summary", value.kind === "local" ? "bodyMarkdown" : "externalUrl", "tagsText", "coverSrc", "coverAlt", "publishedOn"];
+      const order: (keyof PublicationDraft)[] = ["title", "summary", "bodyMarkdown", "tagsText", "coverSrc", "coverAlt", "publishedOn"];
       const first = order.find((field) => nextErrors[field]);
       if (first) {
         requestAnimationFrame(() =>
@@ -144,7 +144,7 @@ function PublicationEditorForm({
       </>} />
       <CmsToolbar>
         <Button type="button" id="publication-card-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("card")}>Preview card</Button>
-        <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>{value.kind === "local" ? "Preview article" : "Preview destination"}</Button>
+        <Button type="button" id="publication-detail-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => openPreview("detail")}>Preview article</Button>
       </CmsToolbar>
       <CmsDraftFeedback status={persistenceStatus} />
       <CmsFeedback label="Publication save status" error={dialog === "delete" ? undefined : requestError}>

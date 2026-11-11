@@ -80,9 +80,7 @@ create table public.publications (
   position integer not null default 0 check (position >= 0),
   title text not null default '',
   summary text not null default '',
-  kind text not null default 'local' check (kind in ('local', 'external')),
   body_markdown text not null default '',
-  external_url text not null default '',
   cover_asset_id uuid references public.media_assets(id) on delete restrict,
   cover_alt text not null default '',
   -- Keep raw tag input; a draft date is either valid or absent.
@@ -96,9 +94,7 @@ create table public.published_publications (
   publication_id uuid primary key references public.publications(id) on delete cascade,
   title text not null default '',
   summary text not null default '',
-  kind text not null default 'local' check (kind in ('local', 'external')),
   body_markdown text not null default '',
-  external_url text not null default '',
   cover_asset_id uuid references public.media_assets(id) on delete restrict,
   cover_alt text not null default '',
   tags_text text not null default '',
@@ -107,8 +103,7 @@ create table public.published_publications (
   constraint published_publications_complete check (
     btrim(title) <> '' and btrim(summary) <> '' and cover_asset_id is not null
     and btrim(cover_alt) <> '' and published_on is not null
-    and ((kind = 'local' and btrim(body_markdown) <> '')
-      or (kind = 'external' and btrim(external_url) <> ''))
+    and btrim(body_markdown) <> ''
   )
 );
 

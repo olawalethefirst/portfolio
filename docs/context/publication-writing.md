@@ -1,8 +1,10 @@
 # Publication article writing
 
-Local publications use an Article card to open a dedicated Markdown workspace.
-This replaces the inline article textarea in the publication form. External
-publications retain their destination field and preserve any inactive article.
+All publications are internal articles and use an Article card to open a dedicated
+Markdown workspace. This replaces the inline article textarea in the publication
+form. No publication type or external destination field is tracked. Legacy browser
+drafts retain article text when restored; obsolete type/URL fields are stripped.
+An empty article is valid for Save draft, but blocks Publish with Article feedback.
 
 ## Form and workspace
 

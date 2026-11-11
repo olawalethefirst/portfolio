@@ -16,7 +16,7 @@ it("enforces action schemas with injected today, while incomplete/over-limit dra
   });
   expect(request).not.toHaveBeenCalled();
   expect(result.current.pending).toBe(false);
-  const draft = { ...emptyPublication(), title: "a".repeat(41), externalUrl: "unfinished", publishedOn: "unfinished" };
+  const draft = { ...emptyPublication(), title: "a".repeat(41), publishedOn: "unfinished" };
   await act(async () => { await result.current.commit("new", draft, "save"); });
   expect(result.current.records[0]).toEqual({ id: "new", draft, published: null });
 });
@@ -42,7 +42,7 @@ it("captures published content, blocks duplicate changes and isolates subsequent
 it("rejects malformed draft shape without requests and recovers from failed publishing", async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error("Request failed")).mockResolvedValue(undefined);
   const { result } = renderHook(useCms, { wrapper: ({ children }) => <CmsProvider initialRecords={[]} request={request} today={today}>{children}</CmsProvider> });
-  await act(async () => { await expect(result.current.commit("new", JSON.parse(JSON.stringify({ ...emptyPublication(), kind: "unknown" })), "save")).rejects.toThrow(); });
+  await act(async () => { await expect(result.current.commit("new", JSON.parse(JSON.stringify({ ...emptyPublication(), bodyMarkdown: 123 })), "save")).rejects.toThrow(); });
   expect(request).not.toHaveBeenCalled();
   await act(async () => { await expect(result.current.commit("new", complete(), "publish")).rejects.toThrow("Request failed"); });
   expect(result.current.records).toEqual([]);

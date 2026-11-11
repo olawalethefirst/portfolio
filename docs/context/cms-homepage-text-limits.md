@@ -67,8 +67,8 @@ surface. Apply tag limits to the existing parsed tags, not the comma-separated
   through the migration's blur/correction/submit behavior. Never silently truncate
   text or prevent typing/pasting over-limit drafts through input `maxLength`.
 - Publication `bodyMarkdown` (actual detail content) is excluded. No new homepage
-  length limits apply to URLs, image sources/alternative text, dates, platform or
-  publication-kind enums, About, Contact or SEO. Existing rules still apply.
+  length limits apply to URLs, image sources/alternative text, dates, platform
+  enums, About, Contact or SEO. Existing rules still apply.
 - During implementation, verify exact-limit acceptance and one-over rejection,
   retained over-limit drafts, correction feedback and provider enforcement.
 

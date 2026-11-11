@@ -42,7 +42,7 @@ or submission behavior.
 
 | Area | Screen content | Preview |
 | --- | --- | --- |
-| Publications | Search, status filter, dated list, create/edit; title, summary, local Markdown or external URL, cover, alt text, tags, publication date | PublicationCard; PublicationDetails for local articles |
+| Publications | Search, status filter, dated list, create/edit; title, summary, article Markdown, cover, alt text, tags, publication date | PublicationCard; PublicationDetails for articles |
 | Projects | Ordered list; name, summary, What, How, mobile/web platform, screenshot, live URL | ProjectItem including What/How popovers |
 | Homepage | Eyebrow, headline; tagline and description for idea, iterate, solution | PrismHeroLayout |
 | About | Heading and biography | AboutCtaSection |
@@ -351,17 +351,17 @@ remain controller-owned under CONSTRAINTS.md.
    article body from `src/components/publication-details/sample-publication.ts`. Search title/summary
    case-insensitively; combine it with draft/published filtering. Distinguish an
    empty library from no matching results. New publication opens an empty draft.
-2. Group editor fields into Content, Cover, and Publishing. An explicit
-   Local article / External link choice exposes the relevant content field.
-   Preserve hidden values when toggling types; validate only the active type.
+2. Group editor fields into Content, Cover, and Publishing. All publications are
+   internal articles with a dedicated Markdown workspace. Do not track a
+   publication type or external destination. Legacy browser drafts retain article
+   text while dropping obsolete kind/URL fields during restoration.
 3. Maintain provider-owned working drafts, last in-memory saved draft, and published
    snapshot. Edits never mutate the published snapshot. Save updates the draft;
    publish validates and copies the current working values into both snapshots.
    Unpublish removes only the demo-published snapshot after confirmation.
    Both Delete and Unpublish block confirmation dismissal while a request is pending.
 4. Draft save permits incomplete content. Publish requires nonblank title,
-   summary, selected cover, publication date, and either nonblank local body or
-   a valid HTTPS external destination. Future dates show a scheduling-not-supported
+   summary, selected cover, publication date, and a nonblank article body. Future dates show a scheduling-not-supported
    error rather than suggesting scheduled publishing. Image descriptions
    are required before publishing. Do not invent arbitrary text limits.
 5. Request states: idle, pending, success, error. Disable duplicate submissions.
@@ -375,7 +375,7 @@ remain controller-owned under CONSTRAINTS.md.
 7. Opening or closing previews does not save, publish or reset values. Restore
    the previous form values and useful focus on return.
 
-List rows identify title, local/external type, publication state, and date.
+List rows identify title, publication state, and date.
 A published item with a different saved draft shows “Published · Unpublished
 changes”; unsaved changes have a separate indicator. Save draft does not publish.
 Use Publish for first publication and Update published for subsequent changes.
@@ -415,8 +415,7 @@ paths use this same record type. Seed `/contact` and `/publication-details-lab`
 with their existing metadata as demo fixtures. Homepage has no placeholder record:
 paths without a saved record inherit global defaults. A real override for `/` can
 be created when a title or description needs to differ from the defaults.
-Do not invent publication slug routes. External publication destinations are not
-site paths and do not receive local SEO override records. A custom path may be
+Do not invent publication slug routes. Publications use internal article paths. A custom path may be
 entered for demonstration; an override does not create a public page.
 
 Paths start with one `/` and identify an exact pathname. Reject full URLs,
@@ -639,8 +638,7 @@ editing session, shows only the section or publication view being edited, hides
 CMS chrome, and restores the editor on exit without losing values or staged
 images. Keep the public component's responsive rendition. Use the shared sticky
 HeaderActionBar with an icon-only back action and readable preview label.
-Publications have separate card and detail previews (external items use a
-destination summary in place of a local article). Use the actual viewport and a
+Publications have separate card and internal article detail previews. Use the actual viewport and a
 document scroll context compatible with public components. Verify sticky
 positioning, table of contents, reading progress, portals, focus and scroll
 restoration. If an isolated iframe is needed for fidelity, choose its transport
@@ -656,8 +654,8 @@ Separate-tab previews and persisted drafts remain deferred product decisions.
 
 Missing draft values use visibly identified preview-only placeholders; never
 write them back into editor values or pass invalid dates to public renderers.
-External publications offer card and destination summary previews, not an iframe
-or fabricated local article. Real contact/comment submissions are absent from
+All publication cards use internal destinations and detail previews render the
+article body, with identified placeholders for incomplete drafts. Real contact/comment submissions are absent from
 preview. Confirm before navigation out of the preview; links are not globally
 disabled. Leaving full-screen preview returns to the same working editor values.
 
@@ -726,8 +724,7 @@ review; no blanket coverage target or tests that merely mirror field markup.
 
 Milestone-one acceptance:
 
-1. Search/filter/create/edit works with the actual publication fixtures, including
-   external publications; empty and no-results states are distinct.
+1. Search/filter/create/edit works with the internal publication fixtures; empty and no-results states are distinct.
 2. Unsaved values reach both previews without changing saved/published values.
    Preview returns to editing without loss, including staged images once image replacement is implemented.
 3. Save/publish success and failure are truthful demo states; retry preserves

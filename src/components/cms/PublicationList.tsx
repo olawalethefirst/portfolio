@@ -53,7 +53,7 @@ export function PublicationList() {
                 setAnnouncement(`${item.draft.title.trim() || "Untitled publication"} moved to position ${index + direction + 1} of ${records.length}.`);
               }} />}>
 
-              <CmsRecordLink href={`/admin/publications/${item.id}`} title={item.draft.title.trim() || "Untitled publication"} summary={item.draft.summary || "Add a summary to introduce this publication."} metadata={<><span>{item.draft.kind === "local" ? "Article" : "External publication"}</span><time dateTime={item.draft.publishedOn || undefined}>{item.draft.publishedOn || "Undated draft"}</time></>} status={publicationState(item)} />
+              <CmsRecordLink href={`/admin/publications/${item.id}`} title={item.draft.title.trim() || "Untitled publication"} summary={item.draft.summary || "Add a summary to introduce this publication."} metadata={<><span>Article</span><time dateTime={item.draft.publishedOn || undefined}>{item.draft.publishedOn || "Undated draft"}</time></>} status={publicationState(item)} />
             </CmsRecordRow>
           ))}
         </ul>

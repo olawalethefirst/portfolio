@@ -19,8 +19,8 @@ it.each([
   ["About", () => <AboutPreview value={initialAbout} />, "Start a conversation", "/contact"],
   ["Contact", () => <ContactPreview value={initialSocial} />, "Visit GitHub profile (opens in a new tab)", initialSocial.github],
   ["Project", () => <ProjectPreview value={initialProjects()[0].draft} />, "View Field Notes live", initialProjects()[0].draft.liveUrl],
-  ["External publication", () => <PublicationPreview value={initialPublications()[1].draft} mode="card" />, "Read Designing with productive constraints", initialPublications()[1].draft.externalUrl],
-  ["Local publication", () => <PublicationPreview value={initialPublications()[0].draft} mode="card" />, `Read ${initialPublications()[0].draft.title}`, "/publication-details-lab"],
+  ["Second publication", () => <PublicationPreview value={initialPublications()[1].draft} mode="card" />, "Read Designing with productive constraints", "/publication-details-lab"],
+  ["Publication", () => <PublicationPreview value={initialPublications()[0].draft} mode="card" />, `Read ${initialPublications()[0].draft.title}`, "/publication-details-lab"],
 ] as const)("lets the browser handle %s preview links", (_name, preview, label, href) => {
   const { container } = render(preview());
   const link = screen.getByRole("link", { name: label });

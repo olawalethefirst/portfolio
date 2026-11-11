@@ -29,31 +29,16 @@ describe("publication editing contract", () => {
     expect(result.published).toBeNull();
     expect(result.draft.title).toBe("Keep this");
   });
-  it("requires complete publication content but validates only the active destination", () => {
-    expect(
-      validatePublication(emptyPublication(), "2026-11-03").title,
-    ).toBeTruthy();
-    const external = {
-      ...emptyPublication(),
-      title: "Article",
-      summary: "Summary",
-      kind: "external" as const,
+  it("requires article content for publishing even when a legacy external destination exists", () => {
+    const legacy = {
+      ...completePublication(), bodyMarkdown: "", kind: "external",
       externalUrl: "https://example.com/article",
-      coverSrc: "/publication-cover.svg",
-      coverAlt: "Cover",
-      publishedOn: "2026-09-18",
     };
-    expect(validatePublication(external, "2026-11-03")).toEqual({});
-    expect(
-      validatePublication({ ...external, kind: "local" }, "2026-11-03")
-        .bodyMarkdown,
-    ).toBeTruthy();
-    expect(
-      validatePublication(
-        { ...external, externalUrl: "javascript:alert(1)" },
-        "2026-11-03",
-      ).externalUrl,
-    ).toBeTruthy();
+    expect(validatePublication(legacy, "2026-11-09").bodyMarkdown)
+      .toBe("Write your article before publishing.");
+    expect(validatePublication({ ...legacy, bodyMarkdown: "   " }, "2026-11-09").bodyMarkdown)
+      .toBeTruthy();
+    expect(validatePublication(completePublication(), "2026-11-09")).toEqual({});
   });
   it("rejects invalid and future dates rather than silently scheduling", () => {
     expect(
@@ -94,14 +79,21 @@ it("enforces parsed tag budgets without changing raw tags or existing deduplicat
   expect(publicationDraftSchema.safeParse({ ...draft, tagsText: "a".repeat(500) }).success).toBe(true);
 });
 
-it("retains inactive content, permits long article bodies and requires cover descriptions", async () => {
+it("permits long article bodies and requires cover descriptions", async () => {
   const { createPublicationPublishSchema } = await import("./publications");
   const schema = createPublicationPublishSchema("2026-11-09");
-  const local = { ...completePublication(), bodyMarkdown: "Long body ".repeat(20000), externalUrl: "unfinished", coverSrc: " " };
-  expect(schema.safeParse({ ...local, coverAlt: "   ", decorativeCover: true }).success).toBe(false);
-  expect(schema.parse(local)).toEqual(local);
-  const external = { ...local, kind: "external" as const, bodyMarkdown: "", externalUrl: "https://user:password@example.com" };
-  expect(schema.parse(external)).toEqual(external);
-  expect(schema.safeParse({ ...external, publishedOn: "2026-11-10" }).success).toBe(false);
-  expect(schema.safeParse({ ...external, publishedOn: "2026-02-30" }).success).toBe(false);
+  const article = { ...completePublication(), bodyMarkdown: "Long body ".repeat(20000), coverSrc: " " };
+  expect(schema.safeParse({ ...article, coverAlt: "   ", decorativeCover: true }).success).toBe(false);
+  expect(schema.parse(article)).toEqual(article);
+  expect(schema.safeParse({ ...article, publishedOn: "2026-11-10" }).success).toBe(false);
+  expect(schema.safeParse({ ...article, publishedOn: "2026-02-30" }).success).toBe(false);
+});
+
+it("restores legacy browser drafts without retaining publication type or losing article content", async () => {
+  const { publicationDraftSchema } = await import("./publications");
+  const article = completePublication();
+  expect(publicationDraftSchema.parse({ ...article, kind: "external", externalUrl: "https://example.com/old" }))
+    .toEqual(article);
+  expect(publicationDraftSchema.parse({ ...emptyPublication(), kind: "external", externalUrl: "https://example.com/old" }))
+    .toEqual(emptyPublication());
 });

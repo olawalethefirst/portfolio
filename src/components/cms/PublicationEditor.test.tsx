@@ -66,6 +66,20 @@ function PublishedReader() {
   );
 }
 
+it.each(["", "Recovered article text"])("restores a legacy external draft as an editable internal article: %s", (bodyMarkdown) => {
+  const record = initialPublications()[0];
+  localStorage.setItem("portfolio:cms-drafts:v1:publications:publication-1", JSON.stringify({
+    id: record.id,
+    value: { ...record.draft, title: "Recovered title", bodyMarkdown, kind: "external", externalUrl: "https://example.com/old" },
+  }));
+  render(<CmsProvider><PublicationEditor id={record.id} /></CmsProvider>);
+  expect((screen.getByRole("textbox", { name: "Title" }) as HTMLInputElement).value).toBe("Recovered title");
+  expect(screen.queryByRole("radiogroup", { name: "Publication type" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Publication URL" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: bodyMarkdown ? "Edit article" : "Write article" }));
+  expect((screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement).value).toBe(bodyMarkdown);
+});
+
 describe("publication CMS", () => {
   it("previews unsaved content with the public article and returns without publishing or losing edits", async () => {
     render(
@@ -198,7 +212,7 @@ describe("publication CMS", () => {
     expect(screen.getByText(/Preview placeholders/)).toBeTruthy();
   });
 
-  it("previews external publications as cards without inventing article content", async () => {
+  it("previews publication cards with internal article destinations", async () => {
     render(
       <CmsProvider>
         <PublicationEditor id="publication-2" />
@@ -210,7 +224,7 @@ describe("publication CMS", () => {
     expect(
       screen.queryByRole("navigation", { name: "Article sections" }),
     ).toBeNull();
-    expect(screen.getByRole("link", { name: "Read Designing with productive constraints" }).getAttribute("href")).toBe("https://example.com/publications/productive-constraints");
+    expect(screen.getByRole("link", { name: "Read Designing with productive constraints" }).getAttribute("href")).toBe("/publication-details-lab");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -314,7 +328,7 @@ it("keeps publication list row actions limited to ordering", () => {
   expect(request).not.toHaveBeenCalled();
 });
 
-it("deduplicates removable tags and preserves hidden content when changing publication type", async () => {
+it("deduplicates removable tags and preserves article content when reopening the writer", async () => {
   render(<CmsProvider><PublicationEditor id="publication-1" /></CmsProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Tags" }), { target: { value: "React, react, Writing" } });
   expect(screen.getAllByRole("button", { name: "Remove tag React" })).toHaveLength(1);
@@ -323,14 +337,11 @@ it("deduplicates removable tags and preserves hidden content when changing publi
   fireEvent.click(screen.getByRole("button", { name: "Edit article" }));
   fireEvent.change(screen.getByRole("textbox", { name: "Article" }), { target: { value: "Keep my article" } });
   fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
-  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Publication URL" }), { target: { value: "https://example.com/story" } });
-  fireEvent.click(screen.getByRole("radio", { name: "Local article" }));
   fireEvent.click(screen.getByRole("button", { name: "Edit article" }));
   expect((screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement).value).toBe("Keep my article");
   fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
-  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
-  expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
+  expect(screen.queryByRole("radiogroup", { name: "Publication type" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Publication URL" })).toBeNull();
   expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
   const description = screen.getByRole("textbox", { name: "Image description" }) as HTMLInputElement;
   const originalAlt = description.value;
@@ -423,7 +434,7 @@ it("previews the full published publication section independently of filters and
   expect(screen.queryByText("Saved draft revision")).toBeNull();
   expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "Exit publication section preview" }));
-  expect(screen.getByRole("link", { name: `Read ${records[2].draft.title}` }).getAttribute("href")).toBe(records[2].draft.externalUrl);
+  expect(screen.getByRole("link", { name: `Read ${records[2].draft.title}` }).getAttribute("href")).toBe("/publication-details-lab");
   expect(screen.getByRole("link", { name: `Read ${publishedTitle}` }).getAttribute("href")).toBe("/publication-details-lab");
   expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.keyDown(window, { key: "Escape" });
@@ -555,20 +566,16 @@ it("corrects title and parsed tag errors live without blocking draft saves", asy
   expect(request).toHaveBeenCalledTimes(1);
 });
 
-it("updates active branch errors after Publish and retains hidden content", async () => {
+it("clears the required article error after writing content following an incomplete Publish", async () => {
   render(<CmsProvider><PublicationEditor id="new" /></CmsProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Publish" }));
-  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
-  const url = screen.getByRole("textbox", { name: "Publication URL" });
-  expect(url.getAttribute("aria-invalid")).toBe("true");
-  expect(screen.queryByRole("textbox", { name: "Article" })).toBeNull();
-  fireEvent.change(url, { target: { value: "https://example.com/story" } });
-  expect(url.getAttribute("aria-invalid")).not.toBe("true");
-  fireEvent.click(screen.getByRole("radio", { name: "Local article" }));
   expect(screen.getByRole("button", { name: "Write article" }).getAttribute("aria-describedby")).toBe("publication-body-error");
   expect(screen.getByText("Write your article before publishing.")).toBeTruthy();
-  fireEvent.click(screen.getByRole("radio", { name: "External link" }));
-  expect((screen.getByRole("textbox", { name: "Publication URL" }) as HTMLInputElement).value).toBe("https://example.com/story");
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Article" }), { target: { value: "My internal article" } });
+  fireEvent.click(screen.getByRole("button", { name: "Back to publication" }));
+  expect(screen.queryByText("Write your article before publishing.")).toBeNull();
+  expect(screen.getByRole("button", { name: "Edit article" })).toBeTruthy();
 });
 
 it("focuses tags before cover and requires an image description", async () => {
