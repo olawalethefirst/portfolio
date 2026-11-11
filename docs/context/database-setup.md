@@ -14,11 +14,11 @@ separate work. Do not introduce a second migration history through Drizzle Kit.
 The CLI is pinned as a development dependency. Run it with `pnpm exec supabase`.
 The first content schema migration is prepared under `supabase/migrations/`.
 See the [content contract](../contracts/cms-content-schema.md) for its table map
-and integration boundaries. No initial content or seed data is included.
+and integration boundaries. Required initial content is prepared separately in
+[`supabase/seed.sql`](../../supabase/seed.sql).
 
-Application permissions and initial data are explicitly deferred to separate
-work. This migration enables RLS without policies and supplies no application
-role grants. Required Hero, About, social and `/` SEO records must be initialized
+Application permissions remain separate work. This migration enables RLS without
+policies and supplies no application role grants. Required Hero, About, social and `/` SEO records must be initialized
 before the application relies on them; no sample projects/publications are planned.
 
 ## Configuration boundaries
@@ -33,7 +33,27 @@ database version describe the optional local Docker stack; they do not configure
 the hosted database. We do not start that stack for the current single-database
 workflow. The generated PostgreSQL version is not confirmation of the hosted
 version. Local Data API defaults mirror the disabled hosted settings, and
-seeding is disabled until seed data is agreed.
+automatic seeding remains disabled; initialization is a separate reviewed step.
+
+## Required content initialization
+
+`supabase/seed.sql` copies current application defaults for Hero, About, social
+destinations and default SEO (`path = '/'`). It creates no projects,
+publications, overrides or media. Source paths are recorded beside the inserts.
+These values initialize content once; subsequent edits belong in the dashboard.
+
+Apply the schema migration first, then review and execute the seed against the
+same confirmed database using an authorized SQL connection or Supabase SQL
+Editor. The seed is transactional and uses targeted `ON CONFLICT DO NOTHING`:
+rerunning it fills missing required rows without overwriting content or changing
+existing IDs/timestamps. PostgreSQL generates the SEO record UUID. Do not reset
+the shared database to seed it. Ordinary migration pushes do not apply this
+separately managed seed automatically.
+
+Controller verification: initialize an empty migrated database, confirm one row
+per singleton and one `/` SEO record, edit a seeded value, then rerun the seed
+and confirm the edited value and row identities remain intact. The seed grants
+no application permissions and does not change RLS policies.
 
 ## Migration workflow
 
