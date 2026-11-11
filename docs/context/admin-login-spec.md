@@ -1,5 +1,35 @@
 # Admin login UI specification
 
+## Provider decision — 2026-11-11
+
+The owner has selected **GitHub through Supabase Auth**, replacing the original
+Google-only plan below. The existing implementation still shows Google; this
+document update does not change runtime code. The original Google copy, artwork,
+branding and account-selection requirements below describe the earlier UI and
+are superseded for future authentication integration.
+
+The integration must show **Continue with GitHub**, with a leading decorative
+GitHub mark (preferred over generic LogIn; reuse the existing licensed local mark
+where suitable). Preserve the standalone layout, Back action, async states and
+vendor-independent view boundary. Implement only GitHub, not an additional Google
+option. Provider-specific account-switch recovery must be verified with GitHub.
+
+Application routes are `POST /api/auth/github` and `GET /api/auth/callback`.
+Register a GitHub OAuth App using the callback copied from Supabase provider
+settings, normally `https://<project-ref>.supabase.co/auth/v1/callback`. Configure
+the GitHub client credentials in Supabase and allow local/production application
+callback URLs in Supabase redirect settings. These are distinct callback hops.
+
+Only the configured owner's verified Supabase user UUID (`ADMIN_USER_ID`,
+server-side) authorizes CMS access. Missing configuration denies access; successful
+GitHub authentication alone grants no CMS privileges. Existing production gate
+and account-scoped browser-draft requirements still apply.
+
+References: [Supabase GitHub sign-in](https://supabase.com/docs/guides/auth/social-sign-in/auth-github),
+[GitHub OAuth registration](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app).
+
+## Original UI specification and implementation record
+
 Status: approved; UI implemented. This specifies the UI; it does not authorize live
 Google/Supabase configuration or authentication implementation.
 

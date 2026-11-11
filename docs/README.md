@@ -9,6 +9,10 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`contracts/app-api-foundation.md`](contracts/app-api-foundation.md): agreed
+  endpoint inventory, content lifecycle, media association and TanStack Query
+  boundaries. Additional persistence mechanisms require explicit design.
+
 - [`context/publication-writing.md`](context/publication-writing.md): dedicated
   article workspace, formatting and image insertion, draft lifecycle, and shared
   article preview rendering.
