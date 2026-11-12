@@ -248,3 +248,49 @@ Use the application's trusted origin if an absolute redirect URL is required.
 The helper alone performs no redirects, authentication, authorization or navigation;
 endpoint integration remains separately scoped. Browser fragments are only
 preserved when supplied by a client; they are not present in incoming HTTP URLs.
+
+## GitHub sign-in initiation endpoint
+
+`POST /api/auth/github` accepts a browser form with content type
+`application/x-www-form-urlencoded` and one optional `returnTo` string field.
+An empty form uses `/admin`; unknown fields and duplicate returnTo values are
+rejected with 400. The existing return-path helper validates the destination.
+JSON bodies are not supported by this navigation endpoint.
+
+The Origin header must exactly match the request URL's origin; missing, opaque
+or cross-origin values receive 403 before OAuth is started. Hosting must supply
+Next.js with the correct application URL/origin. The handler does not trust a
+client-supplied callback origin or arbitrary forwarded headers.
+
+The handler constructs `/api/auth/callback?returnTo=...` on the request origin
+and calls the request-local Supabase client's `signInWithOAuth` with GitHub and
+`skipBrowserRedirect: true`. Success returns 303 to the SDK authorization URL,
+using the same response that received the PKCE verifier cookie and SDK cache
+headers. All responses are private/no-store. Configure this application's callback
+URL in Supabase's redirect allowlist before real-provider verification.
+
+Invalid input/origin, unavailable configuration and provider initiation failures
+return safe JSON errors using the shared envelope; status/code pairs are
+400/INVALID_REQUEST, 403/FORBIDDEN, 500/INTERNAL_ERROR and
+503/SERVICE_UNAVAILABLE. Provider errors, thrown failures and missing provider
+URLs cannot produce a success redirect; raw error details are not exposed.
+No credentials are read from the request, and successful OAuth initiation grants
+no owner access.
+
+This endpoint starts OAuth only. Callback exchange, owner authorization, session
+refresh, login UI wiring and integrated real-provider verification are separate
+slices. No rate-limiting service is configured here; deployment abuse controls
+remain a launch consideration. The original production UI gate is unchanged.
+
+### Initiation layer ownership
+
+`src/auth/github-service.ts` exports `startGitHubSignIn(auth, origin, returnTo)`.
+It accepts the provider's signInWithOAuth capability as a dependency, builds the
+callback using the validated return-path policy, and returns either an authorization
+URL or a safe typed application error. It has no NextRequest/NextResponse, cookie
+sink, environment access or content repository dependency.
+
+The route owns form/origin validation, construction of the cookie-enabled client,
+and the final 303 response. It passes the request origin to the service and uses
+`src/api/errors.ts` for every JSON error. Existing statuses, returnTo handling and
+PKCE cookie/cache-header preservation remain the same.
