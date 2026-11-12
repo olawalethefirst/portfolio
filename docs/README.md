@@ -9,6 +9,12 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`contracts/api-requests-and-responses.md`](contracts/api-requests-and-responses.md):
+  JSON request bodies, success responses, HTTP statuses and client ownership.
+
+- [`contracts/api-errors.md`](contracts/api-errors.md): JSON API error envelope,
+  request-field pointers and client-owned form feedback mapping.
+
 - [`contracts/app-api-foundation.md`](contracts/app-api-foundation.md): agreed
   endpoint inventory, content lifecycle, media association and TanStack Query
   boundaries. Additional persistence mechanisms require explicit design.
