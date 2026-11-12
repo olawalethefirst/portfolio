@@ -103,3 +103,12 @@ or test results are implied by this written contract.
 
 - [RFC 6901 — JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901.html)
 - [RFC 9457 — validation example](https://www.rfc-editor.org/rfc/rfc9457.html#section-3.1)
+
+## Shared implementation
+
+`src/api/errors.ts` owns `ApiErrorCode`, `ApiIssue`, `ApiError` and
+`ApiErrorEnvelope`. `apiErrorResponse(error)` serializes the envelope as JSON,
+selects the approved status for its code, and sets `Cache-Control: private,
+no-store`. Use it at HTTP boundaries; services return typed application results
+without constructing Responses. Pass only safe messages/issues, never raw SDK
+or database error objects. The GitHub initiation route is the first consumer.

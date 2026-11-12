@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`contracts/api-layer-boundaries.md`](contracts/api-layer-boundaries.md):
+  endpoint, service, database and shared-utility ownership.
+
 - [`contracts/api-requests-and-responses.md`](contracts/api-requests-and-responses.md):
   JSON request bodies, success responses, HTTP statuses and client ownership.
 
