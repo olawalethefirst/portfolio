@@ -196,3 +196,31 @@ Artwork source: [Google sign-in assets](https://developers.google.com/static/ide
 and [branding guidelines](https://developers.google.com/identity/branding-guidelines).
 
 No open layout questions. Live authentication remains explicitly deferred.
+
+## Supabase server cookie adapter
+
+`src/auth/server.ts` exposes `createSupabaseServerClient(requestCookies, response)`
+for writable server request contexts. It creates a fresh Supabase SSR client on
+every call; never cache it globally or share it across requests. Configuration is
+read on invocation from `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`, with no
+secret/service-role fallback and no `NEXT_PUBLIC_` aliases. Installed Supabase
+SDK versions require Node.js 22 or later; verify the deployed runtime accordingly.
+
+The caller supplies the incoming cookie store and the actual outgoing response
+(or equivalent writable cookie/header sinks). `NextRequest.cookies` and
+`NextResponse` satisfy these interfaces. With `cookies()` from `next/headers`,
+await it first, per the installed Next.js guide. The adapter reads all request
+cookies and forwards every SDK cookie chunk/deletion with its options, plus the
+SDK's cache-prevention headers, to the supplied response. Return that response;
+if replacing it, preserve all cookies and cache headers. Write failures propagate.
+
+This writable adapter is not for Server Component rendering, where cookie writes
+are forbidden. Read-only server rendering and proxy refresh integration are
+separately scoped. Do not suppress cookie write errors to make it work there.
+The adapter itself does not refresh a session, authorize a user, initiate OAuth,
+query content, or expose an endpoint. Session/owner verification and integration
+must be implemented in their separately accepted slices.
+
+References: [Supabase SSR client guidance](https://supabase.com/docs/guides/auth/server-side/creating-a-client),
+installed `@supabase/ssr` cookie types (including response cache headers), and
+`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/cookies.md`.
