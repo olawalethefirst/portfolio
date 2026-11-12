@@ -1,7 +1,7 @@
 # CMS content schema
 
-Status: current content-field contract with a first SQL migration prepared for
-review; not applied to the hosted database.
+Status: current content-field contract. The owner reports the first SQL migration
+and required seed were applied successfully on 2026-11-12. Preserve applied history.
 
 This replaces the earlier SQL proposal, which predated the current CMS fields.
 The inventories below describe implemented inputs and behavior. The SQL mapping
