@@ -224,3 +224,27 @@ must be implemented in their separately accepted slices.
 References: [Supabase SSR client guidance](https://supabase.com/docs/guides/auth/server-side/creating-a-client),
 installed `@supabase/ssr` cookie types (including response cache headers), and
 `node_modules/next/dist/docs/01-app/03-api-reference/04-functions/cookies.md`.
+
+## Admin return destination policy
+
+`src/auth/return-path.ts` exports `adminReturnPath(value)`. After successful
+sign-in, preserve the originating destination only when it is a root-relative
+`/admin` path (the `/admin` segment must match exactly) and is not `/admin/login`
+or a descendant. Missing or rejected values fall back to `/admin`.
+
+The helper resolves the query-decoded return value with `new URL` against a
+fixed placeholder origin (`baseOrigin`); no network request is made to it.
+It checks the resolved origin and decoded admin/login pathname, treating repeated
+slashes/backslashes as separators for comparison. Invalid URLs or malformed
+pathname escapes fall back to `/admin`. Relative spellings, whitespace and dot
+segments follow URL parser normalization. Query strings/fragments survive.
+Unknown admin paths and nested encodings are not separately filtered; they may
+produce a normal 404. The helper is not an existing-route allowlist.
+
+Pass the returned root-relative value unchanged to the eventual redirect; never
+URL-decode it again. Revalidate untrusted return values at OAuth initiation and
+callback boundaries rather than trusting a previously supplied query parameter.
+Use the application's trusted origin if an absolute redirect URL is required.
+The helper alone performs no redirects, authentication, authorization or navigation;
+endpoint integration remains separately scoped. Browser fragments are only
+preserved when supplied by a client; they are not present in incoming HTTP URLs.
