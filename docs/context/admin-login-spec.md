@@ -294,3 +294,29 @@ The route owns form/origin validation, construction of the cookie-enabled client
 and the final 303 response. It passes the request origin to the service and uses
 `src/api/errors.ts` for every JSON error. Existing statuses, returnTo handling and
 PKCE cookie/cache-header preservation remain the same.
+
+## OAuth callback and failure notification
+
+`GET /api/auth/callback` reads one nonblank `code` and at most one `returnTo`.
+It does not require an Origin header: this is the browser's OAuth return navigation.
+The callback revalidates the destination with `adminReturnPath`; unsafe destinations
+fall back to `/admin`. It calls `completeGitHubSignIn` through a request-local
+Supabase client and returns a 303 to the validated destination on exchange success.
+
+Missing/duplicate input, provider denial, unavailable configuration and failed
+exchange return a 303 to `/admin/login?error=sign_in_failed&returnTo=...`.
+Raw provider errors and authorization codes never enter the failure URL.
+The same response receives SDK cookie writes and cache headers and is returned
+for both successful and unsuccessful exchanges, preserving cookie deletion too.
+Responses use `Cache-Control: no-store`. Authentication does not grant admin authorization;
+the configured-owner guard is separately scoped.
+
+The login page consumes only the fixed `sign_in_failed` marker and calls HeroUI's
+`toast.danger` with generic retry feedback. It removes the marker with
+`router.replace`, retaining other query parameters and avoiding another history
+entry. The effect prevents duplicate notification during React effect replay.
+Its `useSearchParams` consumer has a Suspense boundary. A single HeroUI toast
+provider is mounted at the application root, independently of login navigation.
+
+References: [HeroUI toast](https://heroui.com/en/docs/react/components/toast),
+installed Next.js `use-router`, `use-search-params` and `next-response` guides.

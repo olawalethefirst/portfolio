@@ -3,7 +3,11 @@ import AdminLoginPage from "./login/page";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AdminLayout from "./layout";
 
-vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
+vi.mock("next/navigation", () => ({
+  notFound: () => { throw new Error("NOT_FOUND"); },
+  useRouter: () => ({ replace: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 afterEach(() => vi.unstubAllEnvs());
 
 describe("CMS prototype access", () => {
