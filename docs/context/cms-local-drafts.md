@@ -27,8 +27,8 @@ The JSON value is `{ id, value }`. Namespaces separate Hero, About, Contact
 (social), Projects, Publications, and SEO. A new-record draft uses `new` and
 retains its generated ID; the ID alias exists only in memory, avoiding duplicate
 stored content. Starting a fresh new record retains existing clearing behavior.
-No account identity exists in this implementation; account scoping must precede
-use with multiple authenticated accounts on the same browser.
+The studio supplies account identity for server query isolation. Local draft keys
+remain unscoped; account-scoped storage and migration are deferred.
 
 Restoration runs after client mounting, before editor interaction or any write.
 Only edited/reset drafts are written. Updates persist after a 300 ms pause;
@@ -45,19 +45,26 @@ to the same draft are not coordinated.
 
 ## Scope and limitations
 
-Only working drafts are durable. Current provider saved values and record
+Hero now fetches and saves real server content, as documented in
+[Hero API integration](hero-api.md#hero-editor-integration). Its existing local
+draft format and recovery behavior remain unchanged. Shared reconciliation,
+account-scoped drafts and migration are deferred to the next iteration per owner
+direction. The remaining editors still use in-memory saved values.
+
+For editors other than Hero, only working drafts are durable. Provider saved values and record
 collections remain in memory and reinitialize on reload. Discard uses the
 provider's current saved values, which after reload are application initial
 values. This feature does not make newly created saved records available at
 their record routes after a reload; collection/API persistence is separate.
 
-Remote comparison, conflict resolution, server revisions, account integration,
-and cross-tab synchronization are deferred. Future API work can add a server
-baseline and revision checks without changing form input handlers.
+Remote comparison, conflict resolution, server revisions, account-scoped local
+storage and cross-tab synchronization are deferred. Hero already uses a server
+baseline; original-snapshot metadata and reconciliation remain future work.
 
 ## Deferred reconciliation contract
 
-Revisit this contract when the CMS API loads and explicitly saves real records.
+Hero now loads and saves real records; this reconciliation contract remains
+explicitly deferred to the shared follow-up.
 This is a documented integration requirement, not an implemented feature or an
 external issue-tracker ticket.
 
@@ -73,11 +80,11 @@ external issue-tracker ticket.
   writing remote content still requires the existing explicit Save action.
 - Define recovery for legacy v1 drafts, which lack an original server snapshot.
   Do not infer which fields changed locally from a two-way comparison alone.
-- Add account-scoped storage keys when authenticated account identity is available.
+- Use the available account identity for account-scoped storage keys, with migration.
 - Consider revision-checked server saves during API design as a separate server
   concern. They are not part of this local persistence change.
 
-Acceptance at API integration: a remote-only edit never prompts, independent
+Acceptance for the deferred reconciliation implementation: a remote-only edit never prompts, independent
 edits survive together, overlapping differing edits can be selected per field,
 and resolving or dismissing the modal never writes remote content automatically.
 

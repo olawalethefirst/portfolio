@@ -1,4 +1,11 @@
-const errorStatuses = {
+export const apiErrorCodes = [
+  "INVALID_REQUEST", "UNAUTHENTICATED", "FORBIDDEN", "NOT_FOUND",
+  "CONFLICT", "VALIDATION_ERROR", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE",
+] as const;
+
+export type ApiErrorCode = (typeof apiErrorCodes)[number];
+
+const errorStatuses: Record<ApiErrorCode, number> = {
   INVALID_REQUEST: 400,
   UNAUTHENTICATED: 401,
   FORBIDDEN: 403,
@@ -9,7 +16,6 @@ const errorStatuses = {
   SERVICE_UNAVAILABLE: 503,
 } as const;
 
-export type ApiErrorCode = keyof typeof errorStatuses;
 export interface ApiIssue { pointer: string; message: string }
 export interface ApiError {
   code: ApiErrorCode;
