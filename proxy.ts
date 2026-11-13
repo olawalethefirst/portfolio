@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { CookieOptions } from "@supabase/ssr";
 import { createSupabaseServerClient } from "@/src/auth/server";
 import { adminLoginRedirect } from "@/src/auth/admin-navigation";
+import { applySessionResponse } from "@/src/auth/session-response";
 
 export async function proxy(request: NextRequest) {
-  const updates: { name: string; value: string; options: CookieOptions }[] = [];
-  const headers = new Headers({ "Cache-Control": "no-store" });
+  const session = new NextResponse(null, { headers: { "Cache-Control": "no-store" } });
   const supabase = createSupabaseServerClient(request.cookies, {
-    headers,
+    headers: session.headers,
     cookies: {
       set(name, value, options) {
         request.cookies.set(name, value);
-        updates.push({ name, value, options });
+        session.cookies.set(name, value, options);
       },
     },
   });
@@ -30,11 +29,7 @@ export async function proxy(request: NextRequest) {
   const response = denied
     ? NextResponse.redirect(new URL(denied, request.nextUrl.origin), 303)
     : NextResponse.next({ request });
-  headers.forEach((value, key) => response.headers.set(key, value));
-  for (const { name, value, options } of updates) {
-    response.cookies.set(name, value, options);
-  }
-  return response;
+  return applySessionResponse(session, response);
 }
 
 export const config = {

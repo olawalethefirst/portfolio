@@ -36,6 +36,16 @@ Do not move business logic into a generic utils file. A local helper used only b
 one operation need not become global unless it implements an application-wide
 contract. Shared utilities need a named consumer, not speculative scaffolding.
 
+`src/auth/session-response.ts` owns `applySessionResponse(session, response)` for
+transferring SDK session writes to a separately chosen outgoing response. It
+copies session headers except raw `Set-Cookie`, then merges cookies through
+Next.js's cookie API so options/deletions and the destination's cookies survive.
+The destination keeps its status, body and other headers. Supply the SDK session
+response, never incoming request headers. Proxy and the admin API wrapper reuse
+it; cookie/header transfer is tested at this utility boundary. Proxy separately
+owns updating request cookies for downstream rendering; callers still own
+authorization and response selection.
+
 HTTP response helpers live at the transport boundary. Services may share typed
 application errors/results, but do not construct HTTP responses. The endpoint
 maps those results to the approved HTTP contract using the shared helpers.
@@ -47,15 +57,24 @@ provider calls, endpoint implementation or hosted operations by itself.
 
 ## Shared request checks
 
-`src/api/request.ts` provides `checkSameOrigin(request)` and
-`hasContentType(request, expected)`. Browser mutation routes call the former
-before parsing input or invoking services; it returns null on a matching Origin
-or the canonical 403 response otherwise. Missing/opaque Origin is denied. This
-is explicit route-level enforcement, not Proxy-based authorization, and must not
-be applied indiscriminately to GET reads or cross-origin OAuth callback navigation.
+`src/api/request.ts` provides `withSameOrigin(handler)` and
+`withContentType(expected, handler, message?)`. They preserve the request type,
+route context and downstream response, terminating before invoking the handler
+when their check fails. `RequestHandler` is the shared synchronous/asynchronous
+handler contract; the low-level predicates are private implementation details.
 
-`hasContentType` compares the media type case-insensitively, ignoring parameters
-such as charset. The route selects the expected media type and uses the shared
-error response helper on mismatch. Body parsing and resource-specific field
-validation remain at the endpoint boundary. Neither utility grants owner access,
-validates body content or substitutes for the service's business rules.
+Browser mutation routes opt into `withSameOrigin`: missing, opaque or mismatched
+Origin receives the canonical 403 response. Do not wrap ordinary GET reads or
+cross-origin OAuth callback navigation indiscriminately.
+
+`withContentType` compares media types case-insensitively, ignoring parameters
+such as charset, and returns canonical 400/INVALID_REQUEST on mismatch. Its
+optional message preserves route-specific safe feedback. Body parsing and
+resource-field validation remain inside the endpoint handler.
+
+`withAdminApi(handler)` also follows the handler-wrapper contract, invoking the
+operation only after owner authorization and applying session writes to its final
+response. Hero PUT composes origin → owner authorization → content type → body
+validation/save, preserving the original rejection order. GitHub initiation
+composes origin → form content type → initiation. GET Hero wraps authorization
+only. These wrappers do not substitute for service-owned business rules.
