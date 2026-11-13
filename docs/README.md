@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/hero-api.md`](context/hero-api.md): protected Hero read/save endpoints,
+  validation, persistence boundaries, and database permission requirements.
+
 - [`contracts/api-layer-boundaries.md`](contracts/api-layer-boundaries.md):
   endpoint, service, database and shared-utility ownership.
 
