@@ -343,3 +343,29 @@ Studio layout, protected service integration and session refresh are separately
 scoped; adding this reusable guard alone does not protect an existing route.
 
 Reference: [Supabase getUser](https://supabase.com/docs/reference/javascript/auth-getuser).
+
+## Session refresh proxy
+
+Root `proxy.ts` runs only for `/admin/:path*` and `/api/admin/:path*`, including
+the login page. Public portfolio/assets and `/api/auth` endpoints are excluded;
+the OAuth endpoints own their writable responses and PKCE/session cookie changes.
+The proxy uses the existing request-local server adapter and `getClaims()` to
+trigger refresh of expiring sessions. It does not redirect or authorize owners.
+
+SDK cookie updates immediately change the request cookie store and are retained
+with their options. After verification/refresh finishes, the proxy builds
+`NextResponse.next({ request, headers })` from the updated request and writes the
+same updates to its response. Thus downstream rendering sees refreshed cookies
+on the current request and the browser receives the matching updates/deletions.
+Unrelated request cookies survive; cookie state and clients are never shared
+across requests. SDK cache headers are forwarded; the default is `no-store`.
+
+A missing session or returned Auth error continues without granting access,
+preserving any SDK cookie cleanup. Unexpected thrown failures and missing SDK
+configuration propagate rather than silently claim successful refresh. Protected
+consumers must independently enforce authorization through the owner guard.
+
+References: [Supabase Next.js SSR guidance](https://supabase.com/docs/guides/auth/server-side/creating-a-client?queryGroups=framework&framework=nextjs)
+and installed Next.js `proxy` file-convention guide. This installed Next.js version
+still exports `unstable_doesMiddlewareMatch` from its experimental testing package,
+although the bundled guide calls it `unstable_doesProxyMatch`.
