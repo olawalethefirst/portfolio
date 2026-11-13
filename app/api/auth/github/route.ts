@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/src/auth/server";
-import { apiErrorResponse } from "@/src/api/errors";
+import { apiErrorResponse, type ApiError } from "@/src/api/errors";
 import { checkSameOrigin, hasContentType } from "@/src/api/request";
 import { startGitHubSignIn } from "@/src/auth/github-service";
+import { adminReturnPath } from "@/src/auth/return-path";
+
+function signInFailure(request: NextRequest, error: ApiError, returnTo: string | null) {
+  if (!request.headers.get("accept")?.includes("text/html")) return apiErrorResponse(error);
+  const destination = new URL("/admin/login", request.nextUrl.origin);
+  destination.searchParams.set("error", "sign_in_failed");
+  destination.searchParams.set("returnTo", adminReturnPath(returnTo));
+  const response = NextResponse.redirect(destination, 303);
+  response.headers.set("Cache-Control", "no-store");
+  return response;
+}
 
 export async function POST(request: NextRequest) {
   const originError = checkSameOrigin(request);
@@ -49,17 +60,17 @@ export async function POST(request: NextRequest) {
   try {
     supabase = createSupabaseServerClient(request.cookies, response);
   } catch {
-    return apiErrorResponse({
+    return signInFailure(request, {
       code: "INTERNAL_ERROR",
       message: "Sign-in is not configured. Try again later.",
-    });
+    }, returnTo);
   }
   const result = await startGitHubSignIn(
     supabase.auth,
     request.nextUrl.origin,
     returnTo,
   );
-  if (!result.ok) return apiErrorResponse(result.error);
+  if (!result.ok) return signInFailure(request, result.error, returnTo);
   response.headers.set("Location", result.url);
   return response;
 }

@@ -12,7 +12,7 @@ it("returns the authorization destination with the validated callback input", as
   expect(await startGitHubSignIn(auth, "https://portfolio.test", "/admin/projects?platform=web"))
     .toEqual({ ok: true, url: "https://example.supabase.co/auth/v1/authorize" });
   expect(auth.signInWithOAuth).toHaveBeenCalledWith({ provider: "github", options: {
-    redirectTo: "https://portfolio.test/api/auth/callback?returnTo=%2Fadmin%2Fprojects%3Fplatform%3Dweb", skipBrowserRedirect: true,
+    redirectTo: "https://portfolio.test/api/auth/callback?returnTo=%2Fadmin%2Fprojects%3Fplatform%3Dweb", skipBrowserRedirect: true, queryParams: { prompt: "select_account" },
   } });
 });
 

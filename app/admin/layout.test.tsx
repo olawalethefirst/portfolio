@@ -26,11 +26,11 @@ describe("CMS prototype access", () => {
 });
 
 
-it("renders the login without editor navigation or draft storage access", () => {
+it("renders the login without editor navigation or draft storage access", async () => {
   vi.stubEnv("NODE_ENV", "development");
   const readStorage = vi.spyOn(Storage.prototype, "length", "get");
   try {
-    render(AdminLayout({ children: <AdminLoginPage /> }));
+    render(AdminLayout({ children: await AdminLoginPage({ searchParams: Promise.resolve({}) }) }));
     expect(screen.getByRole("heading", { name: "Content Studio" })).toBeTruthy();
     expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
     expect(readStorage).not.toHaveBeenCalled();

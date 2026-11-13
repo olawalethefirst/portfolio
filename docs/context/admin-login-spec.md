@@ -369,3 +369,34 @@ References: [Supabase Next.js SSR guidance](https://supabase.com/docs/guides/aut
 and installed Next.js `proxy` file-convention guide. This installed Next.js version
 still exports `unstable_doesMiddlewareMatch` from its experimental testing package,
 although the bundled guide calls it `unstable_doesProxyMatch`.
+
+## GitHub login UI integration
+
+This supersedes the original disconnected Google UI behavior above. `AdminLogin`
+now renders an enabled **Continue with GitHub** submit button in a native POST
+form targeting `/api/auth/github`. The leading decorative GitHub mark reuses the
+existing licensed Bootstrap path; the outline button uses the application's
+theme instead of Google-specific colors/font/artwork. No client Supabase SDK or
+browser auth configuration is introduced.
+
+The server login page awaits `searchParams`, validates a single string `returnTo`
+with `adminReturnPath`, and passes the safe destination as a hidden form field.
+The endpoint continues to validate it independently. Duplicate submissions are
+prevented while navigation is pending; Back stays available. A `pageshow` listener
+resets pending state when browser history restores the page after leaving for
+the provider. The view accepts `returnTo` and `accessDenied`; the old injectable
+`onSignIn` callback is replaced by native form submission.
+
+For browser requests accepting `text/html`, configuration and provider initiation
+failures redirect back to login with the existing `sign_in_failed` toast marker
+and validated `returnTo`. Existing JSON errors remain for non-HTML requests;
+origin/input validation remains unchanged. Successful initiation still returns
+the existing 303 with its PKCE cookie and SDK cache headers. No fetch request
+follows the cross-origin OAuth redirect.
+
+GitHub sign-in requests include `prompt=select_account` through Supabase's OAuth
+`queryParams` so another account can be selected. Confirm account switching with
+the real provider; requesting an account picker does not authorize an account.
+Callback owner checks and protected studio enforcement remain separate work.
+
+Reference: [GitHub OAuth authorization parameters](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#1-request-a-users-github-identity).

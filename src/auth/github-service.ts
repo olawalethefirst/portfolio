@@ -18,7 +18,11 @@ export async function startGitHubSignIn(
   try {
     const { data, error } = await auth.signInWithOAuth({
       provider: "github",
-      options: { redirectTo: callback.toString(), skipBrowserRedirect: true },
+      options: {
+        redirectTo: callback.toString(),
+        skipBrowserRedirect: true,
+        queryParams: { prompt: "select_account" },
+      },
     });
     return error || !data.url ? failure : { ok: true, url: data.url };
   } catch {

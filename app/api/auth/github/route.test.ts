@@ -61,6 +61,7 @@ it("starts GitHub OAuth and returns a 303 with the verifier cookie and cache hea
       redirectTo:
         "https://portfolio.test/api/auth/callback?returnTo=%2Fadmin%2Fprojects%3Fplatform%3Dweb",
       skipBrowserRedirect: true,
+      queryParams: { prompt: "select_account" },
     },
   });
 });
@@ -130,4 +131,23 @@ it("rejects an unreadable form body before constructing the auth client", async 
   vi.spyOn(input, "formData").mockRejectedValue(new Error("invalid body"));
   expect((await POST(input)).status).toBe(400);
   expect(createClient).not.toHaveBeenCalled();
+});
+
+it.each(["provider", "configuration"])("returns browser form failures to login for retry: %s", async (mode) => {
+  if (mode === "configuration") {
+    createClient.mockImplementation(() => { throw new Error("private details"); });
+  } else {
+    signInWithOAuth.mockRejectedValue(new Error("private details"));
+  }
+  const input = request("returnTo=%2Fadmin%2Fprojects");
+  input.headers.set("Accept", "text/html,application/xhtml+xml");
+  const response = await POST(input);
+  expect(response.status).toBe(303);
+  const destination = new URL(response.headers.get("location")!);
+  expect(destination.origin).toBe("https://portfolio.test");
+  expect(destination.pathname).toBe("/admin/login");
+  expect(destination.searchParams.get("error")).toBe("sign_in_failed");
+  expect(destination.searchParams.get("returnTo")).toBe("/admin/projects");
+  expect(response.headers.get("cache-control")).toContain("no-store");
+  expect(destination.toString()).not.toContain("private");
 });
