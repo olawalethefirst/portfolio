@@ -10,9 +10,12 @@ export function CallbackFailureToast() {
   const notified = useRef(false);
 
   useEffect(() => {
-    if (searchParams.get("error") !== "sign_in_failed" || notified.current) return;
+    const error = searchParams.get("error");
+    if ((error !== "sign_in_failed" && error !== "access_denied") || notified.current) return;
     notified.current = true;
-    toast.danger("Couldn’t sign in. Please try again.");
+    toast.danger(error === "access_denied"
+      ? "This account doesn’t have admin access."
+      : "Couldn’t sign in. Please try again.");
     const remaining = new URLSearchParams(searchParams);
     remaining.delete("error");
     const query = remaining.toString();

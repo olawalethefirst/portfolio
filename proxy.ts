@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { CookieOptions } from "@supabase/ssr";
 import { createSupabaseServerClient } from "@/src/auth/server";
+import { adminLoginRedirect } from "@/src/auth/admin-navigation";
 
 export async function proxy(request: NextRequest) {
   const updates: { name: string; value: string; options: CookieOptions }[] = [];
@@ -15,11 +16,21 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // getClaims refreshes expiring sessions; owner authorization remains separate.
+  // Refresh first so owner verification uses the updated session.
   await supabase.auth.getClaims();
 
+  const path = request.nextUrl.pathname;
+  const isStudio = (path === "/admin" || path.startsWith("/admin/")) &&
+    path !== "/admin/login" && !path.startsWith("/admin/login/");
+  const denied = isStudio
+    ? await adminLoginRedirect(supabase.auth, path + request.nextUrl.search)
+    : null;
+
   // Build after refresh so downstream rendering receives the updated Cookie header.
-  const response = NextResponse.next({ request, headers });
+  const response = denied
+    ? NextResponse.redirect(new URL(denied, request.nextUrl.origin), 303)
+    : NextResponse.next({ request });
+  headers.forEach((value, key) => response.headers.set(key, value));
   for (const { name, value, options } of updates) {
     response.cookies.set(name, value, options);
   }

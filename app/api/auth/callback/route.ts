@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { completeGitHubSignIn } from "@/src/auth/callback-service";
 import { adminReturnPath } from "@/src/auth/return-path";
 import { createSupabaseServerClient } from "@/src/auth/server";
+import { adminLoginRedirect } from "@/src/auth/admin-navigation";
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -32,9 +33,10 @@ export async function GET(request: NextRequest) {
   }
   const result = await completeGitHubSignIn(supabase.auth, code);
   if (result.ok) {
+    const denied = await adminLoginRedirect(supabase.auth, returnTo, "sign_in_failed");
     response.headers.set(
       "Location",
-      new URL(returnTo, request.nextUrl.origin).toString(),
+      new URL(denied ?? returnTo, request.nextUrl.origin).toString(),
     );
   }
   return response;

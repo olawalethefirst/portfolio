@@ -309,7 +309,7 @@ Raw provider errors and authorization codes never enter the failure URL.
 The same response receives SDK cookie writes and cache headers and is returned
 for both successful and unsuccessful exchanges, preserving cookie deletion too.
 Responses use `Cache-Control: no-store`. Authentication does not grant admin authorization;
-the configured-owner guard is separately scoped.
+the callback now invokes the configured-owner check described below.
 
 The login page consumes only the fixed `sign_in_failed` marker and calls HeroUI's
 `toast.danger` with generic retry feedback. It removes the marker with
@@ -339,8 +339,8 @@ The guard returns typed application results, without redirects, HTTP responses,
 client construction or cookie ownership. Callers supply a request-local client
 appropriate to their execution context and handle transport outcomes. It does not
 cache identity, self-provision the first user, or modify environment configuration.
-Studio layout, protected service integration and session refresh are separately
-scoped; adding this reusable guard alone does not protect an existing route.
+The guard alone does not protect a route; its current studio/callback consumers
+are described below. Protected service integration remains scoped to those APIs.
 
 Reference: [Supabase getUser](https://supabase.com/docs/reference/javascript/auth-getuser).
 
@@ -350,7 +350,8 @@ Root `proxy.ts` runs only for `/admin/:path*` and `/api/admin/:path*`, including
 the login page. Public portfolio/assets and `/api/auth` endpoints are excluded;
 the OAuth endpoints own their writable responses and PKCE/session cookie changes.
 The proxy uses the existing request-local server adapter and `getClaims()` to
-trigger refresh of expiring sessions. It does not redirect or authorize owners.
+trigger refresh of expiring sessions. Studio navigation also performs the owner
+check described below; login and API paths only receive session refresh here.
 
 SDK cookie updates immediately change the request cookie store and are retained
 with their options. After verification/refresh finishes, the proxy builds
@@ -360,8 +361,9 @@ on the current request and the browser receives the matching updates/deletions.
 Unrelated request cookies survive; cookie state and clients are never shared
 across requests. SDK cache headers are forwarded; the default is `no-store`.
 
-A missing session or returned Auth error continues without granting access,
-preserving any SDK cookie cleanup. Unexpected thrown failures and missing SDK
+A missing session or returned Auth error preserves SDK cookie cleanup. Studio
+requests then undergo owner verification; login/API requests continue without
+granting access to protected data. Unexpected thrown failures and missing SDK
 configuration propagate rather than silently claim successful refresh. Protected
 consumers must independently enforce authorization through the owner guard.
 
@@ -397,6 +399,41 @@ follows the cross-origin OAuth redirect.
 GitHub sign-in requests include `prompt=select_account` through Supabase's OAuth
 `queryParams` so another account can be selected. Confirm account switching with
 the real provider; requesting an account picker does not authorize an account.
-Callback owner checks and protected studio enforcement remain separate work.
+Callback owner checks and protected studio enforcement are described below.
 
 Reference: [GitHub OAuth authorization parameters](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#1-request-a-users-github-identity).
+
+## Owner enforcement for studio navigation
+
+`src/auth/admin-navigation.ts` composes `authorizeAdmin` with safe login navigation.
+`adminLoginRedirect(auth, returnTo, unauthenticatedError?)` returns null for the
+verified owner or a root-relative login URL for denial. It validates `returnTo`
+with the existing policy. Forbidden identities (including missing owner config)
+receive the fixed `access_denied` marker. A visitor without a verified session
+normally receives no error marker; callback callers request `sign_in_failed`
+because verification failed while completing a sign-in. Callers retain ownership
+of HTTP responses, cookies and cache headers.
+
+After a successful code exchange, the callback calls this helper before choosing
+its final destination. Successful authentication alone no longer leads into the
+studio. Non-owners retain an authenticated session but receive no studio access;
+the login account picker allows another identity to be selected. The failure
+toast supports `access_denied` with generic denial copy and removes the marker
+through the existing Next.js navigation behavior.
+
+The proxy refreshes first, then calls the same helper for `/admin` and descendants,
+excluding `/admin/login` and its descendants. It derives the return destination
+from the actual request path and query, never from a caller-supplied header.
+Denied requests return a 303 before studio rendering. Both redirects and normal
+responses receive the same SDK cookie updates/cache headers. The existing studio
+provider layout and production CMS environment gate remain unchanged.
+
+Authorization is applied before rendering rather than only in the layout because
+Next.js reuses layouts during client navigation and a parent layout cannot prevent
+child segments from rendering independently. This navigation gate is not an API
+authorization substitute: protected services/actions/API endpoints must invoke
+the owner guard themselves when implemented. The proxy does not redirect API
+requests; a JSON authorization helper is deferred until its first API consumer.
+
+References: installed Next.js authentication guide, “Layouts and auth checks”,
+and [Next.js authorization guidance](https://nextjs.org/docs/app/guides/authentication#layouts-and-auth-checks).

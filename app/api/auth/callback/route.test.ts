@@ -1,18 +1,36 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest, type NextResponse } from "next/server";
 
-const { completeSignIn, createClient } = vi.hoisted(() => ({
+const { completeSignIn, createClient, loginRedirect } = vi.hoisted(() => ({
   completeSignIn: vi.fn(),
   createClient: vi.fn(),
+  loginRedirect: vi.fn(),
 }));
 vi.mock("@/src/auth/server", () => ({ createSupabaseServerClient: createClient }));
 vi.mock("@/src/auth/callback-service", () => ({ completeGitHubSignIn: completeSignIn }));
+vi.mock("@/src/auth/admin-navigation", () => ({ adminLoginRedirect: loginRedirect }));
 import { GET } from "./route";
 
 beforeEach(() => {
   vi.resetAllMocks();
   createClient.mockReturnValue({ auth: {} });
   completeSignIn.mockResolvedValue({ ok: true, userId: "test-user" });
+  loginRedirect.mockResolvedValue(null);
+});
+
+it("checks owner access after exchange and redirects a denied account back to login", async () => {
+  loginRedirect.mockResolvedValue("/admin/login?returnTo=%2Fadmin%2Fprojects&error=access_denied");
+  const response = await GET(request("code=test-code&returnTo=%2Fadmin%2Fprojects"));
+  expect(loginRedirect).toHaveBeenCalledExactlyOnceWith(expect.anything(), "/admin/projects", "sign_in_failed");
+  const destination = new URL(response.headers.get("location")!);
+  expect(destination.pathname).toBe("/admin/login");
+  expect(destination.searchParams.get("error")).toBe("access_denied");
+});
+
+it("does not attempt owner authorization when the exchange fails", async () => {
+  completeSignIn.mockResolvedValue({ ok: false, error: { code: "UNAUTHENTICATED", message: "Try again." } });
+  await GET(request("code=test-code"));
+  expect(loginRedirect).not.toHaveBeenCalled();
 });
 
 function request(query: string) {
