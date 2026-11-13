@@ -320,3 +320,26 @@ provider is mounted at the application root, independently of login navigation.
 
 References: [HeroUI toast](https://heroui.com/en/docs/react/components/toast),
 installed Next.js `use-router`, `use-search-params` and `next-response` guides.
+
+## Reusable owner authorization
+
+`src/auth/owner-guard.ts` exports server-only `authorizeAdmin(auth)`, accepting
+the request-local Supabase client's `getUser` capability. It reads the trimmed
+`ADMIN_USER_ID` on each call; an unset/blank value denies access without contacting
+the provider. This is the configured Supabase user UUID, never an email or GitHub ID.
+
+The guard calls `getUser()` to verify the current identity with Supabase Auth;
+it does not authorize from `getSession()`, client metadata or a callback result.
+Only an exact match with the configured owner returns `{ ok: true, userId }`.
+Missing configuration or a verified non-owner returns a safe `FORBIDDEN` error.
+Missing/unverifiable sessions and thrown verification failures return a safe
+`UNAUTHENTICATED` error; no provider details or tokens are returned or logged.
+
+The guard returns typed application results, without redirects, HTTP responses,
+client construction or cookie ownership. Callers supply a request-local client
+appropriate to their execution context and handle transport outcomes. It does not
+cache identity, self-provision the first user, or modify environment configuration.
+Studio layout, protected service integration and session refresh are separately
+scoped; adding this reusable guard alone does not protect an existing route.
+
+Reference: [Supabase getUser](https://supabase.com/docs/reference/javascript/auth-getuser).
