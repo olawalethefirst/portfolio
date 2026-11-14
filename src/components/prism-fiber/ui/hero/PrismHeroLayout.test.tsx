@@ -57,9 +57,30 @@ import {
   type PrismHeroLayoutHandle,
 } from "./PrismHeroLayout";
 
+import { PRISM_HERO_DEFAULT_CONTENT } from "./prism-hero-content";
+
 describe("PrismHeroLayout", () => {
+  it("renders saved live content and uses saved copy when changing stages", () => {
+    const content = {
+      ...PRISM_HERO_DEFAULT_CONTENT,
+      headline: "Saved headline",
+      eyebrow: "Saved eyebrow",
+      stages: {
+        ...PRISM_HERO_DEFAULT_CONTENT.stages,
+        idea: { tagline: "Saved idea", description: "Saved idea description" },
+        solution: { tagline: "Saved solution", description: "Saved solution description" },
+      },
+    };
+    render(<PrismHeroLayout content={content} />);
+    expect(screen.getByRole("heading", { level: 1, name: "Saved headline" })).toBeTruthy();
+    expect(screen.getByText("Saved eyebrow")).toBeTruthy();
+    expect(screen.getByText("Saved solution description")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Idea" }));
+    expect(screen.getByText("Saved idea description")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Saved idea" })).toBeTruthy();
+  });
   it("renders one interactive prism with its editorial content and controls", () => {
-    render(<PrismHeroLayout />);
+    render(<PrismHeroLayout content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     expect(screen.getAllByTestId("prism-stage")).toHaveLength(1);
     expect(screen.getByLabelText("Prism controls")).toBeTruthy();
@@ -69,7 +90,7 @@ describe("PrismHeroLayout", () => {
   });
 
   it("begins the state-led editorial flow from the solution state", () => {
-    render(<PrismHeroLayout />);
+    render(<PrismHeroLayout content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     expect(
       screen.getByRole("heading", { level: 1, name: "Ideas into products." }),
@@ -87,7 +108,7 @@ describe("PrismHeroLayout", () => {
   });
 
   it("uses one state for the Prism and editorial content", () => {
-    render(<PrismHeroLayout />);
+    render(<PrismHeroLayout content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Idea" }));
 
@@ -101,7 +122,7 @@ describe("PrismHeroLayout", () => {
 
   it("forwards page-owned discovery progress to its persistent Prism", () => {
     const ref = createRef<PrismHeroLayoutHandle>();
-    render(<PrismHeroLayout ref={ref} allowsCameraZoom={false} />);
+    render(<PrismHeroLayout content={PRISM_HERO_DEFAULT_CONTENT} ref={ref} allowsCameraZoom={false} />);
 
     expect(
       screen.getByTestId("prism-stage").getAttribute("data-allows-camera-zoom"),

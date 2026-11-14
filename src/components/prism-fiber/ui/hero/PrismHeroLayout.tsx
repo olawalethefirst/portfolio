@@ -9,24 +9,23 @@ import { Button } from "../../../ui/Button";
 import { Prism, type PrismHandle } from "../../Prism";
 import { usePrismAutoplay } from "../usePrismAutoplay";
 import { PRISM_INITIAL_STATE, type PrismState } from "../../state/prism-state";
-import { PRISM_HERO_DEFAULT_CONTENT, type PrismHeroContent } from "./prism-hero-content";
+import type { PrismHeroContent } from "./prism-hero-content";
 import { usePrismHomeFrame } from "./usePrismHomeFrame";
 import styles from "./PrismHeroLayout.module.css";
 
 interface PrismHeroLayoutBaseProps {
+  content: PrismHeroContent;
   allowsCameraZoom?: boolean;
 }
 
 export type PrismHeroLayoutProps =
   | (PrismHeroLayoutBaseProps & {
       mode?: "live";
-      content?: never;
       initialStage?: never;
       onStageChange?: never;
     })
   | (PrismHeroLayoutBaseProps & {
       mode: "preview";
-      content: PrismHeroContent;
       initialStage?: PrismState;
       onStageChange?: (state: PrismState) => void;
     });
@@ -41,7 +40,7 @@ export const PrismHeroLayout = forwardRef<
 >(function PrismHeroLayout(props, ref) {
   const allowsCameraZoom = props.allowsCameraZoom ?? true;
   const preview = props.mode === "preview";
-  const content = preview ? props.content : PRISM_HERO_DEFAULT_CONTENT;
+  const content = props.content;
   const initialStage = preview ? props.initialStage ?? PRISM_INITIAL_STATE : PRISM_INITIAL_STATE;
   const onStageChange = preview ? props.onStageChange : undefined;
   const prismRef = useRef<PrismHandle>(null);

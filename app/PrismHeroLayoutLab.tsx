@@ -10,6 +10,7 @@ import {
   PrismHeroLayout,
   type PrismHeroLayoutHandle,
 } from "@/src/components/prism-fiber/ui/hero/PrismHeroLayout";
+import type { PrismHeroContent } from "@/src/components/prism-fiber/ui/hero/prism-hero-content";
 import { Surface } from "@/src/components/ui/Surface";
 
 import { LabThemeShell } from "./LabThemeShell";
@@ -17,7 +18,7 @@ import { LabThemeShell } from "./LabThemeShell";
 import { usePrismDiscoveryScroll } from "./usePrismDiscoveryScroll";
 import { labPublications } from "./lab-publications";
 
-export function PrismHeroLayoutLab() {
+export function PrismHeroLayoutLab({ content }: { content: PrismHeroContent }) {
   const heroRef = useRef<PrismHeroLayoutHandle>(null);
   const scrollOriginRef = usePrismDiscoveryScroll(heroRef);
 
@@ -40,7 +41,7 @@ export function PrismHeroLayoutLab() {
             data-testid="prism-scroll-runway"
           >
             <div className="sticky top-0 h-dvh w-full">
-              <PrismHeroLayout ref={heroRef} allowsCameraZoom={false} />
+              <PrismHeroLayout content={content} ref={heroRef} allowsCameraZoom={false} />
             </div>
           </section>
 

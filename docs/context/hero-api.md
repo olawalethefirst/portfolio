@@ -31,8 +31,8 @@ failure, not a 403 for the owner. Do not automatically retry writes after a lost
 response; the outcome can be unknown.
 
 The Hero editor now uses these endpoints through `src/cms/hero-api.ts` and
-TanStack Query. Public server reads/cache invalidation remain a separate slice;
-editor saves do not yet change the public page's content source.
+TanStack Query. The public homepage now reads the same persisted Hero row server-side, as
+specified below.
 
 ## Hero editor integration
 
@@ -101,3 +101,33 @@ Implementation references: the installed Next.js Route Handler guide,
 [Drizzle select](https://orm.drizzle.team/docs/select),
 [Drizzle update/returning](https://orm.drizzle.team/docs/update), and
 [Zod object validation](https://zod.dev/api).
+
+## Public homepage output
+
+`app/page.tsx` is an async Server Component. It awaits `connection()` from
+`next/server`, reads the singleton through `readHero`, and passes the serializable
+content to `PrismHeroLayoutLab`. That client screen forwards content into
+`PrismHeroLayout`; both live and preview layouts require supplied content. Client
+components retain the existing Prism interactions and participate in initial
+server rendering. No browser content fetch or public JSON endpoint is added.
+
+The homepage uses request-time rendering with no persistent content cache. Each
+full page request reads current database content, so successful editor saves are
+visible on the next page load without tag invalidation. No TTL, cache tags, or
+cacheComponents setting is introduced. Already-open pages do not receive push
+updates; reload to see a later save. A future cache policy must explicitly define
+freshness and invalidation before changing this behavior.
+
+A missing singleton throws “Hero content was not found.” and database failures
+propagate to Next.js error handling. The public page does not substitute sample
+copy. Database credentials and queries remain server-only; only Hero content
+crosses the client boundary. The existing seed owns initialization.
+
+Performance impact: one database read per homepage request; no extra client
+content request or changes to the WebGL scene. Controller review should record
+homepage response timing and verify existing scroll, stage, autoplay, responsive,
+and theme behavior with saved copy. A production build must succeed without
+attempting the page's request-time database read during prerendering.
+
+Implementation reference: installed Next.js `connection` and Server and Client
+Components guides under `node_modules/next/dist/docs/`.
