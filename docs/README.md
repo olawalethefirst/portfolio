@@ -37,7 +37,11 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 - [`context/cms-local-drafts.md`](context/cms-local-drafts.md): automatic browser
   draft recovery, shared integration, storage lifecycle, persistence boundaries,
-  and the deferred API reconciliation contract.
+  and shared server-backed reconciliation.
+
+- [`context/cms-draft-reconciliation-spec.md`](context/cms-draft-reconciliation-spec.md):
+  server-first forms, field-level draft selection, successful-save cleanup, and
+  acceptance criteria for shared reconciliation.
 
 - [`context/cms-ui-spec.md`](context/cms-ui-spec.md): proposed CMS UI screens,
   reusable public previews, editing states, scope and acceptance contract.

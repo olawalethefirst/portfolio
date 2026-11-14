@@ -292,6 +292,8 @@ it("locks fields and actions during Save and restores editing after failure", as
     expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(
       true,
     );
+  for (const action of screen.getAllByRole("button", { name: /Use (draft|saved)/ }))
+    expect(action.hasAttribute("disabled")).toBe(true);
   expect(headline.closest("fieldset")?.getAttribute("aria-busy")).toBe("true");
   await act(async () => fail(new Error("Save failed")));
   await screen.findByRole("alert");

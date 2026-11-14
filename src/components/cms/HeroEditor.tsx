@@ -16,7 +16,7 @@ import { Button } from "@/src/components/ui/Button";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import {
   useDraftStore,
-  useWorkingDraft,
+  useReconciledDraft,
   type DraftStore,
 } from "@/src/cms/working-drafts";
 import { heroIssueFeedback } from "@/src/cms/hero-api";
@@ -79,10 +79,11 @@ function HeroEditorForm({
   loadError: Error | null;
 }) {
   const { save, pending, error: saveError, reset: resetSave } = useSaveHero();
-  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(
+  const { value, draft, reset, bindField, ready, persistenceStatus } = useReconciledDraft(
     working,
     "hero",
-    () => saved,
+    saved,
+    { disabled: pending, onChange: resetSave },
   );
   const active = useRef(true);
   useEffect(() => {
@@ -111,12 +112,8 @@ function HeroEditorForm({
   }
   const expose = (field: HeroField) =>
     setExposed((current) => ({ ...current, [field]: true }));
-  function edit(next: (current: HeroDraft) => HeroDraft) {
-    if (pending) return;
-    resetSave();
-    setValue(next);
-  }
   const dirty = !sameHero(value, saved);
+  const hasDraft = Boolean(draft && !sameHero(draft, saved));
   function focusFirstError(nextErrors: HeroErrors) {
     const order: HeroField[] = [
       "eyebrow",
@@ -146,9 +143,9 @@ function HeroEditorForm({
       return false;
     }
     try {
-      const canonical = await save(value);
-      if (active.current)
-        reset(canonical);
+      await save(value);
+      if (active.current) reset();
+      else if (working.drafts.hero) working.clear("hero", working.drafts.hero);
       return true;
     } catch (failure) {
       if (active.current) {
@@ -162,8 +159,6 @@ function HeroEditorForm({
       return false;
     }
   }
-  const update = (patch: Partial<HeroDraft>) =>
-    edit((current) => ({ ...current, ...patch }));
   if (!ready) return <p role="status">Restoring local draft…</p>;
   if (preview)
     return (
@@ -214,6 +209,11 @@ function HeroEditorForm({
       <CmsFeedback label="Hero save status" error={error}>
         {pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}
       </CmsFeedback>
+      {hasDraft ? (
+        <p role="status" className="my-4 text-sm text-muted">
+          You have local changes. Review them beside each field.
+        </p>
+      ) : null}
       <Form
         id={formId}
         ref={formRef}
@@ -232,16 +232,20 @@ function HeroEditorForm({
               onBlur={() => expose("eyebrow")}
               label="Eyebrow"
               error={errors.eyebrow}
-              value={value.eyebrow}
-              onChange={(eyebrow) => update({ eyebrow })}
+              {...bindField(
+                (content) => content.eyebrow,
+                (content, eyebrow) => ({ ...content, eyebrow }),
+              )}
             />
             <CmsField
               name="headline"
               onBlur={() => expose("headline")}
               label="Headline"
               error={errors.headline}
-              value={value.headline}
-              onChange={(headline) => update({ headline })}
+              {...bindField(
+                (content) => content.headline,
+                (content, headline) => ({ ...content, headline }),
+              )}
             />
             <div className="mt-8 space-y-8">
               {stages.map(([key, label]) => (
@@ -251,16 +255,14 @@ function HeroEditorForm({
                     onBlur={() => expose(`${key}-tagline`)}
                     label="Tagline"
                     error={errors[`${key}-tagline`]}
-                    value={value.stages[key].tagline}
-                    onChange={(tagline) =>
-                      edit((current) => ({
-                        ...current,
-                        stages: {
-                          ...current.stages,
-                          [key]: { ...current.stages[key], tagline },
-                        },
-                      }))
-                    }
+                    reviewLabel={`${label} tagline`}
+                    {...bindField(
+                      (content) => content.stages[key].tagline,
+                      (content, tagline) => ({
+                        ...content,
+                        stages: { ...content.stages, [key]: { ...content.stages[key], tagline } },
+                      }),
+                    )}
                   />
                   <CmsField
                     name={key + "-description"}
@@ -268,16 +270,14 @@ function HeroEditorForm({
                     label="Description"
                     error={errors[`${key}-description`]}
                     multiline="short"
-                    value={value.stages[key].description}
-                    onChange={(description) =>
-                      edit((current) => ({
-                        ...current,
-                        stages: {
-                          ...current.stages,
-                          [key]: { ...current.stages[key], description },
-                        },
-                      }))
-                    }
+                    reviewLabel={`${label} description`}
+                    {...bindField(
+                      (content) => content.stages[key].description,
+                      (content, description) => ({
+                        ...content,
+                        stages: { ...content.stages, [key]: { ...content.stages[key], description } },
+                      }),
+                    )}
                   />
                 </CmsFieldSection>
               ))}
@@ -290,9 +290,9 @@ function HeroEditorForm({
         <Button
           type="button"
           variant="ghost"
-          isDisabled={pending || !dirty}
+          isDisabled={pending || (!dirty && !hasDraft)}
           onPress={() => {
-                    reset(saved);
+            reset();
             resetSave();
             setExposed({});
           }}

@@ -68,19 +68,28 @@ Server field issues use an explicit
 Hero pointer allowlist and visual focus order; unmapped issues remain general
 feedback. Late failures cannot invalidate newer input or focus an unmounted form.
 
-This iteration is limited to server state. The existing local draft store,
-`portfolio:cms-drafts:v1:hero:hero` key and `{ id, value }` format remain unchanged.
-No original-baseline metadata, account-scoped draft format, migration, merge or
-conflict-review UI is implemented. Reconciliation is deferred to a shared
-implementation in the next iteration, per owner direction.
+## Draft review and save cleanup
 
-Save advances the query's saved baseline and adopts the canonical response.
-Fields, Save, Discard and Preview are disabled during Save; the existing Button
-loading indicator shows a HeroUI spinner. Initial loading also shows a spinner.
-Revision tracking is unnecessary because editing is blocked during Save.
-Discard uses the latest fetched/saved server baseline. A
-background read never automatically replaces the working draft. Local drafts
-still lack account isolation and original-snapshot comparison, as documented in
+Hero uses the shared `useReconciledDraft` hook with the existing
+`portfolio:cms-drafts:v1:hero:hero` key and `{ id, value }` format. It opens on
+current server values and offers Use draft / Use saved actions beside differing
+field labels. One inline notice explains the available local changes. Source
+choices change only the assembled form; typing updates that field's local draft
+candidate while preserving other unreviewed draft values. Preview and Save use
+the assembled form. See the [reconciliation spec](cms-draft-reconciliation-spec.md).
+
+Save advances the query's saved baseline, adopts the canonical response, and
+clears local draft storage and pending writes. Failed or unconfirmed saves keep
+local work. If Save finishes after navigation, guarded cleanup preserves drafts
+replaced by later edits. Discard also clears draft alternatives and restores the
+latest server values; it is enabled for recoverable alternatives even if the
+form is otherwise clean. Subsequent edits start a new draft.
+
+Fields, review actions, Save, Discard and Preview are disabled during Save. A
+background read does not replace active form edits. Existing HeroUI loading
+feedback remains. No original server snapshot, three-way merge, or conflict modal
+is used. Local drafts still lack account isolation; account-key migration and
+cross-tab coordination remain separate work, as documented in
 [local draft limitations](cms-local-drafts.md#scope-and-limitations).
 
 Implementation references for the client boundary:

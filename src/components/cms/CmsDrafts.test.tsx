@@ -51,6 +51,10 @@ it.each(editors)("retains the %s working draft across navigation without confirm
   expect(unload.defaultPrevented).toBe(false);
   rerender(<Providers>{null}</Providers>);
   rerender(<Providers>{editor()}</Providers>);
+  if (_name === "Hero") {
+    await screen.findByRole("button", { name: "Use draft Headline" });
+    fireEvent.click(screen.getByRole("button", { name: "Use draft Headline" }));
+  }
   expect((screen.getByRole("textbox", { name: field }) as HTMLInputElement).value).toBe("Working draft");
 });
 
@@ -60,6 +64,9 @@ it.each(editors)("restores the %s working draft after providers remount", async 
   fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Recovered after reload" } });
   first.unmount();
   await render(<Providers>{editor()}</Providers>);
+  if (_name === "Hero") {
+    fireEvent.click(screen.getByRole("button", { name: "Use draft Headline" }));
+  }
   expect((screen.getByRole("textbox", { name: field }) as HTMLInputElement).value).toBe("Recovered after reload");
   expect(screen.getByRole("status", { name: "Local draft status" }).textContent).toBe("Saved on this device.");
 });

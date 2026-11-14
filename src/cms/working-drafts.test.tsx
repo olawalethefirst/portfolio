@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { useDraftStore, useWorkingDraft } from "./working-drafts";
+import { useDraftStore, useWorkingDraft, useReconciledDraft } from "./working-drafts";
 
 const schema = z.object({ title: z.string() });
 const initial = () => ({ title: "Initial" });
@@ -98,4 +98,61 @@ it("allows editing when storage cannot be read", () => {
   expect(first.result.current.draft.persistenceStatus).toBe("restore-error");
   act(() => first.result.current.draft.setValue({ title: "Still editable" }));
   expect(first.result.current.draft.value.title).toBe("Still editable");
+});
+
+
+function useReview(saved = initial()) {
+  const store = useDraftStore({ namespace: "review", schema });
+  return { store, review: useReconciledDraft(store, "record", saved) };
+}
+const reviewKey = "portfolio:cms-drafts:v1:review:record";
+
+it("clears saved drafts and queued writes, then only persists edits made after Save", () => {
+  const page = renderHook(({ saved }) => useReview(saved), { initialProps: { saved: initial() } });
+  act(() => page.result.current.review.edit(() => ({ title: "Submitted" })));
+  act(() => page.result.current.review.reset());
+  page.rerender({ saved: { title: "Canonical" } });
+  act(() => vi.advanceTimersByTime(300));
+  act(() => window.dispatchEvent(new Event("pagehide")));
+  expect(localStorage.getItem(reviewKey)).toBeNull();
+  expect(page.result.current.review.value.title).toBe("Canonical");
+  expect(page.result.current.review.draft).toBeUndefined();
+  act(() => page.result.current.review.edit(() => ({ title: "Later edit" })));
+  page.unmount();
+  const next = renderHook(() => useReview({ title: "Canonical" }));
+  expect(next.result.current.review.value.title).toBe("Canonical");
+  expect(next.result.current.review.draft?.title).toBe("Later edit");
+});
+
+it("reports failed local cleanup and retries removal without restoring old edits", () => {
+  const page = renderHook(({ saved }) => useReview(saved), { initialProps: { saved: initial() } });
+  act(() => page.result.current.review.edit(() => ({ title: "Submitted" })));
+  act(() => page.result.current.store.flush());
+  const remove = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => { throw new Error("Blocked"); });
+  act(() => page.result.current.review.reset());
+  expect(page.result.current.review.persistenceStatus).toBe("error");
+  expect(page.result.current.review.value.title).toBe("Initial");
+  remove.mockRestore();
+  act(() => window.dispatchEvent(new Event("pagehide")));
+  expect(localStorage.getItem(reviewKey)).toBeNull();
+  expect(page.result.current.review.persistenceStatus).toBe("idle");
+});
+
+it("uses fresh server values before editing and preserves active edits during refresh", () => {
+  const page = renderHook(({ saved }) => useReview(saved), { initialProps: { saved: initial() } });
+  page.rerender({ saved: { title: "Fresh server" } });
+  expect(page.result.current.review.value.title).toBe("Fresh server");
+  act(() => page.result.current.review.edit(() => ({ title: "My edit" })));
+  page.rerender({ saved: { title: "Newer server" } });
+  expect(page.result.current.review.value.title).toBe("My edit");
+  expect(page.result.current.review.draft?.title).toBe("My edit");
+});
+
+it("follows refreshed server content after resetting a completed editing session", () => {
+  const page = renderHook(({ saved }) => useReview(saved), { initialProps: { saved: initial() } });
+  act(() => page.result.current.review.edit(() => ({ title: "Unsaved" })));
+  act(() => page.result.current.review.reset());
+  page.rerender({ saved: { title: "Updated remotely" } });
+  expect(page.result.current.review.value.title).toBe("Updated remotely");
+  expect(page.result.current.review.draft).toBeUndefined();
 });

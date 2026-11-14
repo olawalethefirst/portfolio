@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -154,4 +155,138 @@ it("shows load failure without editing demo content or adding recovery controls"
   await screen.findByRole("alert");
   expect(screen.queryByRole("textbox", { name: "Headline" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Retry loading" })).toBeNull();
+});
+
+const draftKey = "portfolio:cms-drafts:v1:hero:hero";
+function storeDraft() {
+  const value = structuredClone(saved);
+  value.headline = "Recovered headline";
+  value.stages.idea.tagline = "Recovered tagline";
+  localStorage.setItem(draftKey, JSON.stringify({ id: "hero", value }));
+  return value;
+}
+const choose = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+
+it("starts from saved values and assembles selected draft fields without saving alternatives", async () => {
+  const draft = storeDraft();
+  render(<Page />);
+  await loaded();
+  expect(headline().value).toBe(saved.headline);
+  expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
+  expect(screen.getByText("You have local changes. Review them beside each field.")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Use draft Eyebrow" })).toBeNull();
+  choose("Use draft Headline");
+  expect(headline().value).toBe(draft.headline);
+  expect((field("Idea", "Tagline") as HTMLInputElement).value).toBe(saved.stages.idea.tagline);
+  choose("Use saved Headline");
+  expect(headline().value).toBe(saved.headline);
+  expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
+  choose("Use draft Idea tagline");
+  edit("New headline");
+  save();
+  await waitFor(() => expect(screen.getByRole("status", { name: "Hero save status" }).textContent).toBe("No unsaved changes"));
+  expect(saved.headline).toBe("New headline");
+  expect(saved.stages.idea.tagline).toBe(draft.stages.idea.tagline);
+  expect(localStorage.getItem(draftKey)).toBeNull();
+  expect(screen.queryByRole("button", { name: /Use (draft|saved)/ })).toBeNull();
+});
+
+it("preserves unreviewed draft fields while typing and offers them again after reload", async () => {
+  const draft = storeDraft();
+  const page = render(<Page />);
+  await loaded();
+  edit("Later local headline");
+  choose("Use saved Headline");
+  expect(headline().value).toBe(saved.headline);
+  page.unmount();
+  render(<Page />);
+  await loaded();
+  expect(headline().value).toBe(saved.headline);
+  choose("Use draft Headline");
+  expect(headline().value).toBe("Later local headline");
+  choose("Use draft Idea tagline");
+  expect((field("Idea", "Tagline") as HTMLInputElement).value).toBe(draft.stages.idea.tagline);
+});
+
+it("retains the draft after an unconfirmed Save and does not let recovery reads replace edits", async () => {
+  storeDraft();
+  put = async (value) => {
+    saved = { ...value, headline: "Changed remotely" };
+    throw new TypeError("Response lost");
+  };
+  const page = render(<Page />);
+  await loaded();
+  choose("Use draft Headline");
+  save();
+  await screen.findByText("Couldn’t confirm the save.");
+  await waitFor(() => expect(fetch.mock.calls.filter(([, options]) => options?.method !== "PUT")).toHaveLength(2));
+  expect(headline().value).toBe("Recovered headline");
+  expect(localStorage.getItem(draftKey)).not.toBeNull();
+  choose("Use saved Headline");
+  expect(headline().value).toBe("Changed remotely");
+  page.unmount();
+  render(<Page />);
+  await loaded();
+  choose("Use draft Headline");
+  expect(headline().value).toBe("Recovered headline");
+});
+
+it("lets Discard clear unselected recovery values even when the form is clean", async () => {
+  storeDraft();
+  render(<Page />);
+  await loaded();
+  choose("Discard changes");
+  expect(headline().value).toBe(saved.headline);
+  expect(localStorage.getItem(draftKey)).toBeNull();
+  expect(screen.queryByRole("button", { name: /Use (draft|saved)/ })).toBeNull();
+});
+
+it("keeps invalid recovered values available and never submits them until corrected", async () => {
+  const draft = storeDraft();
+  draft.headline = "";
+  localStorage.setItem(draftKey, JSON.stringify({ id: "hero", value: draft }));
+  render(<Page />);
+  await loaded();
+  choose("Use draft Headline");
+  save();
+  expect(fetch.mock.calls.some(([, options]) => options?.method === "PUT")).toBe(false);
+  expect(localStorage.getItem(draftKey)).not.toBeNull();
+  expect(headline().getAttribute("aria-invalid")).toBe("true");
+  expect(headline().value).toBe("");
+});
+
+it.each([false, true])("finishes save cleanup after navigation while preserving later drafts: %s", async (laterEdit) => {
+  let finish!: () => void;
+  put = (value) => new Promise<Response>((resolve) => {
+    finish = () => { saved = value; resolve(Response.json(value)); };
+  });
+  const page = render(<Page />);
+  await loaded();
+  edit("Submitted");
+  save();
+  await waitFor(() => expect(finish).toBeTypeOf("function"));
+  page.unmount();
+  if (laterEdit) {
+    const next = render(<Page />);
+    await loaded();
+    edit("Later edit");
+    next.unmount();
+  }
+  await act(async () => finish());
+  expect(saved.headline).toBe("Submitted");
+  if (laterEdit) {
+    expect(JSON.parse(localStorage.getItem(draftKey)!).value.headline).toBe("Later edit");
+  } else {
+    expect(localStorage.getItem(draftKey)).toBeNull();
+  }
+});
+
+
+it.each([false, true])("keeps an absent or equal draft out of review: stored=%s", async (stored) => {
+  if (stored) localStorage.setItem(draftKey, JSON.stringify({ id: "hero", value: saved }));
+  render(<Page />);
+  await loaded();
+  expect(screen.queryByRole("button", { name: /Use (draft|saved)/ })).toBeNull();
+  expect(screen.queryByText("You have local changes. Review them beside each field.")).toBeNull();
+  expect(screen.getByRole("button", { name: "Save changes" }).hasAttribute("disabled")).toBe(true);
 });
