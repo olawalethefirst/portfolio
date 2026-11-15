@@ -6,8 +6,8 @@ import { getDb } from "./client";
 
 // Query mappings only; supabase/migrations remains the schema authority.
 const projects = pgTable("projects", {
-  id: uuid("id").primaryKey(),
-  position: integer("position").notNull(),
+  id: uuid("id").defaultRandom().primaryKey(),
+  position: integer("position").notNull().default(0),
   name: text("name").notNull(),
   summary: text("summary").notNull(),
   what: text("what").notNull(),
@@ -87,4 +87,44 @@ export async function readProject(id: string): Promise<ProjectRecord | null> {
     .where(eq(projects.id, id));
 
   return row ? record(row.project, row.published ?? undefined) : null;
+}
+
+type ProjectInput = ProjectDraft;
+
+function projectValues(value: ProjectInput) {
+  const screenshotAssetId =
+    value.screenshot.match(/^\/media\/([0-9a-f-]{36})$/i)?.[1] ?? null;
+  return {
+    name: value.name,
+    summary: value.summary,
+    what: value.what,
+    how: value.how,
+    platform: value.platform,
+    screenshotAssetId,
+    screenshotAlt: value.screenshotAlt,
+    liveUrl: value.liveUrl,
+  };
+}
+
+export async function insertProject(
+  value: ProjectInput,
+): Promise<ProjectRecord> {
+  const [row] = await getDb()
+    .insert(projects)
+    .values(projectValues(value))
+    .returning();
+  if (!row) throw new Error("Project insert did not return content.");
+  return record(row, undefined);
+}
+
+export async function updateProject(
+  id: string,
+  value: ProjectInput,
+): Promise<ProjectRecord | null> {
+  const [row] = await getDb()
+    .update(projects)
+    .set(projectValues(value))
+    .where(eq(projects.id, id))
+    .returning();
+  return row ? record(row, undefined) : null;
 }

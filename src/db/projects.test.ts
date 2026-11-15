@@ -5,11 +5,12 @@ const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
 
-import { listProjects, readProject } from "./projects";
+import type { ProjectDraft } from "@/src/cms/projects";
+import { insertProject, listProjects, readProject, updateProject } from "./projects";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const asset = "22222222-2222-4222-8222-222222222222";
-const content = (name: string, screenshot: string) => ({
+const content = (name: string, screenshot: string): ProjectDraft => ({
   name, summary: "Summary", what: "What", how: "How", platform: "web",
   screenshot, screenshotAlt: "Interface", liveUrl: "https://example.com",
 });
@@ -17,6 +18,8 @@ const snapshot = (name: string, image: string | null) =>
   [name, "Summary", "What", "How", "web", image, "Interface", "https://example.com"];
 const saved = [id, 2, ...snapshot("Saved edits", asset)];
 const live = [id, ...snapshot("Live version", asset)];
+const draftInput: ProjectDraft = { ...content("Draft", `/media/${asset}`) };
+const inserted = [id, 0, ...snapshot("Draft", asset)];
 
 beforeEach(() => { execute.mockReset(); });
 
@@ -51,6 +54,45 @@ it("returns an empty collection without sample records", async () => {
 it("returns null for a missing project", async () => {
   execute.mockResolvedValue({ rows: [] });
   expect(await readProject(id)).toBeNull();
+});
+
+it("inserts an unfinished draft using database-generated identity and maps its asset reference", async () => {
+  execute.mockResolvedValue({ rows: [inserted] });
+  expect(await insertProject(draftInput)).toEqual({
+    id, draft: content("Draft", `/media/${asset}`), published: null,
+  });
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toMatch(/^insert into "projects"/);
+  expect(query).toContain("returning");
+  expect(params).toEqual(["Draft", "Summary", "What", "How", "web", asset, "Interface", "https://example.com"]);
+});
+
+it("stores an empty screenshot as a null asset reference", async () => {
+  execute.mockResolvedValue({ rows: [[id, 0, ...snapshot("Draft", null)]] });
+  await insertProject({ ...draftInput, screenshot: "" });
+  expect(execute.mock.calls[0][1][5]).toBeNull();
+});
+
+it("updates only the requested saved draft and returns the stored record", async () => {
+  execute.mockResolvedValue({ rows: [inserted] });
+  expect(await updateProject(id, draftInput)).toEqual({
+    id, draft: content("Draft", `/media/${asset}`), published: null,
+  });
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toMatch(/^update "projects"/);
+  expect(query).toContain('where "projects"."id" = $9');
+  expect(query).toContain("returning");
+  expect(params).toEqual(["Draft", "Summary", "What", "How", "web", asset, "Interface", "https://example.com", id]);
+});
+
+it("returns null when an update finds no project", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await updateProject(id, draftInput)).toBeNull();
+});
+
+it("reports an insert without a returned row", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  await expect(insertProject(draftInput)).rejects.toThrow("Project insert did not return content.");
 });
 
 it.each(["list", "read"])("propagates %s database failures", async (operation) => {
