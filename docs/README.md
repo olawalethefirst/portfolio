@@ -9,6 +9,9 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
+- [`context/projects-api.md`](context/projects-api.md): owner-only Project
+  collection/detail reads, snapshot separation, ordering and safe errors.
+
 - [`context/seo-api.md`](context/seo-api.md): public SEO reads and owner-only writes, persistent UUIDs and exact-path lookup, shared domain validation
   and default/override resource projection.
 
