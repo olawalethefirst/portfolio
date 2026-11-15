@@ -1,4 +1,4 @@
-# SEO API reads
+# SEO API
 
 `GET /api/admin/seo` returns the complete JSON array of saved
 `{ id, path, title, description }` resources, including the `/` default.
@@ -27,8 +27,7 @@ null. Neither query synthesizes defaults or resolves blank fields. Application D
 permissions and seed availability require live verification separately from tests.
 
 No read service is needed: query output already equals the accepted projection,
-and layer rules prohibit pass-through wrappers. Creation/update HTTP handling, deletion, editor integration and public metadata
-resolution remain separate capabilities.
+and layer rules prohibit pass-through wrappers. Deletion, editor integration and public metadata resolution remain separate capabilities.
 No SQL/schema/grants or hosted operations are part of these reads.
 
 Route params and JSON responses follow installed Next.js guidance in
@@ -73,8 +72,8 @@ Other errors propagate unchanged for the HTTP safe-error boundary. There is no
 collection preflight uniqueness check, retry or conflict overwrite. Existing SQL
 constraints/triggers remain the final guard on uniqueness/default identity.
 
-This service introduces no POST/PUT route, local creation recovery, editor wiring
-or public metadata invalidation. Those remain later slices.
+The service stays transport-independent. Local creation recovery, editor wiring
+and public metadata invalidation remain separate slices.
 
 
 ## Shared domain and CMS boundaries
@@ -93,3 +92,27 @@ schema/type exports re-export the domain definitions so editor imports remain
 compatible. Server uniqueness still relies on the database constraint, not that
 editor collection check. Shared Zod rules can run on both sides without moving
 client feedback or fixtures into server validation.
+
+
+## Creation/update HTTP endpoints
+
+`POST /api/admin/seo` accepts `{ path, title, description }`, creates an override
+through `createSeo`, and returns 201 with canonical saved content and server UUID.
+`PUT /api/admin/seo/:id` accepts the same body, updates that UUID through `saveSeo`,
+and returns 200 with canonical saved content. Body identity/timestamps and extra
+fields are rejected; route identity owns update targeting.
+
+Both mutations compose same-origin → owner → JSON content-type guards, matching
+existing Hero/About/Social policy. JSON charset parameters are accepted. PUT
+awaits route params and validates UUID before parsing content. Strict shared
+`seoInputSchema` validates body structure: malformed JSON/missing/extra/nonstring
+fields return 400/INVALID_REQUEST. Service domain issues return 422 with field
+pointers; path collisions 409 with /path feedback; absent update target 404.
+Unexpected failures remain safe500. Session writes/private no-store use the
+existing admin wrapper. No CORS policy or authentication logic changes.
+
+Creation cannot target `/`; updating a default must retain `/` and provide both
+content fields. Overrides preserve blank field inheritance and normalized paths.
+Only the accepted create/save service owns those rules; routes contain no SQL or
+editor validation. SEO deletion, creation recovery, editor wiring and public
+metadata integration remain unimplemented by these endpoints.
