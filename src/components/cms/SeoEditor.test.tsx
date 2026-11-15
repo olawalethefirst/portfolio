@@ -149,7 +149,7 @@ it("rejects clearing both fields, preserves saved values and permits saving one 
   ).toBeNull();
 });
 
-it("validates new paths, saves normalized paths once and retains edits typed during saving", async () => {
+it("validates new paths, locks pending fields and saves normalized paths once", async () => {
   let finish!: () => void;
   const request = vi.fn(
     () =>
@@ -183,11 +183,13 @@ it("validates new paths, saves normalized paths once and retains edits typed dur
       .getByRole("button", { name: "Discard changes" })
       .hasAttribute("disabled"),
   ).toBe(true);
+  expect(path.matches(":disabled")).toBe(true);
+  await act(async () => finish());
+  expect(path.matches(":disabled")).toBe(false);
   fireEvent.change(
     screen.getByRole("textbox", { name: "SEO title override" }),
     { target: { value: "Newer edits" } },
   );
-  await act(async () => finish());
   expect((path as HTMLInputElement).value).toBe("/notes");
   expect(screen.getByLabelText("Path count").textContent).toBe("3");
   expect(
@@ -364,7 +366,7 @@ it("uses defaults-only form validation and resets independent blur errors on dis
   expect(description.getAttribute("aria-invalid")).not.toBe("true");
 });
 
-it("clears contextual path errors during correction and retains a newer path after submission", async () => {
+it("clears contextual path errors and allows edits after pending save completes", async () => {
   let finish!: () => void;
   const request = vi.fn(
     () =>
@@ -392,8 +394,10 @@ it("clears contextual path errors during correction and retains a newer path aft
   );
   expect(path.closest("form")).toBeTruthy();
   fireEvent.submit(path.closest("form")!);
-  fireEvent.change(path, { target: { value: "/later/" } });
+  expect(path.matches(":disabled")).toBe(true);
   await act(async () => finish());
+  expect(path.matches(":disabled")).toBe(false);
+  fireEvent.change(path, { target: { value: "/later/" } });
   expect(path.value).toBe("/later/");
   expect(
     screen.getByRole("status", { name: "SEO save status" }).textContent,
@@ -402,7 +406,7 @@ it("clears contextual path errors during correction and retains a newer path aft
   expect(path.value).toBe("/notes");
 });
 
-it("suppresses obsolete save errors and retries the current metadata", async () => {
+it("shows save errors, unlocks defaults and permits correction and retry", async () => {
   let fail!: (reason: Error) => void;
   const request = vi
     .fn()
@@ -422,8 +426,11 @@ it("suppresses obsolete save errors and retries the current metadata", async () 
   const title = screen.getByRole("textbox", { name: "Default title" });
   fireEvent.change(title, { target: { value: "Submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  expect(title.matches(":disabled")).toBe(true);
+  await act(async () => fail(new Error("Save failure")));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(title.matches(":disabled")).toBe(false);
   fireEvent.change(title, { target: { value: "Newer" } });
-  await act(async () => fail(new Error("Obsolete failure")));
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() =>

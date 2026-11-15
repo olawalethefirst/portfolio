@@ -61,14 +61,17 @@ afterEach(() => {
 
 function Published() { const { records } = useProjects(); return <output aria-label="Published name">{records[0]?.published?.name ?? "Unpublished"}</output>; }
 
-it("keeps edits made during save dirty and leaves published content intact", async () => {
+it("locks fields during save, then permits edits without changing published content", async () => {
   let finish!: () => void;
   const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
   render(<ProjectProvider request={request}><ProjectEditor id="field-notes" /><Published /></ProjectProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Still editing" } });
+  expect([...screen.getByRole("textbox", { name: "Name" }).closest("form")!.querySelectorAll("input, textarea, button")].every((control) => control.matches(":disabled"))).toBe(true);
+  expect(screen.getByRole("button", { name: "Preview project" }).matches(":disabled")).toBe(true);
   await act(async () => finish());
+  expect(screen.getByRole("textbox", { name: "Name" }).matches(":disabled")).toBe(false);
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Still editing" } });
   expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Unsaved changes");
   expect(screen.getByLabelText("Published name").textContent).toBe("Field Notes");
   fireEvent.click(screen.getByRole("button", { name: "Publications" }));
@@ -338,14 +341,17 @@ it("clears failed replacement feedback on discard without losing the saved image
   expect(screen.getByLabelText("Replace image")).toBeTruthy();
 });
 
-it("suppresses a failed save after newer edits and permits retry", async () => {
+it("unlocks fields after a failed save and permits correction and retry", async () => {
   let fail!: (reason: Error) => void;
   const request = vi.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { fail = reject; })).mockResolvedValue(undefined);
   render(<ProjectProvider request={request}><ProjectEditor id="new" /></ProjectProvider>);
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  expect(screen.getByRole("textbox", { name: "Name" }).matches(":disabled")).toBe(true);
+  await act(async () => fail(new Error("Save failure")));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(screen.getByRole("textbox", { name: "Name" }).matches(":disabled")).toBe(false);
   fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "Newer" } });
-  await act(async () => fail(new Error("Obsolete failure")));
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));

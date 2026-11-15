@@ -67,6 +67,7 @@ export function PublicationWriting({ title, value, onChange, onBlur, onBack, onS
     if (editor.current) selection.current = { start: editor.current.selectionStart, end: editor.current.selectionEnd };
   }
   function apply(result: ReturnType<typeof formatArticle>) {
+    if (pending) return;
     const native = !preview && editor.current && insertNativeText(editor.current, result.edit);
     onChange(native ? editor.current!.value : result.text);
     setRestore(result.selection);
@@ -85,6 +86,7 @@ export function PublicationWriting({ title, value, onChange, onBlur, onBack, onS
   }
 
   function openInsertion(kind: ArticleInsertion["kind"]) {
+    if (pending) return;
     if (kind === "image") {
       imageInput.current?.click();
     } else {
@@ -105,6 +107,7 @@ export function PublicationWriting({ title, value, onChange, onBlur, onBack, onS
   }
 
   return <section aria-label="Article writing workspace" className="min-h-dvh bg-surface text-foreground">
+    <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
     <Tabs variant="secondary" selectedKey={preview ? "preview" : "write"} onSelectionChange={(key) => togglePreview(key === "preview")} className="block w-full gap-0">
       <Tabs.ListContainer className="sticky top-0 z-30 w-full border-b-0! bg-surface!"
         render={(containerProps) => <div {...containerProps}>
@@ -134,7 +137,7 @@ export function PublicationWriting({ title, value, onChange, onBlur, onBack, onS
       <Tabs.Panel id="write" shouldForceMount hidden={preview} className="m-0! p-0!">
         <TextArea ref={editor} name="bodyMarkdown" aria-label="Article" aria-invalid={Boolean(articleError)} aria-describedby={articleError ? "writing-article-error" : undefined}
           value={value} placeholder="Write your article in Markdown…" className="block min-h-120 w-full cursor-text resize-none overflow-hidden border-0! bg-transparent px-5 py-8 font-mono text-base leading-8 shadow-none! ring-0! outline-none! sm:px-8"
-          onChange={(event) => { setRestore(null); onChange(event.target.value); }} onSelect={saveSelection} onBlur={() => { saveSelection(); onBlur(); }} />
+          onChange={(event) => { if (pending) return; setRestore(null); onChange(event.target.value); }} onSelect={saveSelection} onBlur={() => { saveSelection(); onBlur(); }} />
         {articleError ? <p id="writing-article-error" className="px-5 text-sm text-danger sm:px-8">{articleError}</p> : null}
       </Tabs.Panel>
       <Tabs.Panel id="preview" shouldForceMount hidden={!preview} className="m-0! px-5! py-8! sm:px-8!">
@@ -148,6 +151,7 @@ export function PublicationWriting({ title, value, onChange, onBlur, onBack, onS
       </footer>
     </div>
     </Tabs>
+    </fieldset>
     {insertion ? <ArticleInsertDialog key={insertion.kind} kind={insertion.kind} selectedText={insertion.selectedText}
       onClose={() => { setInsertion(null); setRestore({ ...insertion.range }); }}
       onInsert={(item) => { setInsertion(null); apply(insertArticleMedia(value, insertion.range, item)); }} /> : null}

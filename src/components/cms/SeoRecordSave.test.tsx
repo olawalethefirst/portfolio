@@ -134,7 +134,7 @@ it("saves defaults by their persisted UUID with fixed / path", async () => {
   expect(screen.queryByRole("textbox", { name: "Path" })).toBeNull();
 });
 
-it("blocks duplicate Save, preserves later edits and can Discard to canonical saved values", async () => {
+it("blocks duplicate Save and edits while pending, then permits Discard to canonical values", async () => {
   let finish!: () => void;
   put = (id, value) =>
     new Promise((resolve) => {
@@ -157,9 +157,12 @@ it("blocks duplicate Save, preserves later edits and can Discard to canonical sa
       .getByRole("button", { name: "Discard changes" })
       .hasAttribute("disabled"),
   ).toBe(true);
+  expect(input("Path").matches(":disabled")).toBe(true);
+  expect(input("SEO title override").matches(":disabled")).toBe(true);
+  await act(async () => finish());
+  expect(input("Path").matches(":disabled")).toBe(false);
   change("Path", "/later");
   change("SEO title override", "Later title");
-  await act(async () => finish());
   expect(input("Path").value).toBe("/later");
   expect(input("SEO title override").value).toBe("Later title");
   expect(

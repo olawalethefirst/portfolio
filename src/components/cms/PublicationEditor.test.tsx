@@ -131,7 +131,7 @@ describe("publication CMS", () => {
     expect(screen.getByText("Unsaved changes")).toBeTruthy();
   });
 
-  it("preserves edits made while saving and keeps the published copy unchanged", async () => {
+  it("locks fields while saving and keeps the published copy unchanged", async () => {
     let finish: () => void = () => {
       throw new Error("Request has not started");
     };
@@ -150,9 +150,12 @@ describe("publication CMS", () => {
     const title = screen.getByRole("textbox", { name: "Title" });
     fireEvent.change(title, { target: { value: "Submitted draft" } });
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    fireEvent.change(title, { target: { value: "Still typing" } });
+    expect([...title.closest("form")!.querySelectorAll("input, textarea, button")].every((control) => control.matches(":disabled"))).toBe(true);
+    expect(screen.getByRole("button", { name: "Preview article" }).matches(":disabled")).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await act(async () => finish());
+    expect(title.matches(":disabled")).toBe(false);
+    fireEvent.change(title, { target: { value: "Still typing" } });
     expect(request).toHaveBeenCalledTimes(1);
     expect(screen.queryByText("Saved.")).toBeNull();
     expect(screen.getByText("Unsaved changes")).toBeTruthy();
@@ -604,15 +607,18 @@ it("discards failed cover feedback even when the saved content did not change", 
   expect(screen.getByLabelText("Replace image")).toBeTruthy();
 });
 
-it("suppresses stale save failures after newer edits and permits retry", async () => {
+it("unlocks fields after save failure and permits correction and retry", async () => {
   let fail!: (reason: Error) => void;
   const request = vi.fn().mockImplementationOnce(() => new Promise<void>((_, reject) => { fail = reject; })).mockResolvedValue(undefined);
   render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
   const title = screen.getByRole("textbox", { name: "Title" });
   fireEvent.change(title, { target: { value: "Submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  expect(title.matches(":disabled")).toBe(true);
+  await act(async () => fail(new Error("Save failure")));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(title.matches(":disabled")).toBe(false);
   fireEvent.change(title, { target: { value: "Newer" } });
-  await act(async () => fail(new Error("Obsolete failure")));
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   await screen.findByText("Saved.");
@@ -790,4 +796,24 @@ it("preserves edits typed while an article image is being decoded", async () => 
     expect(editor.value).toMatch(/^Newer text\n\n!\[Image description\]/);
     expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe("Image description");
   } finally { Reflect.deleteProperty(HTMLImageElement.prototype, "decode"); }
+});
+
+
+it("locks the writing textarea and formatting controls during save and restores them after failure", async () => {
+  let fail!: (reason: Error) => void;
+  const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
+  render(<CmsProvider request={request}><PublicationEditor id="new" /></CmsProvider>);
+  fireEvent.click(screen.getByRole("button", { name: /Write article/ }));
+  const article = screen.getByRole("textbox", { name: "Article" }) as HTMLTextAreaElement;
+  fireEvent.change(article, { target: { value: "Submitted article" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  expect(article.matches(":disabled")).toBe(true);
+  expect(screen.getByRole("button", { name: "Bold" }).matches(":disabled")).toBe(true);
+  fireEvent.change(article, { target: { value: "Blocked edit" } });
+  expect(article.value).toBe("Submitted article");
+  await act(async () => fail(new Error("Save failure")));
+  expect(await screen.findByRole("alert")).toBeTruthy();
+  expect(article.matches(":disabled")).toBe(false);
+  fireEvent.change(article, { target: { value: "Corrected article" } });
+  expect(article.value).toBe("Corrected article");
 });

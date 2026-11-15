@@ -239,8 +239,8 @@ in-flight collection/item reads before writing, and updates both caches with the
 canonical response. Transport or response failures invalidate saved reads without
 automatically repeating the write.
 
-The form adopts canonical fields only where the user has not changed them since
-submission. Later edits remain dirty; Discard uses the latest saved baseline.
+The form disables its fields and actions while a write is pending, then adopts
+canonical fields directly. Discard uses the latest saved baseline.
 Failures preserve input, map known field pointers through shared error focusing,
 and retain unknown issues as general feedback. Cached content remains mounted
 when a background read fails. A save completing after unmount cannot update the

@@ -116,10 +116,15 @@ TanStack Query. They do not navigate, focus controls or mutate local drafts.
 TanStack Query owns remote records and mutation state; the editor owns working
 input, baseline reconciliation, field feedback and focus.
 
-Capture submitted input and the editor generation. A success updates remote
-state/baseline with canonical saved data without replacing edits typed during
-the request. Account changes must isolate query state and local drafts; exact
-account/recovery integration is separate work. No speculative resource hooks.
+Disable editable fields and action buttons while a create/save/publish/unpublish/
+delete request is pending. Use the existing pending state and native disabled
+fieldset pattern. Success adopts canonical saved values; failures retain input
+and unlock controls for correction/retry. Background reads do not lock an already
+loaded form. Do not add edit-during-save revision tracking or conditional field
+merging when editing is disabled. Preserve unmount guards so late responses cannot
+navigate a different editor or overwrite a newer draft. Account changes must
+isolate query state and local drafts; exact account/recovery integration is
+separate work. No speculative resource hooks.
 
 Do not automatically retry mutations, especially creates: a network failure can
 leave the outcome unknown. Preserve edits, invalidate/refetch as appropriate,
@@ -134,8 +139,8 @@ Do not infer idempotency support from PUT/DELETE names alone.
 2. Incomplete publication Save: accept structurally valid unfinished article;
    Publish with empty body: 422, issue pointer /draft/bodyMarkdown; the form maps it to Article.
 3. Duplicate normalized SEO path: 409 with path feedback; preserve input.
-4. New typing during Save: response advances saved baseline but retains new text;
-   stale validation feedback does not focus or invalidate that new text.
+4. Pending Save: fields/actions are disabled; success adopts canonical values,
+   while failure keeps submitted input and enables correction/retry.
 5. DELETE 204: no JSON parse attempt; refresh remote state, retain drafts on
    unpublish, and follow the separately accepted deletion UI contract.
 6. POST response lost: retain local work and report uncertain outcome; no blind

@@ -160,7 +160,6 @@ export function SeoEditorForm({
     : !sameSeoRecord(value, baseline);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
-  const revision = useRef(0);
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
@@ -189,7 +188,7 @@ export function SeoEditorForm({
   const [deleting, setDeleting] = useState(false);
 
   function changeFields(patch: Partial<SeoRecord>) {
-    revision.current += 1;
+    if (pending) return;
     setError("");
     setServerErrors({});
     setMessage("");
@@ -220,29 +219,22 @@ export function SeoEditorForm({
       focusFirstError(nextErrors);
       return false;
     }
-    const submittedRevision = revision.current;
     try {
       const canonical =
         defaultsMode && saveDefaults
           ? await saveDefaults(value)
           : await saveRecord?.({ ...value, id });
       if (!active.current) return true;
-      // Adopt saved fields only while they still match the submitted snapshot.
       if (canonical)
-        setValue((current) => {
-          const next = { ...current };
-          for (const field of ["path", "title", "description"] as const)
-            if (
-              current[field] === value[field] &&
-              !(defaultsMode && field === "path")
-            )
-              next[field] = canonical[field];
-          return next;
+        setValue({
+          ...canonical,
+          id,
+          path: defaultsMode ? "" : canonical.path,
         });
-      if (revision.current === submittedRevision) setMessage("Saved.");
+      setMessage("Saved.");
       return true;
     } catch (failure) {
-      if (active.current && revision.current === submittedRevision) {
+      if (active.current) {
         if (failure instanceof ApiRequestError) {
           const feedback = seoIssueFeedback(failure.error?.issues);
           setServerErrors(feedback.fields);
@@ -334,36 +326,38 @@ export function SeoEditorForm({
           void saveChanges();
         }}
       >
-        <CmsEditorContent>
-          <CmsFieldSection
-            title="Content"
-            description={
-              defaultsMode
-                ? "Both defaults are required."
-                : "Provide at least one override. A blank individual field inherits its default."
-            }
-          >
-            {!defaultsMode ? (
-              <CmsField
-                name="path"
-                label="Path"
-                value={value.path}
-                error={errors.path}
-                icon={<Route aria-hidden="true" className="size-4" />}
-                hint="An exact site path such as /contact. Trailing slashes are normalized on save."
-                onBlur={() => expose("path")}
-                onChange={(path) => changeFields({ path })}
+        <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
+          <CmsEditorContent>
+            <CmsFieldSection
+              title="Content"
+              description={
+                defaultsMode
+                  ? "Both defaults are required."
+                  : "Provide at least one override. A blank individual field inherits its default."
+              }
+            >
+              {!defaultsMode ? (
+                <CmsField
+                  name="path"
+                  label="Path"
+                  value={value.path}
+                  error={errors.path}
+                  icon={<Route aria-hidden="true" className="size-4" />}
+                  hint="An exact site path such as /contact. Trailing slashes are normalized on save."
+                  onBlur={() => expose("path")}
+                  onChange={(path) => changeFields({ path })}
+                />
+              ) : null}
+              <SeoFields
+                value={value}
+                defaults={defaultsMode ? undefined : saved.defaults}
+                errors={errors}
+                onBlur={expose}
+                onChange={changeFields}
               />
-            ) : null}
-            <SeoFields
-              value={value}
-              defaults={defaultsMode ? undefined : saved.defaults}
-              errors={errors}
-              onBlur={expose}
-              onChange={changeFields}
-            />
-          </CmsFieldSection>
-        </CmsEditorContent>
+            </CmsFieldSection>
+          </CmsEditorContent>
+        </fieldset>
       </Form>
       <CmsFooter
         actions={
@@ -389,7 +383,6 @@ export function SeoEditorForm({
             (!dirty && !Object.keys(exposed).length && !error && !message)
           }
           onPress={() => {
-            revision.current += 1;
             reset(baseline);
             setExposed({});
             setServerErrors({});
