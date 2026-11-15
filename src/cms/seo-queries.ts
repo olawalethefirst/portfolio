@@ -100,3 +100,35 @@ export function useDeleteSeoRecord(id?: string) {
   }
   return { remove, pending: mutation.isPending };
 }
+
+export function useCreateSeoRecord() {
+  const queryKey = seoQueryKey(useCmsAccount());
+  const client = useQueryClient();
+  const creating = useRef(false);
+  const mutation = useMutation({
+    mutationFn: seoApi.create,
+    onMutate: () => client.cancelQueries({ queryKey }),
+  });
+  async function create(value: SeoInput) {
+    if (creating.current) throw new Error("A creation is already in progress.");
+    const submitted = seoInputSchema.parse(value);
+    // Keep submission locked until the New route unmounts after navigation.
+    creating.current = true;
+    try {
+      const canonical = await mutation.mutateAsync(submitted);
+      client.setQueryData([...queryKey, canonical.id], canonical);
+      client.setQueryData<SeoRecord[]>(queryKey, (records) =>
+        records
+          ? [...records.filter((record) => record.id !== canonical.id), canonical]
+          : undefined,
+      );
+      return canonical;
+    } catch (failure) {
+      creating.current = false;
+      if (failure instanceof ApiRequestError && failure.kind !== "server")
+        void client.invalidateQueries({ queryKey });
+      throw failure;
+    }
+  }
+  return { create, pending: mutation.isPending || mutation.isSuccess };
+}

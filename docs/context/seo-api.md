@@ -219,7 +219,7 @@ Existing record loading uses shared LoadingState with no visible loading text.
 Read errors/missing initialized defaults show feedback without fixture fallback;
 missing or failed item reads provide Back to SEO. The form receives server content
 as explicit input, keeping the prior local draft/Discard behavior and field layout.
-New remains on its existing implementation.
+New creation uses the POST integration described below.
 
 Save/Delete operations are explicit optional form dependencies. Server-loaded
 records receive no demo write handlers. Save uses the real operation described
@@ -245,7 +245,7 @@ Failures preserve input, map known field pointers through shared error focusing,
 and retain unknown issues as general feedback. Cached content remains mounted
 when a background read fails. A save completing after unmount cannot update the
 working draft. Existing local draft storage remains in use; creation recovery is
-a separate scope. Creation remains a separate integration.
+a separate scope. Basic creation is described below.
 
 
 ## Deleting existing overrides
@@ -262,3 +262,23 @@ the current local draft and navigates to `/admin/seo`. Server failures retain th
 dialog and edits. Unconfirmed transport/response failures refresh saved reads
 without repeating DELETE or clearing drafts. A late response after unmount cannot
 clear a newer session's draft or navigate that session away.
+
+
+## Creating overrides and UUID navigation
+
+The New form loads saved defaults and paths through the existing collection
+query for inheritance previews and normalized duplicate-path validation. It uses
+shared spinner-only LoadingState while loading and safe feedback without fixture
+fallback on failure or missing defaults. The typed POST adapter sends only path,
+title and description; it validates the response includes a persistent UUID.
+
+`useCreateSeoRecord` prevents duplicate POSTs, cancels pending saved reads and adds
+the canonical response to item and collection caches. A successful mounted form
+replaces `/admin/seo/new` with `/admin/seo/{uuid}`; further saves use PUT. Fields,
+Save, Discard and Back remain locked through that transition. A failed request
+keeps input and unlocks correction; uncertain outcomes refresh reads without
+repeating POST. Late completion after unmount does not navigate or rewrite drafts.
+
+Local New draft cleanup/handoff and reload recovery remain a separate scope. This
+basic create integration leaves the New draft in storage; it does not rekey it or
+transfer it to the created UUID. Public page metadata resolution is also separate.

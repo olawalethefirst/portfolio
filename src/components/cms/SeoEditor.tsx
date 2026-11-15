@@ -30,6 +30,7 @@ import {
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { ApiRequestError } from "@/src/api/client";
 import {
+  useCreateSeoRecord,
   useDeleteSeoRecord,
   useSaveSeoRecord,
   useSeoQuery,
@@ -42,10 +43,39 @@ import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import { SeoFields } from "./SeoFields";
 
 export function SeoEditor({ id }: { id: string }) {
-  const demo = useSeo();
-  if (id === "new")
-    return <SeoEditorForm key="new" defaultsMode={false} {...demo} />;
-  return <ExistingSeoEditor id={id} working={demo.working} />;
+  const { working } = useSeo();
+  if (id === "new") return <NewSeoEditor working={working} />;
+  return <ExistingSeoEditor id={id} working={working} />;
+}
+
+function NewSeoEditor({ working }: { working: DraftStore<SeoRecord> }) {
+  const router = useRouter();
+  const collection = useSeoQuery();
+  const mutation = useCreateSeoRecord();
+  const defaults = collection.data?.find((record) => record.path === "/");
+  if (!collection.data && collection.error)
+    return (
+      <CmsFeedback error="Couldn’t load saved SEO content.">{null}</CmsFeedback>
+    );
+  if (!collection.data) return <LoadingState label="Loading SEO content" />;
+  if (!defaults)
+    return (
+      <CmsFeedback error="The saved SEO defaults are unavailable.">
+        {null}
+      </CmsFeedback>
+    );
+  return (
+    <SeoEditorForm
+      defaultsMode={false}
+      saved={{ defaults, records: collection.data }}
+      working={working}
+      pending={mutation.pending}
+      saveRecord={mutation.create}
+      onCreated={(record) =>
+        router.replace(`/admin/seo/${encodeURIComponent(record.id)}`)
+      }
+    />
+  );
 }
 
 function ExistingSeoEditor({
@@ -128,6 +158,7 @@ export function SeoEditorForm({
   pending = false,
   saveDefaults,
   saveRecord,
+  onCreated,
   deleteRecord,
 }: {
   defaultsMode: boolean;
@@ -137,6 +168,7 @@ export function SeoEditorForm({
   pending?: boolean;
   saveDefaults?: (value: SeoValues) => Promise<SeoRecord | void>;
   saveRecord?: (value: SeoRecord) => Promise<SeoRecord>;
+  onCreated?: (record: SeoRecord) => void;
   deleteRecord?: (id: string) => Promise<void>;
 }) {
   const router = useRouter();
@@ -225,6 +257,10 @@ export function SeoEditorForm({
           ? await saveDefaults(value)
           : await saveRecord?.({ ...value, id });
       if (!active.current) return true;
+      if (canonical && onCreated) {
+        onCreated(canonical);
+        return true;
+      }
       if (canonical)
         setValue({
           ...canonical,

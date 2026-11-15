@@ -5,8 +5,11 @@ import { mapIssueFeedback } from "./issue-feedback";
 import { seoRecordSchema, type SeoInput } from "@/src/seo/content";
 
 const collectionSchema = z.array(seoRecordSchema);
+const createdRecordSchema = seoRecordSchema.extend({ id: z.uuid() });
 
 export const seoApi = {
+  create: (body: SeoInput) =>
+    requestJson("/api/admin/seo", createdRecordSchema, { method: "POST", body }),
   remove: (id: string) =>
     requestJson(`/api/admin/seo/${encodeURIComponent(id)}`, z.undefined(), {
       method: "DELETE",
