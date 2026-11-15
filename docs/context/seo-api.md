@@ -162,3 +162,26 @@ and non-owner requests return 401/403, invalid origin returns 403, and unexpecte
 provider/database errors return safe 500 feedback. No CORS or authentication
 policy changed. Confirmation UI, query invalidation and draft cleanup belong to
 the later editor integration, not this transport handler.
+
+
+## SEO list integration
+
+`SeoList` reads the complete saved collection through `seoApi.list` and
+`useSeoQuery`, under the studio's existing `CmsQueryProvider`. The account-scoped
+key is `["cms", accountId, "seo"]`; the typed JSON client validates the collection
+against shared domain record shapes, forwards AbortSignal and uses existing
+no-retry defaults. No mutation hooks or alternative server-state provider are
+introduced by list loading.
+
+Initial loading uses shared `src/components/ui/LoadingState.tsx`: a centered
+HeroUI Spinner with an accessible label and no visible loading text. Read/response failures show existing CMS error feedback without demo
+fallback. The `/` record supplies saved metadata inheritance and is excluded from
+override rows. Missing saved defaults is an initialization error, not an empty
+successful list. A collection with just the default shows the existing empty
+state. Client-side search, clear-search, fixed icons and navigation controls remain.
+Override links use persistent IDs from the API response.
+
+This is the list-loading slice only. Existing record/default loading and mutations
+still use their prior editor implementation until their own integration slices;
+server-ID links become fully usable as that record-loading slice is delivered.
+No draft storage, recovery, editor form or public metadata behavior changes here.
