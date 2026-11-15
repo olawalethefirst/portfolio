@@ -1,6 +1,7 @@
 import "server-only";
 import { DrizzleQueryError } from "drizzle-orm";
 import type { ApiError, ApiIssue } from "@/src/api/errors";
+import { toApiIssues } from "@/src/api/zod-issues";
 import { deleteSeoOverride, insertSeo, readSeo, updateSeo } from "@/src/db/seo";
 import {
   normalizeSeoPath, seoDefaultInputSchema, seoOverrideSchema,
@@ -12,9 +13,7 @@ type SeoResult = { ok: true; content: SeoRecord } | { ok: false; error: ApiError
 function validate(value: SeoInput, current?: SeoRecord): ApiIssue[] {
   const schema = current?.path === "/" ? seoDefaultInputSchema : seoOverrideSchema;
   const result = schema.safeParse(value);
-  const issues: ApiIssue[] = result.success ? [] : result.error.issues.map((issue) => ({
-    pointer: "/" + issue.path.join("/"), message: issue.message,
-  }));
+  const issues: ApiIssue[] = result.success ? [] : toApiIssues(result.error.issues);
   if (current?.path !== "/" && normalizeSeoPath(value.path) === "/") issues.push({
     pointer: "/path", message: "The / path is reserved for the existing SEO defaults.",
   });

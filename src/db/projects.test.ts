@@ -6,7 +6,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
 
 import type { ProjectDraft } from "@/src/cms/projects";
-import { insertProject, listProjects, readProject, updateProject } from "./projects";
+import { insertProject, listProjects, readProject, updateProject, upsertPublishedProject } from "./projects";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const asset = "22222222-2222-4222-8222-222222222222";
@@ -93,6 +93,25 @@ it("returns null when an update finds no project", async () => {
 it("reports an insert without a returned row", async () => {
   execute.mockResolvedValue({ rows: [] });
   await expect(insertProject(draftInput)).rejects.toThrow("Project insert did not return content.");
+});
+
+it("inserts or replaces the published snapshot for the project identity", async () => {
+  execute.mockResolvedValue({ rows: [live] });
+  expect(await upsertPublishedProject(id, content("Live version", `/media/${asset}`)))
+    .toEqual(content("Live version", `/media/${asset}`));
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toMatch(/^insert into "published_projects"/);
+  expect(query).toContain('on conflict ("project_id") do update');
+  expect(query).toContain("returning");
+  expect(params).toEqual([
+    id, "Live version", "Summary", "What", "How", "web", asset, "Interface", "https://example.com",
+    "Live version", "Summary", "What", "How", "web", asset, "Interface", "https://example.com",
+  ]);
+});
+
+it("returns null when published persistence returns no row", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await upsertPublishedProject(id, content("Live version", ""))).toBeNull();
 });
 
 it.each(["list", "read"])("propagates %s database failures", async (operation) => {

@@ -1,5 +1,6 @@
 import "server-only";
 import type { ApiError } from "@/src/api/errors";
+import { toApiIssues } from "@/src/api/zod-issues";
 import { updateSocial } from "@/src/db/social";
 import { socialSchema, type SocialDraft } from "./social";
 
@@ -13,10 +14,7 @@ export async function saveSocial(value: SocialDraft): Promise<
       error: {
         code: "VALIDATION_ERROR",
         message: "Check the highlighted fields.",
-        issues: result.error.issues.map((issue) => ({
-          pointer: "/" + issue.path.map((part) => String(part).replaceAll("~", "~0").replaceAll("/", "~1")).join("/"),
-          message: issue.message,
-        })),
+        issues: toApiIssues(result.error.issues),
       },
     };
   }

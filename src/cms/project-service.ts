@@ -1,7 +1,13 @@
 import "server-only";
 import type { ApiError, ApiIssue } from "@/src/api/errors";
-import { insertProject, updateProject } from "@/src/db/projects";
+import { toApiIssues } from "@/src/api/zod-issues";
 import {
+  insertProject,
+  saveAndPublishProject,
+  updateProject,
+} from "@/src/db/projects";
+import {
+  projectPublishSchema,
   projectDraftSchema,
   type ProjectDraft,
   type ProjectRecord,
@@ -24,18 +30,7 @@ function invalid(issues: ApiIssue[]): ProjectWriteResult {
 
 function validate(value: ProjectDraft): ApiIssue[] {
   const result = projectDraftSchema.safeParse(value);
-  return result.success
-    ? []
-    : result.error.issues.map((issue) => ({
-        pointer:
-          "/" +
-          issue.path
-            .map((part) =>
-              String(part).replaceAll("~", "~0").replaceAll("/", "~1"),
-            )
-            .join("/"),
-        message: issue.message,
-      }));
+  return result.success ? [] : toApiIssues(result.error.issues);
 }
 
 export async function createProject(
@@ -53,6 +48,22 @@ export async function saveProject(
   const issues = validate(value);
   if (issues.length) return invalid(issues);
   const content = await updateProject(id, value);
+  return content
+    ? { ok: true, content }
+    : {
+        ok: false,
+        error: { code: "NOT_FOUND", message: "Project was not found." },
+      };
+}
+
+export async function publishProject(
+  id: string,
+  value: ProjectDraft,
+): Promise<ProjectWriteResult> {
+  const result = projectPublishSchema.safeParse(value);
+  if (!result.success)
+    return invalid(toApiIssues(result.error.issues));
+  const content = await saveAndPublishProject(id, result.data);
   return content
     ? { ok: true, content }
     : {

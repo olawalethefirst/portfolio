@@ -128,3 +128,43 @@ export async function updateProject(
     .returning();
   return row ? record(row, undefined) : null;
 }
+
+export async function upsertPublishedProject(
+  id: string,
+  value: ProjectDraft,
+): Promise<ProjectDraft | null> {
+  const values = { projectId: id, ...projectValues(value) };
+  const [row] = await getDb()
+    .insert(publishedProjects)
+    .values(values)
+    .onConflictDoUpdate({
+      target: publishedProjects.projectId,
+      set: projectValues(value),
+    })
+    .returning();
+  return row ? published(row) : null;
+}
+
+export async function saveAndPublishProject(
+  id: string,
+  value: ProjectDraft,
+): Promise<ProjectRecord | null> {
+  return getDb().transaction(async (tx) => {
+    const [saved] = await tx
+      .update(projects)
+      .set(projectValues(value))
+      .where(eq(projects.id, id))
+      .returning();
+    if (!saved) return null;
+    const [live] = await tx
+      .insert(publishedProjects)
+      .values({ projectId: id, ...projectValues(value) })
+      .onConflictDoUpdate({
+        target: publishedProjects.projectId,
+        set: projectValues(value),
+      })
+      .returning();
+    if (!live) throw new Error("Project publish did not return content.");
+    return record(saved, live);
+  });
+}

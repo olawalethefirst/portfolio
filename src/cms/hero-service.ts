@@ -1,5 +1,6 @@
 import "server-only";
 import type { ApiError } from "@/src/api/errors";
+import { toApiIssues } from "@/src/api/zod-issues";
 import { updateHero } from "@/src/db/hero";
 import { heroSchema, type HeroDraft } from "./hero";
 
@@ -9,10 +10,7 @@ export async function saveHero(value: HeroDraft): Promise<
   const result = heroSchema.safeParse(value);
   if (!result.success) return { ok: false, error: {
     code: "VALIDATION_ERROR", message: "Check the highlighted fields.",
-    issues: result.error.issues.map((issue) => ({
-      pointer: "/" + issue.path.map((part) => String(part).replaceAll("~", "~0").replaceAll("/", "~1")).join("/"),
-      message: issue.message,
-    })),
+    issues: toApiIssues(result.error.issues),
   } };
   const saved = await updateHero(result.data);
   return saved ? { ok: true, content: saved } : { ok: false, error: {
