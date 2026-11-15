@@ -502,7 +502,8 @@ Fields and actions lock during Save; failures retain values for explicit retry.
 Server-first local draft review offers field-level alternatives. Save and Discard
 clear recovery alternatives; late-save cleanup preserves later work.
 See [Social editor integration](social-api.md#editor-integration) for the contract.
-Inquiry submission and persisted public links remain separate work.
+Public Contact links now read saved Social destinations on each full server
+request; inquiry submission persistence remains separate work.
 
 Preview hides the shared shell chrome through CmsPreviewFrame and shows the full public
 contact section with the working URLs and three-step form. Invalid

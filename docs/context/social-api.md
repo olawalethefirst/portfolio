@@ -31,7 +31,7 @@ The existing SQL trigger owns updated_at; initialization remains seed-owned.
 No schema/grants or hosted changes are included. Live database permissions must
 be verified through the application connection, separately from automated tests.
 
-Persisted public Social output remains separate work. This route follows installed Next.js guidance in
+This route follows installed Next.js guidance in
 `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`.
 
 
@@ -61,4 +61,25 @@ mapper; unknown issues remain form feedback. Focus follows visual profile order.
 Typing or choosing a source resets mutation feedback; loading failure displays
 feedback without demo fallback or new authentication controls. Native URL inputs
 retain browser whitespace sanitization; the API adapter/query does not introduce
-additional normalization. Public links still use their existing separate data.
+additional normalization. Public destinations use the server read described below.
+
+
+## Public output
+
+The `/contact` server page awaits `connection()` and reads saved destinations
+through `readSocial`. Missing singleton or database failure fails the page rather
+than rendering default profile links. The required destinations prop passes
+through the public ContactPreview into ContactConversationSection/SocialLinks.
+The convenience section keeps optional destinations for standalone consumers;
+the actual public page always supplies the saved resource.
+
+Public links reuse `socialProfileHref` to resolve valid HTTPS strings, including
+outer whitespace, and disable invalid destinations without substituting defaults.
+Fixed profile labels, icons, order, new-tab/rel behavior and the inquiry form are
+preserved. This slice adds no inquiry persistence or delivery.
+
+Each full Contact request reads current saved values. There is no persistent
+server data cache, ISR or browser API request, so Save requires no server cache
+invalidation. Existing open pages are not live-updated; fully reload to see later
+saves. This follows the installed Next.js connection() reference at
+`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/connection.md`.
