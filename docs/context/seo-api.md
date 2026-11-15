@@ -27,9 +27,69 @@ null. Neither query synthesizes defaults or resolves blank fields. Application D
 permissions and seed availability require live verification separately from tests.
 
 No read service is needed: query output already equals the accepted projection,
-and layer rules prohibit pass-through wrappers. Creation/update/deletion,
-editor integration and public metadata resolution remain separate capabilities.
+and layer rules prohibit pass-through wrappers. Creation/update HTTP handling, deletion, editor integration and public metadata
+resolution remain separate capabilities.
 No SQL/schema/grants or hosted operations are part of these reads.
 
 Route params and JSON responses follow installed Next.js guidance in
 `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`.
+
+
+## Insert/update query layer
+
+`insertSeo({ path, title, description })` issues one INSERT RETURNING and returns
+canonical id/path/title/description. The mapping declares the existing PostgreSQL
+`gen_random_uuid()` default; caller-supplied identity/timestamps are never written.
+An unexpected missing insert result throws rather than pretending creation worked.
+`updateSeo(id, values)` writes only those three fields to the matching persistent
+ID and returns canonical content or null. It never inserts an absent record.
+Existing SQL triggers own updated_at and protect the default record's identity.
+
+These are internal persistence primitives, not HTTP operations. Services must
+validate/normalize paths, enforce default/override rules and translate known
+path-uniqueness failures into conflict feedback. Queries propagate database errors
+and retain underlying driver causes. No upsert, conflict suppression, retry,
+normalization, schema migration or hosted change is introduced by these queries.
+
+
+## Creation/update service
+
+`createSeo(values)` creates overrides only; `saveSeo(id, values)` reads the current
+record and updates an existing default or override. Both capture the three input
+strings before asynchronous work, return canonical saved content in a typed result,
+and preserve title/description spacing. Paths normalize through existing
+`normalizeSeoPath`; invalid input returns VALIDATION_ERROR with /path, /title or
+/description issues. Shared domain schemas remain authoritative.
+
+Creation and override updates cannot target `/`. Updating the saved `/` record
+requires path `/` unchanged and both content fields nonblank. Overrides require
+at least one nonblank content field. A missing update target, including disappearance
+between read and update, returns NOT_FOUND without inserting a replacement.
+
+The database unique constraint arbitrates normalized-path collisions, including
+concurrent writes. A postgres-js 23505 error for constraint_name `seo_path_key`,
+directly or as a DrizzleQueryError cause, maps to CONFLICT with /path feedback.
+Other errors propagate unchanged for the HTTP safe-error boundary. There is no
+collection preflight uniqueness check, retry or conflict overwrite. Existing SQL
+constraints/triggers remain the final guard on uniqueness/default identity.
+
+This service introduces no POST/PUT route, local creation recovery, editor wiring
+or public metadata invalidation. Those remain later slices.
+
+
+## Shared domain and CMS boundaries
+
+`src/seo/content.ts` owns UI-independent SEO values/input/record schemas, default
+and override content validation, path normalization and inferred domain types.
+The service imports those schemas/types directly, selecting default validation
+from the persisted path. It converts schema issues to request-field API issues;
+it does not import CMS error maps, demo records or validation-only identities.
+The database imports its record type from the same domain module.
+
+`src/cms/seo.ts` owns demo state, form error adapters, editor comparisons and
+preview metadata resolution. Its contextual record schema extends the shared
+override schema with editor identity and local duplicate feedback. Existing CMS
+schema/type exports re-export the domain definitions so editor imports remain
+compatible. Server uniqueness still relies on the database constraint, not that
+editor collection check. Shared Zod rules can run on both sides without moving
+client feedback or fixtures into server validation.

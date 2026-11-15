@@ -130,7 +130,7 @@ that implementation with this confirmed contract remains application work.
 Override paths start with `/` and identify exact routes, including local article routes.
 They are not restricted to a fixed home/contact enum. Query strings, fragments,
 route patterns, whitespace and traversal segments are rejected. Path
-normalization and uniqueness follow `normalizeSeoPath` in `src/cms/seo.ts`.
+normalization and uniqueness follow `normalizeSeoPath` in `src/seo/content.ts` (re-exported by the CMS adapter).
 
 Each blank override field inherits its corresponding site default, independently.
 The current resolver does not automatically substitute publication title/summary.
