@@ -158,8 +158,8 @@ Malformed UUID returns 400/INVALID_REQUEST; protected default returns 409/CONFLI
 absent target before or during deletion returns 404/NOT_FOUND. Unauthenticated
 and non-owner requests return 401/403, invalid origin returns 403, and unexpected
 provider/database errors return safe 500 feedback. No CORS or authentication
-policy changed. Confirmation UI, query invalidation and draft cleanup belong to
-the later editor integration, not this transport handler.
+policy changed. Confirmation UI, query updates and draft cleanup are handled by the editor
+integration described below.
 
 
 ## SEO list integration
@@ -200,7 +200,7 @@ New remains on its existing implementation.
 
 Save/Delete operations are explicit optional form dependencies. Server-loaded
 records receive no demo write handlers. Save uses the real operation described
-below; Delete remains absent until its separate integration slice. Existing form
+below; Delete uses its separate operation described below. Existing form
 operation tests remain at the form boundary; record-loading tests exercise actual
 JSON adapters, saved IDs/content, loading/errors and legacy draft continuity.
 No mutation hook, provider replacement, shared draft machinery or public metadata
@@ -222,4 +222,20 @@ Failures preserve input, map known field pointers through shared error focusing,
 and retain unknown issues as general feedback. Cached content remains mounted
 when a background read fails. A save completing after unmount cannot update the
 working draft. Existing local draft storage remains in use; creation recovery is
-a separate scope. Create and Delete are not wired by this integration.
+a separate scope. Creation remains a separate integration.
+
+
+## Deleting existing overrides
+
+`seoApi.remove` sends a bodyless DELETE to the saved UUID and validates the empty
+204 response. `useDeleteSeoRecord` blocks duplicate submissions, cancels pending
+reads, and removes the confirmed deletion from the collection and item caches.
+Only saved overrides receive this operation; defaults and new forms have no
+Delete action. Server-side default protection and owner authorization still apply.
+
+The existing confirmation dialog names the saved path. Cancel preserves edits;
+while pending, dismissal, Save and Discard are blocked. Confirmed success clears
+the current local draft and navigates to `/admin/seo`. Server failures retain the
+dialog and edits. Unconfirmed transport/response failures refresh saved reads
+without repeating DELETE or clearing drafts. A late response after unmount cannot
+clear a newer session's draft or navigate that session away.

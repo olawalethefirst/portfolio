@@ -30,6 +30,7 @@ import {
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { ApiRequestError } from "@/src/api/client";
 import {
+  useDeleteSeoRecord,
   useSaveSeoRecord,
   useSeoQuery,
   useSeoRecordQuery,
@@ -59,6 +60,9 @@ function ExistingSeoEditor({
   const defaults = collection.data?.find((record) => record.path === "/");
   const item = useSeoRecordQuery(id === "defaults" ? defaults?.id : id);
   const mutation = useSaveSeoRecord(item.data?.id);
+  const deletion = useDeleteSeoRecord(
+    item.data?.path !== "/" ? item.data?.id : undefined,
+  );
   const error =
     (!collection.data && collection.error) || (!item.data && item.error);
   if (error)
@@ -108,7 +112,8 @@ function ExistingSeoEditor({
         records,
       }}
       working={working}
-      pending={mutation.pending}
+      pending={mutation.pending || deletion.pending}
+      deleteRecord={record.path !== "/" ? deletion.remove : undefined}
       saveRecord={mutation.save}
       saveDefaults={(value) => mutation.save({ ...value, path: "/" })}
     />
@@ -262,12 +267,17 @@ export function SeoEditorForm({
     setError("");
     try {
       await deleteRecord(id);
+      if (!active.current) return;
+      working.clear(id);
       router.push("/admin/seo");
     } catch (failure) {
+      if (!active.current) return;
       setError(
-        failure instanceof Error
-          ? failure.message
-          : "Delete failed. Your changes are still here.",
+        failure instanceof ApiRequestError && failure.kind !== "server"
+          ? "Couldn’t confirm the deletion. Your changes are still here."
+          : failure instanceof Error
+            ? failure.message
+            : "Delete failed. Your changes are still here.",
       );
     }
   }

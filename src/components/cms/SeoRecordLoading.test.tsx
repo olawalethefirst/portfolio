@@ -80,7 +80,7 @@ it("loads an existing override by UUID with saved default inheritance", async ()
       .getByRole("button", { name: "Save changes" })
       .hasAttribute("disabled"),
   ).toBe(true);
-  expect(screen.queryByRole("button", { name: "Delete override" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Delete override" })).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   expect(
     fetch.mock.calls.every(([, options]) => options?.method === "GET"),

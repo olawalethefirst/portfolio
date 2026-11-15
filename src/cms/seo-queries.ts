@@ -69,3 +69,34 @@ export function useSaveSeoRecord(id?: string) {
   }
   return { save, pending: mutation.isPending };
 }
+
+export function useDeleteSeoRecord(id?: string) {
+  const queryKey = seoQueryKey(useCmsAccount());
+  const client = useQueryClient();
+  const deleting = useRef(false);
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("The saved SEO record is unavailable.");
+      await seoApi.remove(id);
+    },
+    onMutate: () => client.cancelQueries({ queryKey }),
+  });
+  async function remove() {
+    if (deleting.current) throw new Error("A deletion is already in progress.");
+    deleting.current = true;
+    try {
+      await mutation.mutateAsync();
+      client.removeQueries({ queryKey: [...queryKey, id], exact: true });
+      client.setQueryData<SeoRecord[]>(queryKey, (records) =>
+        records?.filter((record) => record.id !== id),
+      );
+    } catch (failure) {
+      if (failure instanceof ApiRequestError && failure.kind !== "server")
+        void client.invalidateQueries({ queryKey });
+      throw failure;
+    } finally {
+      deleting.current = false;
+    }
+  }
+  return { remove, pending: mutation.isPending };
+}

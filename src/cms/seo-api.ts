@@ -7,6 +7,10 @@ import { seoRecordSchema, type SeoInput } from "@/src/seo/content";
 const collectionSchema = z.array(seoRecordSchema);
 
 export const seoApi = {
+  remove: (id: string) =>
+    requestJson(`/api/admin/seo/${encodeURIComponent(id)}`, z.undefined(), {
+      method: "DELETE",
+    }),
   save: (id: string, body: SeoInput) =>
     requestJson(`/api/admin/seo/${encodeURIComponent(id)}`, seoRecordSchema, { method: "PUT", body }),
   list: (signal?: AbortSignal) =>
