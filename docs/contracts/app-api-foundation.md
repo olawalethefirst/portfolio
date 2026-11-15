@@ -28,10 +28,27 @@ ledgers, upload-reference signing schemes or numeric limits.
 
 17 route patterns / 31 method-route operations. No session-discovery, logout,
 upload completion/status/renewal, standalone media-resolution, separate default
-SEO or public JSON endpoints are included. Every additional route needs a named
+SEO or duplicate public-only JSON routes are included. Every additional route needs a named
 app consumer and an explicit scope decision. Public server pages call server
 query services directly. Complete list reads support current client-side search,
 filtering, ordering and section previews; pagination is not selected.
+
+## Public read access
+
+Saved Hero, About, Social and SEO content is public. Anonymous GET requests to
+`/api/admin/hero`, `/api/admin/about`, `/api/admin/social`, `/api/admin/seo` and
+`/api/admin/seo/:id` return the same saved resources without owner/session checks.
+The existing URL names remain for compatibility; `/admin` in these API paths does
+not make their GET methods private. POST/PUT/DELETE remain configured-owner only.
+Other future admin reads are not made public by this policy; draft/published
+boundaries require their own explicit read contract.
+
+Public reads use `withPublicRead` for safe errors and `Cache-Control: no-store`.
+They do not refresh sessions, depend on Auth configuration or set auth cookies.
+Proxy bypasses auth refresh only for GET/HEAD on these exact route patterns.
+Authentication/public visibility is separate from browser CORS permission; no CORS
+headers or new endpoints are introduced. Public server pages may continue reading
+query modules directly. This supersedes the earlier owner-only read assumption.
 
 ## Content lifecycle and identity
 

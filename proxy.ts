@@ -4,6 +4,9 @@ import { adminLoginRedirect } from "@/src/auth/admin-navigation";
 import { applySessionResponse } from "@/src/auth/session-response";
 
 export async function proxy(request: NextRequest) {
+  const publicRead = (request.method === "GET" || request.method === "HEAD") &&
+    /^\/api\/admin\/(?:hero|about|social|seo(?:\/[^/]+)?)$/.test(request.nextUrl.pathname);
+  if (publicRead) return NextResponse.next({ request });
   const session = new NextResponse(null, { headers: { "Cache-Control": "no-store" } });
   const supabase = createSupabaseServerClient(request.cookies, {
     headers: session.headers,

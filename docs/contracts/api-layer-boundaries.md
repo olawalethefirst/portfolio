@@ -76,5 +76,15 @@ resource-field validation remain inside the endpoint handler.
 operation only after owner authorization and applying session writes to its final
 response. Hero PUT composes origin → owner authorization → content type → body
 validation/save, preserving the original rejection order. GitHub initiation
-composes origin → form content type → initiation. GET Hero wraps authorization
-only. These wrappers do not substitute for service-owned business rules.
+composes origin → form content type → initiation. Public Hero/About/Social/SEO GET handlers use `withPublicRead` instead of owner
+authorization. These wrappers do not substitute for service-owned business rules.
+
+
+## Public content reads
+
+`src/api/public-read.ts` owns `withPublicRead(handler)` for the approved public
+Hero/About/Social/SEO GET operations. It preserves request/context types, catches
+unexpected failures into safe INTERNAL_ERROR JSON and sets no-store on success
+and failure. It does not access auth, transfer sessions or change write guards.
+Proxy skips auth refresh for GET/HEAD on those exact paths, not arbitrary admin
+reads. Refer to app-api-foundation.md for the access policy and endpoint inventory.

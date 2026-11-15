@@ -2,14 +2,16 @@
 
 `GET /api/admin/hero` reads the required `hero_content` singleton.
 `PUT /api/admin/hero` replaces its complete editable content and returns the
-saved resource. Both return the direct HeroDraft shape with status 200 and
-`Cache-Control: private, no-store`. Neither operation initializes missing content;
-a missing row returns 404. The existing seed owns initialization.
+saved resource. Both return the direct HeroDraft shape with status 200.
+GET is anonymous and uses `Cache-Control: no-store`; PUT remains owner-only with
+`Cache-Control: private, no-store`. Neither initializes missing content; an absent
+row returns 404. The existing seed owns initialization.
 
-The endpoint verifies the configured owner through Supabase `getUser`, independently
-of Proxy. Missing owner/auth configuration returns a safe 500; absent identity
-returns 401 and a different identity returns 403. Auth cookie updates, including
-deletions, and SDK cache headers survive successful and failed operations.
+GET uses `withPublicRead`: no identity, Auth configuration, session refresh or
+cookie writes. Unexpected database failures return safe 500 feedback. PUT verifies
+the configured owner through Supabase `getUser`, independently of Proxy. Missing
+owner/auth configuration returns safe500; absent identity returns401 and another
+identity403. Session writes survive successful/failed PUT operations.
 PUT requires a matching Origin and application/json. Missing/extra fields at
 any nesting level, wrong types and malformed JSON return 400. Complete typed
 content that violates existing Hero rules returns 422 with JSON Pointer issues.

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
+import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { heroDraftSchema } from "@/src/cms/hero";
 import { saveHero } from "@/src/cms/hero-service";
@@ -12,7 +13,7 @@ const bodySchema = heroDraftSchema.extend({
   stages: z.strictObject({ idea: stage, iterate: stage, solution: stage }),
 }).strict();
 
-export const GET = withAdminApi(async () => {
+export const GET = withPublicRead(async () => {
   const content = await readHero();
   return content ? NextResponse.json(content) : apiErrorResponse({
     code: "NOT_FOUND", message: "Hero content was not found.",

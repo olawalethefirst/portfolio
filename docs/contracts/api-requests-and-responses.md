@@ -80,7 +80,7 @@ fetch client. This supersedes the earlier fieldErrors wire proposal.
 | 500 | INTERNAL_ERROR | Unexpected server failure; safe form-level feedback |
 | 503 | SERVICE_UNAVAILABLE | Known temporary dependency unavailability; retain edits |
 
-Missing ADMIN_USER_ID is server misconfiguration, never permission to admit an
+For protected operations, missing ADMIN_USER_ID is server misconfiguration, never permission to admit an
 otherwise authenticated user. Return a safe server failure; authorization must
 fail closed. Database permission errors are server failures, not evidence that
 the logged-in owner lacks application authorization.
@@ -143,3 +143,13 @@ Do not infer idempotency support from PUT/DELETE names alone.
 
 Ordering/upload payloads, concurrent-write handling and creation-retry recovery
 require separate design before affected consumers are implemented.
+
+
+## Public read authorization
+
+Hero/About/Social/SEO GET collection/item resources are anonymously readable,
+including with no owner/Auth configuration. They use no-store rather than the
+private, no-store mutation policy, and do not write session cookies. Their
+malformed-ID/missing-data/database error contracts remain 400/404/safe500.
+Owner-only POST/PUT/DELETE still return authorization errors and preserve session
+writes. No browser CORS permission is added by making read authorization public.

@@ -2,14 +2,14 @@
 
 `GET /api/admin/about` returns saved `{ heading, biography }` content.
 `PUT /api/admin/about` replaces the complete editable resource and returns the
-canonical saved resource. Both succeed with status 200 and
-`Cache-Control: private, no-store`.
+canonical saved resource. Both succeed with status 200. GET is public with
+`Cache-Control: no-store`; PUT is owner-only with `private, no-store`.
 
-Both handlers use `withAdminApi` to verify the configured owner independently
-of studio navigation. Missing identity returns 401; a different identity returns
-403; missing configuration or unexpected provider/database failures return safe
-500 feedback. Session cookies, deletions, and response headers survive operation
-success and failure through the existing shared response utility.
+GET uses `withPublicRead` without identity/Auth configuration/session handling.
+PUT uses `withAdminApi` independently of studio navigation: missing identity401,
+different identity403, missing configuration or unexpected failures safe500.
+Session cookies/deletions/headers survive PUT success and failure. Read failures
+also return safe500 without exposing database details.
 
 PUT composes same-origin, owner, and JSON content-type guards in that order.
 Malformed JSON, missing fields, extra fields, or wrong types return 400.
@@ -70,7 +70,7 @@ parallel through their database query modules. Saved About heading and biography
 pass as required content through `PrismHeroLayoutLab` to `AboutCtaSection`.
 The existing biography rendering, motion behavior and fixed contact CTA remain.
 Missing singleton content or database failure fails the page instead of showing
-sample copy. Public rendering does not call the protected admin API.
+sample copy. Public rendering does not call the HTTP read endpoint.
 
 Each full homepage request reads current saved content. No persistent data cache,
 ISR, browser fetch or public query cache is introduced, so About Save needs no

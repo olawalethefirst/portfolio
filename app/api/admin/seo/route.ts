@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
+import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { listSeo } from "@/src/db/seo";
 import { seoInputSchema } from "@/src/seo/content";
@@ -8,7 +9,7 @@ import { createSeo } from "@/src/cms/seo-service";
 
 const bodySchema = seoInputSchema.strict();
 
-export const GET = withAdminApi(async () => NextResponse.json(await listSeo()));
+export const GET = withPublicRead(async () => NextResponse.json(await listSeo()));
 
 export const POST = withSameOrigin(
   withAdminApi(

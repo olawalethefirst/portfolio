@@ -2,14 +2,14 @@
 
 `GET /api/admin/social` returns the saved `{ github, linkedin, x }` resource.
 `PUT /api/admin/social` replaces all three destinations and returns canonical
-saved content. Success is 200; responses use `Cache-Control: private, no-store`.
-These endpoints serve Contact/social editing only, not inquiry submission.
+saved content. Both succeed with 200. GET is public with `Cache-Control: no-store`;
+PUT remains configured-owner only with `private, no-store`. These resources are
+public profile destinations, not inquiry submissions.
 
-Both methods use `withAdminApi` for configured-owner authorization and safe
-unexpected-error handling. No identity returns 401; a different user returns
-403; missing owner configuration or unexpected database/provider failure returns
-a safe 500. The existing session-response helper preserves SDK cookie writes,
-deletions and headers on operation success or failure.
+GET uses `withPublicRead`, with no session/configuration/identity requirement or
+auth cookies. PUT uses `withAdminApi`: no identity401, non-owner403, missing owner
+configuration or unexpected failures safe500. Session writes survive PUT success
+and failure. Public read database failures also use safe500 without details.
 
 PUT checks same origin, owner authorization and JSON content type in that order.
 Missing/opaque/mismatched Origin returns 403. Malformed JSON, missing fields,

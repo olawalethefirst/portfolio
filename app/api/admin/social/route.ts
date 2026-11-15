@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
+import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { socialDraftSchema } from "@/src/cms/social";
 import { saveSocial } from "@/src/cms/social-service";
@@ -8,7 +9,7 @@ import { readSocial } from "@/src/db/social";
 
 const bodySchema = socialDraftSchema.strict();
 
-export const GET = withAdminApi(async () => {
+export const GET = withPublicRead(async () => {
   const content = await readSocial();
   return content ? NextResponse.json(content) : apiErrorResponse({
     code: "NOT_FOUND", message: "Social content was not found.",

@@ -28,14 +28,14 @@ function request(body: unknown = initialAbout, headers: Record<string, string> =
 }
 const getRequest = () => new NextRequest("https://portfolio.test/api/admin/about");
 
-it("returns saved About content directly with private caching", async () => {
+it("returns saved About content directly with uncached public content", async () => {
   const response = await GET(getRequest());
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(initialAbout);
-  expect(response.headers.get("cache-control")).toBe("private, no-store");
+  expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
-it.each([GET, PUT])("denies unauthenticated requests without database access", async (handler) => {
+it.each([PUT])("denies unauthenticated requests without database access", async (handler) => {
   getUser.mockResolvedValue({ data: { user: null }, error: null });
   const response = await handler(request());
   expect(response.status).toBe(401);
@@ -44,14 +44,14 @@ it.each([GET, PUT])("denies unauthenticated requests without database access", a
   expect(update).not.toHaveBeenCalled();
 });
 
-it.each([GET, PUT])("denies a non-owner without database access", async (handler) => {
+it.each([PUT])("denies a non-owner without database access", async (handler) => {
   getUser.mockResolvedValue({ data: { user: { id: "other" } }, error: null });
   expect((await handler(request())).status).toBe(403);
   expect(read).not.toHaveBeenCalled();
   expect(update).not.toHaveBeenCalled();
 });
 
-it.each([GET, PUT])("fails closed when owner configuration is missing", async (handler) => {
+it.each([PUT])("fails closed when owner configuration is missing", async (handler) => {
   vi.stubEnv("ADMIN_USER_ID", " ");
   expect((await handler(request())).status).toBe(500);
   expect(read).not.toHaveBeenCalled();
@@ -141,7 +141,7 @@ it.each([GET, PUT])("hides database error details", async (handler) => {
 
 it("hides authentication setup failures", async () => {
   client.mockImplementation(() => { throw new Error("private configuration"); });
-  const response = await GET(getRequest());
+  const response = await PUT(request());
   expect(response.status).toBe(500);
   expect(await response.text()).not.toContain("private configuration");
 });

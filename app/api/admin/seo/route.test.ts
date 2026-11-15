@@ -28,7 +28,7 @@ it("returns the complete direct collection including default and blank override 
   const response = await collection(request());
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual([defaults, override]);
-  expect(response.headers.get("cache-control")).toBe("private, no-store");
+  expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
 it("returns an empty collection without manufacturing a default record", async () => {
@@ -58,27 +58,17 @@ it("returns NOT_FOUND for an absent UUID", async () => {
   expect(await response.json()).toMatchObject({ error: { code: "NOT_FOUND" } });
 });
 
-it.each(handlers)("denies missing identity without querying", async (handle) => {
+it.each(handlers)("returns saved content without identity or configured owner", async (handle) => {
+  vi.stubEnv("ADMIN_USER_ID", "");
   getUser.mockResolvedValue({ data: { user: null }, error: null });
-  const response = await handle();
-  expect(response.status).toBe(401);
-  expect(await response.json()).toMatchObject({ error: { code: "UNAUTHENTICATED" } });
-  expect(list).not.toHaveBeenCalled();
-  expect(read).not.toHaveBeenCalled();
+  expect((await handle()).status).toBe(200);
+  expect(client).not.toHaveBeenCalled();
 });
 
-it.each(handlers)("denies a non-owner without querying", async (handle) => {
+it.each(handlers)("returns the same public content for non-owner callers", async (handle) => {
   getUser.mockResolvedValue({ data: { user: { id: "other" } }, error: null });
-  expect((await handle()).status).toBe(403);
-  expect(list).not.toHaveBeenCalled();
-  expect(read).not.toHaveBeenCalled();
-});
-
-it.each(handlers)("fails closed when owner configuration is absent", async (handle) => {
-  vi.stubEnv("ADMIN_USER_ID", " ");
-  expect((await handle()).status).toBe(500);
-  expect(list).not.toHaveBeenCalled();
-  expect(read).not.toHaveBeenCalled();
+  expect((await handle()).status).toBe(200);
+  expect(client).not.toHaveBeenCalled();
 });
 
 it.each(handlers)("hides database errors", async (handle) => {
@@ -89,14 +79,14 @@ it.each(handlers)("hides database errors", async (handle) => {
   expect(await response.json()).toEqual({ error: { code: "INTERNAL_ERROR", message: "Unable to complete this request. Try again later." } });
 });
 
-it.each(handlers)("hides provider setup errors", async (handle) => {
+it.each(handlers)("does not depend on provider setup", async (handle) => {
   client.mockImplementation(() => { throw new Error("private configuration"); });
   const response = await handle();
-  expect(response.status).toBe(500);
-  expect(await response.text()).not.toContain("private configuration");
+  expect(response.status).toBe(200);
+  expect(client).not.toHaveBeenCalled();
 });
 
-it.each([false, true])("preserves session writes and private caching on success/failure: %s", async (fails) => {
+it.each([false, true])("does not create sessions on public read success/failure: %s", async (fails) => {
   client.mockImplementation((_cookies: unknown, session: NextResponse) => {
     session.cookies.set("session", "refreshed", { httpOnly: true, path: "/" });
     session.headers.set("x-session-refreshed", "true");
@@ -106,8 +96,9 @@ it.each([false, true])("preserves session writes and private caching on success/
   for (const handle of handlers) {
     const response = await handle();
     expect(response.status).toBe(fails ? 500 : 200);
-    expect(response.headers.get("cache-control")).toBe("private, no-store");
-    expect(response.headers.get("x-session-refreshed")).toBe("true");
-    expect(response.headers.getSetCookie()).toEqual(expect.arrayContaining([expect.stringMatching(/^session=refreshed;/)]));
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("x-session-refreshed")).toBeNull();
+    expect(response.headers.getSetCookie()).toEqual([]);
+    expect(client).not.toHaveBeenCalled();
   }
 });

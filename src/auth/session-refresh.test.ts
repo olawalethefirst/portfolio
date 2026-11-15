@@ -201,3 +201,28 @@ it.each([
     expected,
   );
 });
+
+it.each(["/api/admin/hero", "/api/admin/about", "/api/admin/social", "/api/admin/seo", "/api/admin/seo/00000000-0000-4000-8000-000000000001"])("does not refresh auth for public reads at %s", async (path) => {
+  vi.stubEnv("SUPABASE_URL", "");
+  for (const method of ["GET", "HEAD"]) {
+    const response = await proxy(new NextRequest(`https://portfolio.test${path}`, { method }));
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.headers.get("set-cookie")).toBeNull();
+  }
+  expect(createServerClient).not.toHaveBeenCalled();
+  expect(loginRedirect).not.toHaveBeenCalled();
+});
+
+it.each(["PUT", "POST", "DELETE"])("retains auth refresh for %s mutations", async (method) => {
+  const getClaims = vi.fn().mockResolvedValue({ data: null, error: null });
+  createServerClient.mockReturnValue({ auth: { getClaims } });
+  await proxy(new NextRequest("https://portfolio.test/api/admin/seo", { method }));
+  expect(getClaims).toHaveBeenCalledTimes(1);
+});
+
+it("does not expose future admin reads through the public-read exception", async () => {
+  const getClaims = vi.fn().mockResolvedValue({ data: null, error: null });
+  createServerClient.mockReturnValue({ auth: { getClaims } });
+  await proxy(new NextRequest("https://portfolio.test/api/admin/projects"));
+  expect(getClaims).toHaveBeenCalledTimes(1);
+});

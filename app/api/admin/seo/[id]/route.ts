@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
+import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { readSeo } from "@/src/db/seo";
 import { seoInputSchema } from "@/src/seo/content";
@@ -10,7 +11,7 @@ import { deleteSeo, saveSeo } from "@/src/cms/seo-service";
 const idSchema = z.uuid();
 const bodySchema = seoInputSchema.strict();
 
-export const GET = withAdminApi(
+export const GET = withPublicRead(
   async (
     _request: NextRequest,
     { params }: { params: Promise<{ id: string }> },

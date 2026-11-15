@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
+import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { aboutDraftSchema } from "@/src/cms/about";
 import { saveAbout } from "@/src/cms/about-service";
@@ -8,7 +9,7 @@ import { readAbout } from "@/src/db/about";
 
 const bodySchema = aboutDraftSchema.strict();
 
-export const GET = withAdminApi(async () => {
+export const GET = withPublicRead(async () => {
   const content = await readAbout();
   return content ? NextResponse.json(content) : apiErrorResponse({
     code: "NOT_FOUND", message: "About content was not found.",

@@ -29,14 +29,14 @@ function request(body: unknown = initialHero, headers: Record<string, string> = 
 }
 const getRequest = () => new NextRequest("https://portfolio.test/api/admin/hero");
 
-it("returns saved content directly with private caching", async () => {
+it("returns saved content directly with uncached public content", async () => {
   const response = await GET(getRequest());
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual(initialHero);
-  expect(response.headers.get("cache-control")).toBe("private, no-store");
+  expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
-it.each([GET, PUT])("denies unauthenticated requests without database access", async (handler) => {
+it.each([PUT])("denies unauthenticated requests without database access", async (handler) => {
   getUser.mockResolvedValue({ data: { user: null }, error: null });
   const response = await handler(request());
   expect(response.status).toBe(401);
@@ -52,7 +52,7 @@ it("denies a non-owner", async () => {
 
 it("treats missing owner configuration as a server failure", async () => {
   vi.stubEnv("ADMIN_USER_ID", " ");
-  expect((await GET(getRequest())).status).toBe(500);
+  expect((await PUT(request())).status).toBe(500);
   expect(read).not.toHaveBeenCalled();
 });
 
@@ -109,7 +109,7 @@ it("enforces the existing text limits before database writes", async () => {
 
 it("hides Supabase client configuration failures", async () => {
   client.mockImplementation(() => { throw new Error("private configuration"); });
-  const response = await GET(getRequest());
+  const response = await PUT(request());
   expect(response.status).toBe(500);
   expect(await response.text()).not.toContain("private configuration");
 });

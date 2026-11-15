@@ -9,16 +9,16 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
-- [`context/seo-api.md`](context/seo-api.md): protected SEO CRUD endpoints, persistent UUIDs, shared domain validation
+- [`context/seo-api.md`](context/seo-api.md): public SEO reads and owner-only writes, persistent UUIDs, shared domain validation
   and default/override resource projection.
 
-- [`context/social-api.md`](context/social-api.md): protected Social read/save endpoints,
+- [`context/social-api.md`](context/social-api.md): public Social reads and protected saves,
   URL validation, singleton persistence, Contact editor reconciliation and public server reads.
 
-- [`context/about-api.md`](context/about-api.md): protected About read/save endpoints,
+- [`context/about-api.md`](context/about-api.md): public About reads and protected saves,
   singleton persistence, validation, editor reconciliation and request-time public output.
 
-- [`context/hero-api.md`](context/hero-api.md): protected Hero read/save endpoints,
+- [`context/hero-api.md`](context/hero-api.md): public Hero reads and protected saves,
   validation, persistence boundaries, and database permission requirements.
 
 - [`contracts/api-layer-boundaries.md`](contracts/api-layer-boundaries.md):

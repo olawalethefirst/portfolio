@@ -437,3 +437,11 @@ requests; a JSON authorization helper is deferred until its first API consumer.
 
 References: installed Next.js authentication guide, “Layouts and auth checks”,
 and [Next.js authorization guidance](https://nextjs.org/docs/app/guides/authentication#layouts-and-auth-checks).
+
+
+## Public content-read exception
+
+Hero/About/Social/SEO GET APIs are public under app-api-foundation.md. Proxy
+bypasses session refresh for GET/HEAD on those exact API route patterns before
+constructing the Supabase client. This does not expose studio pages or alter
+owner checks on writes, other admin reads or OAuth/navigation flows.
