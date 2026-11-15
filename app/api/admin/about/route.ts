@@ -3,11 +3,11 @@ import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
 import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { aboutDraftSchema } from "@/src/cms/about";
-import { saveAbout } from "@/src/cms/about-service";
-import { readAbout } from "@/src/db/about";
+import { aboutSchema } from "@/src/cms/about";
+import { validationErrorResponse } from "@/src/api/validation-error";
+import { readAbout, updateAbout } from "@/src/db/about";
 
-const bodySchema = aboutDraftSchema.strict();
+const bodySchema = aboutSchema.strict();
 
 export const GET = withPublicRead(async () => {
   const content = await readAbout();
@@ -25,9 +25,11 @@ export const PUT = withSameOrigin(withAdminApi(withContentType(
     let body: unknown;
     try { body = await request.json(); } catch { return invalid(); }
     const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) return invalid();
-    const result = await saveAbout(parsed.data);
-    return result.ok ? NextResponse.json(result.content) : apiErrorResponse(result.error);
+    if (!parsed.success) return validationErrorResponse(parsed.error, "Submit complete About content as JSON.");
+    const saved = await updateAbout(parsed.data);
+    return saved ? NextResponse.json(saved) : apiErrorResponse({
+      code: "NOT_FOUND", message: "About content was not found.",
+    });
   },
   "Submit complete About content as JSON.",
 )));

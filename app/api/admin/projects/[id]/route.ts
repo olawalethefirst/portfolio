@@ -3,8 +3,7 @@ import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { deleteProject, readProject } from "@/src/db/projects";
-import { saveProject } from "@/src/cms/project-service";
+import { deleteProject, readProject, updateProject } from "@/src/db/projects";
 import { projectDraftSchema } from "@/src/cms/projects";
 
 const idSchema = z.uuid();
@@ -63,10 +62,10 @@ export const PUT = withSameOrigin(
             code: "INVALID_REQUEST",
             message: "Provide a valid Project draft.",
           });
-        const result = await saveProject(parsedId.data, parsed.data.draft);
-        return result.ok
-          ? NextResponse.json(result.content)
-          : apiErrorResponse(result.error);
+        const content = await updateProject(parsedId.data, parsed.data.draft);
+        return content
+          ? NextResponse.json(content)
+          : apiErrorResponse({ code: "NOT_FOUND", message: "Project was not found." });
       },
     ),
   ),

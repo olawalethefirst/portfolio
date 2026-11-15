@@ -2,15 +2,12 @@ import "server-only";
 import type { ApiError, ApiIssue } from "@/src/api/errors";
 import { toApiIssues } from "@/src/api/zod-issues";
 import {
-  insertProject,
   createAndPublishProject as persistFirstPublish,
   deletePublishedProject,
   saveAndPublishProject,
-  updateProject,
 } from "@/src/db/projects";
 import {
   projectPublishSchema,
-  projectDraftSchema,
   type ProjectDraft,
   type ProjectRecord,
 } from "./projects";
@@ -31,34 +28,6 @@ function invalid(issues: ApiIssue[]): ProjectWriteResult {
       issues,
     },
   };
-}
-
-function validate(value: ProjectDraft): ApiIssue[] {
-  const result = projectDraftSchema.safeParse(value);
-  return result.success ? [] : toApiIssues(result.error.issues);
-}
-
-export async function createProject(
-  value: ProjectDraft,
-): Promise<ProjectWriteResult> {
-  const issues = validate(value);
-  if (issues.length) return invalid(issues);
-  return { ok: true, content: await insertProject(value) };
-}
-
-export async function saveProject(
-  id: string,
-  value: ProjectDraft,
-): Promise<ProjectWriteResult> {
-  const issues = validate(value);
-  if (issues.length) return invalid(issues);
-  const content = await updateProject(id, value);
-  return content
-    ? { ok: true, content }
-    : {
-        ok: false,
-        error: { code: "NOT_FOUND", message: "Project was not found." },
-      };
 }
 
 export async function publishProject(

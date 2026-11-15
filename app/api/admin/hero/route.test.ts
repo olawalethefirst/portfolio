@@ -126,3 +126,13 @@ it("hides database failures", async () => {
   expect(response.status).toBe(500);
   expect(await response.text()).not.toContain("private database credentials");
 });
+
+
+it("prioritizes malformed structure over content validation failures", async () => {
+  const response = await PUT(request({ ...initialHero, headline: 42, eyebrow: "" }));
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: {
+    code: "INVALID_REQUEST", message: "Submit complete Hero content as JSON.",
+  } });
+  expect(update).not.toHaveBeenCalled();
+});

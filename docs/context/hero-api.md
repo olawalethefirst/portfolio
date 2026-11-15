@@ -17,8 +17,8 @@ any nesting level, wrong types and malformed JSON return 400. Complete typed
 content that violates existing Hero rules returns 422 with JSON Pointer issues.
 Input strings are preserved rather than normalized.
 
-The endpoint owns HTTP/structural checks. `src/cms/hero-service.ts` applies the
-existing `heroSchema` Save rules and returns application results. `src/db/hero.ts`
+The endpoint parses the strict `heroSchema` once, applies the existing Save
+rules and maps structural/content errors to 400/422 without a forwarding service. `src/db/hero.ts`
 maps the applied SQL columns to the nested resource and uses parameterized
 Drizzle reads/updates. UPDATE RETURNING supplies canonical saved content; it
 never inserts or upserts. The database trigger owns `updated_at`, which is not

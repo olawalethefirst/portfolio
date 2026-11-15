@@ -167,3 +167,34 @@ it.each([false, true])("preserves session cookie writes and headers when the ope
   expect(response.headers.get("x-session-refreshed")).toBe("true");
   expect(response.headers.get("cache-control")).toBe("private, no-store");
 });
+
+
+it.each([["github", ""], ["github", "http://github.com/maker"], ["linkedin", "https://user:password@linkedin.com/in/maker"], ["linkedin", "https://linkedin.com/in/my profile"], ["x", "javascript:alert(1)"], ["x", "/maker"]])("rejects invalid %s with field feedback before persistence: %s", async (field, value) => {
+  const response = await PUT(request({ ...initialSocial, [field]: value }));
+  expect(response.status).toBe(422);
+  expect(await response.json()).toMatchObject({ error: {
+    code: "VALIDATION_ERROR", message: "Check the highlighted fields.",
+    issues: [{ pointer: `/${field}`, message: "Enter a complete HTTPS profile URL without sign-in credentials." }],
+  } });
+  expect(update).not.toHaveBeenCalled();
+});
+
+
+it("prioritizes malformed structure over content validation failures", async () => {
+  const response = await PUT(request({ github: 42, linkedin: "", x: "" }));
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: {
+    code: "INVALID_REQUEST", message: "Submit complete Social content as JSON.",
+  } });
+  expect(update).not.toHaveBeenCalled();
+});
+
+
+it("reports every blank destination without partially saving", async () => {
+  const response = await PUT(request({ github: "", linkedin: "", x: "" }));
+  expect(response.status).toBe(422);
+  expect(await response.json()).toMatchObject({ error: { issues: [
+    { pointer: "/github" }, { pointer: "/linkedin" }, { pointer: "/x" },
+  ] } });
+  expect(update).not.toHaveBeenCalled();
+});

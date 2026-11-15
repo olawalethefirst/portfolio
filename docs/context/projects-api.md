@@ -37,3 +37,11 @@ key cascades removal to its published snapshot. Media records and physical objec
 remain. There is no separate deletion service: cascade persistence belongs to the
 DB layer, while validation, authorization and status mapping belong to the route.
 CMS deletion UI integration remains a separate capability.
+
+## Draft write validation
+
+Project POST with Save intent and item PUT validate the request structure once
+and persist directly through insertProject/updateProject. Incomplete drafts remain
+allowed; Save has no forwarding service or duplicate structural parse. POST Publish
+intent and published PUT still invoke the publishing service for completeness
+rules and atomic persistence. Existing response shapes/statuses are unchanged.

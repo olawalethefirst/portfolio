@@ -4,12 +4,12 @@ import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
 import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { heroDraftSchema } from "@/src/cms/hero";
-import { saveHero } from "@/src/cms/hero-service";
-import { readHero } from "@/src/db/hero";
+import { heroSchema } from "@/src/cms/hero";
+import { validationErrorResponse } from "@/src/api/validation-error";
+import { readHero, updateHero } from "@/src/db/hero";
 
-const stage = heroDraftSchema.shape.stages.shape.idea.strict();
-const bodySchema = heroDraftSchema.extend({
+const stage = heroSchema.shape.stages.shape.idea.strict();
+const bodySchema = heroSchema.extend({
   stages: z.strictObject({ idea: stage, iterate: stage, solution: stage }),
 }).strict();
 
@@ -27,9 +27,11 @@ export const PUT = withSameOrigin(withAdminApi(withContentType(
     let body: unknown;
     try { body = await request.json(); } catch { return invalid(); }
     const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) return invalid();
-    const result = await saveHero(parsed.data);
-    return result.ok ? NextResponse.json(result.content) : apiErrorResponse(result.error);
+    if (!parsed.success) return validationErrorResponse(parsed.error, "Submit complete Hero content as JSON.");
+    const saved = await updateHero(parsed.data);
+    return saved ? NextResponse.json(saved) : apiErrorResponse({
+      code: "NOT_FOUND", message: "Hero content was not found.",
+    });
   },
   "Submit complete Hero content as JSON.",
 )));

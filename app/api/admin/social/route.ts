@@ -3,11 +3,11 @@ import { apiErrorResponse } from "@/src/api/errors";
 import { withSameOrigin, withContentType } from "@/src/api/request";
 import { withPublicRead } from "@/src/api/public-read";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { socialDraftSchema } from "@/src/cms/social";
-import { saveSocial } from "@/src/cms/social-service";
-import { readSocial } from "@/src/db/social";
+import { socialSchema } from "@/src/cms/social";
+import { validationErrorResponse } from "@/src/api/validation-error";
+import { readSocial, updateSocial } from "@/src/db/social";
 
-const bodySchema = socialDraftSchema.strict();
+const bodySchema = socialSchema.strict();
 
 export const GET = withPublicRead(async () => {
   const content = await readSocial();
@@ -25,9 +25,11 @@ export const PUT = withSameOrigin(withAdminApi(withContentType(
     let body: unknown;
     try { body = await request.json(); } catch { return invalid(); }
     const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) return invalid();
-    const result = await saveSocial(parsed.data);
-    return result.ok ? NextResponse.json(result.content) : apiErrorResponse(result.error);
+    if (!parsed.success) return validationErrorResponse(parsed.error, "Submit complete Social content as JSON.");
+    const saved = await updateSocial(parsed.data);
+    return saved ? NextResponse.json(saved) : apiErrorResponse({
+      code: "NOT_FOUND", message: "Social content was not found.",
+    });
   },
   "Submit complete Social content as JSON.",
 )));

@@ -16,8 +16,8 @@ Malformed JSON, missing fields, extra fields, or wrong types return 400.
 Complete typed strings that violate `aboutSchema` return 422 with JSON Pointers
 `/heading` and `/biography`. Both must be nonblank; no additional length limits
 or normalization are introduced. Input spacing, newlines, and Markdown remain
-unchanged. HTTP validation stays in the route; business validation is owned by
-`src/cms/about-service.ts`.
+unchanged. The route parses strict `aboutSchema` once and calls the DB directly;
+there is no forwarding Save service.
 
 `src/db/about.ts` reads/updates only `about_content` singleton id=1. UPDATE
 RETURNING supplies canonical content; the existing trigger owns updated_at.

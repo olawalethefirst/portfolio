@@ -3,10 +3,10 @@
 ## Ownership
 
 - Endpoints (`app/api/**/route.ts`) own HTTP parsing, transport validation,
-  request-origin checks, invoking authorization/services, HTTP status selection,
+  request-origin checks, fixed request-schema validation, invoking authorization/services, HTTP status selection,
   headers, cookies and redirects. They use shared response helpers.
 - Services (`src/<domain>/`) own application operations, business validation,
-  Save/Publish orchestration and transaction boundaries. They do not construct
+  content-dependent rules, Save/Publish orchestration and transaction boundaries. They do not construct
   NextResponse objects or depend on route-handler request objects.
 - Database access (`src/db/` domain modules) owns Drizzle mappings, queries and
   persistence operations. Pass a transaction executor when an operation participates
@@ -21,6 +21,24 @@ reviewable subitems with explicit dependencies. Mark unused layers not applicabl
 do not add empty wrappers, interfaces or repositories to satisfy a folder pattern.
 Tests belong at the lowest boundary that proves the contract, with endpoint tests
 protecting actual status/header/cookie serialization and integration behavior.
+
+## Validation ownership
+
+A fixed request schema belongs at the route boundary. Parse it once; do not add
+or retain a service solely to revalidate typed input, call one DB operation and
+wrap its result. Hero/About/Social saves and Project draft creation/Save call DB
+functions directly. Shared schemas remain reusable by browser forms.
+
+`src/api/validation-error.ts` maps failed fixed-schema request parses to the
+existing HTTP contract: invalid types, enum values and unknown keys are structural
+400/INVALID_REQUEST errors; content refinements and limits produce
+422/VALIDATION_ERROR with JSON Pointer issues. A structural issue takes priority
+when both categories occur. Malformed JSON is still handled by the route.
+
+Retain services for actual decisions or orchestration, such as SEO rules selected
+by the stored default/override record, normalization/uniqueness conflicts, and
+Project publishing. Schema composition inside those operations can enforce their
+business requirements; a service must not exist just to repeat route checks.
 
 ## Shared utilities
 

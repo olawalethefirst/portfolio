@@ -14,13 +14,14 @@ and failure. Public read database failures also use safe500 without details.
 PUT checks same origin, owner authorization and JSON content type in that order.
 Missing/opaque/mismatched Origin returns 403. Malformed JSON, missing fields,
 extra fields or nonstring destinations return 400/INVALID_REQUEST. Complete
-strings pass to `saveSocial`; invalid destinations return 422/VALIDATION_ERROR
+strings failing destination rules return 422/VALIDATION_ERROR
 with JSON Pointer issues at `/github`, `/linkedin` and `/x`.
 
 Existing `socialSchema` requires complete HTTPS destinations with a hostname,
 without internal whitespace or embedded credentials. Outer whitespace remains
 accepted and stored unchanged. Hosts are not restricted to each platform's
-domain. The service performs no URL fetching or normalization. Labels, icons and
+domain. The route parses strict `socialSchema` once and calls the DB directly,
+without a forwarding service, URL fetching or normalization. Labels, icons and
 order remain fixed in code. Unexpected persistence failures propagate to the
 HTTP wrapper for safe serialization; internal details are never returned.
 

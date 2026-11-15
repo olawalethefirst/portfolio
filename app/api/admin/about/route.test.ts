@@ -164,3 +164,24 @@ it.each([false, true])("preserves session cookie writes and headers when the ope
   expect(response.headers.get("x-session-refreshed")).toBe("true");
   expect(response.headers.get("cache-control")).toBe("private, no-store");
 });
+
+
+it.each([["heading", ""], ["heading", " \t\n"], ["biography", ""], ["biography", " \t\n"]])("rejects invalid %s with field feedback before persistence: %s", async (field, value) => {
+  const response = await PUT(request({ ...initialAbout, [field]: value }));
+  expect(response.status).toBe(422);
+  expect(await response.json()).toMatchObject({ error: {
+    code: "VALIDATION_ERROR", message: "Check the highlighted fields.",
+    issues: [{ pointer: `/${field}`, message: "Complete this field before saving." }],
+  } });
+  expect(update).not.toHaveBeenCalled();
+});
+
+
+it("prioritizes malformed structure over content validation failures", async () => {
+  const response = await PUT(request({ heading: 42, biography: "" }));
+  expect(response.status).toBe(400);
+  expect(await response.json()).toEqual({ error: {
+    code: "INVALID_REQUEST", message: "Submit complete About content as JSON.",
+  } });
+  expect(update).not.toHaveBeenCalled();
+});
