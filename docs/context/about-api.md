@@ -61,5 +61,21 @@ behavior is replaced by the same pending lock already used by Hero. No new
 validation limits, normalization, field types or auth recovery UI are introduced.
 
 Account-scoped local draft keys/migration and cross-tab coordination remain
-separate from the existing account-scoped query cache. Public About output still
-uses sample content; server-side public reads are the next separate slice.
+separate from the existing account-scoped query cache.
+
+## Public output
+
+The server homepage awaits `connection()` before reading Hero and About in
+parallel through their database query modules. Saved About heading and biography
+pass as required content through `PrismHeroLayoutLab` to `AboutCtaSection`.
+The existing biography rendering, motion behavior and fixed contact CTA remain.
+Missing singleton content or database failure fails the page instead of showing
+sample copy. Public rendering does not call the protected admin API.
+
+Each full homepage request reads current saved content. No persistent data cache,
+ISR, browser fetch or public query cache is introduced, so About Save needs no
+server cache invalidation. An already open page is not updated live; reload to
+see a later save. This follows the installed Next.js `connection()` and parallel
+Server Component database-read guidance in
+`node_modules/next/dist/docs/01-app/03-api-reference/04-functions/connection.md`
+and `node_modules/next/dist/docs/01-app/01-getting-started/06-fetching-data.md`.

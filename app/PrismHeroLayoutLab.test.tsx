@@ -74,12 +74,19 @@ vi.mock("@/src/components/ui/Surface", () => ({
   ),
 }));
 
+import { initialAbout } from "@/src/cms/about";
 import { PRISM_HERO_DEFAULT_CONTENT } from "@/src/components/prism-fiber/ui/hero/prism-hero-content";
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
 
 describe("PrismHeroLayoutLab", () => {
+  it("renders the saved About heading and biography with the existing contact CTA", () => {
+    render(<PrismHeroLayoutLab content={PRISM_HERO_DEFAULT_CONTENT} about={{ heading: "Meet the maker", biography: "Saved server biography." }} />);
+    const about = screen.getByRole("region", { name: "Meet the maker" });
+    expect(within(about).getByText("Saved server biography.")).toBeTruthy();
+    expect(within(about).getByRole("link", { name: "Start a conversation" }).getAttribute("href")).toBe("/contact");
+  });
   it("forwards server-loaded Hero copy into the interactive layout", () => {
-    render(<PrismHeroLayoutLab content={{ ...PRISM_HERO_DEFAULT_CONTENT, headline: "Server supplied headline" }} />);
+    render(<PrismHeroLayoutLab about={initialAbout} content={{ ...PRISM_HERO_DEFAULT_CONTENT, headline: "Server supplied headline" }} />);
     expect(screen.getByRole("heading", { level: 1, name: "Server supplied headline" })).toBeTruthy();
   });
   beforeEach(() => {
@@ -87,7 +94,7 @@ describe("PrismHeroLayoutLab", () => {
     document.documentElement.dataset.mode = "dark";
   });
   it("provides navigation and working display settings within the glass content", () => {
-    render(<PrismHeroLayoutLab content={PRISM_HERO_DEFAULT_CONTENT} />);
+    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     const panel = screen.getByTestId("prism-glass-panel");
     expect(within(panel).getByRole("button", { name: "Menu" })).toBeTruthy();
@@ -103,7 +110,7 @@ describe("PrismHeroLayoutLab", () => {
   });
 
   it("renders the complete hero with page-owned camera zoom", () => {
-    render(<PrismHeroLayoutLab content={PRISM_HERO_DEFAULT_CONTENT} />);
+    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     const heroes = screen.getAllByTestId("prism-hero");
     expect(heroes).toHaveLength(1);
@@ -114,7 +121,7 @@ describe("PrismHeroLayoutLab", () => {
   });
 
   it("places an accessible project stack in the glass panel after the hero runway", () => {
-    render(<PrismHeroLayoutLab content={PRISM_HERO_DEFAULT_CONTENT} />);
+    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} />);
 
     const runway = screen.getByTestId("prism-scroll-runway");
     const panel = screen.getByTestId("prism-glass-panel");

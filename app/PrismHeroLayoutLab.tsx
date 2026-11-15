@@ -3,6 +3,7 @@
 import { useRef } from "react";
 
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
+import type { AboutContent } from "@/src/components/about-cta/about-content";
 import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
 import { labProjects } from "@/src/components/project-item/lab-projects";
 import { PublicationsSection } from "@/src/components/home-sections/PublicationsSection";
@@ -18,7 +19,13 @@ import { LabThemeShell } from "./LabThemeShell";
 import { usePrismDiscoveryScroll } from "./usePrismDiscoveryScroll";
 import { labPublications } from "./lab-publications";
 
-export function PrismHeroLayoutLab({ content }: { content: PrismHeroContent }) {
+export function PrismHeroLayoutLab({
+  content,
+  about,
+}: {
+  content: PrismHeroContent;
+  about: AboutContent;
+}) {
   const heroRef = useRef<PrismHeroLayoutHandle>(null);
   const scrollOriginRef = usePrismDiscoveryScroll(heroRef);
 
@@ -41,7 +48,11 @@ export function PrismHeroLayoutLab({ content }: { content: PrismHeroContent }) {
             data-testid="prism-scroll-runway"
           >
             <div className="sticky top-0 h-dvh w-full">
-              <PrismHeroLayout content={content} ref={heroRef} allowsCameraZoom={false} />
+              <PrismHeroLayout
+                content={content}
+                ref={heroRef}
+                allowsCameraZoom={false}
+              />
             </div>
           </section>
 
@@ -54,12 +65,20 @@ export function PrismHeroLayoutLab({ content }: { content: PrismHeroContent }) {
               <div className="min-w-0 [grid-area:1/1]">
                 <ProjectsSection projects={labProjects} />
                 <PublicationsSection publications={labPublications} />
-                <AboutCtaSection />
+                <AboutCtaSection
+                  heading={about.heading}
+                  summary={about.biography}
+                />
               </div>
               <div className="pointer-events-none relative z-20 min-h-0 [grid-area:1/1]">
-                <div aria-hidden="true" className="h-[calc(100dvh-var(--navigation-bottom-offset))]" />
+                <div
+                  aria-hidden="true"
+                  className="h-[calc(100dvh-var(--navigation-bottom-offset))]"
+                />
                 <div className="sticky top-[calc(100dvh-var(--navigation-bottom-offset))] h-0">
-                  <div className="absolute inset-x-0 bottom-0">{navigation}</div>
+                  <div className="absolute inset-x-0 bottom-0">
+                    {navigation}
+                  </div>
                 </div>
               </div>
             </div>
