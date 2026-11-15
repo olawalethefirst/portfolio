@@ -3,7 +3,7 @@
 import { Route, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useSeo } from "@/src/cms/SeoProvider";
 import {
   emptySeoOverride,
@@ -29,9 +29,15 @@ import {
 } from "./CmsLayout";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { ApiRequestError } from "@/src/api/client";
-import { useSeoQuery, useSeoRecordQuery } from "@/src/cms/seo-queries";
+import {
+  useSaveSeoRecord,
+  useSeoQuery,
+  useSeoRecordQuery,
+} from "@/src/cms/seo-queries";
 import { LoadingState } from "@/src/components/ui/LoadingState";
 import { useWorkingDraft, type DraftStore } from "@/src/cms/working-drafts";
+import { seoIssueFeedback } from "@/src/cms/seo-api";
+import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import { SeoFields } from "./SeoFields";
 
 export function SeoEditor({ id }: { id: string }) {
@@ -52,7 +58,9 @@ function ExistingSeoEditor({
   const collection = useSeoQuery();
   const defaults = collection.data?.find((record) => record.path === "/");
   const item = useSeoRecordQuery(id === "defaults" ? defaults?.id : id);
-  const error = collection.error ?? item.error;
+  const mutation = useSaveSeoRecord(item.data?.id);
+  const error =
+    (!collection.data && collection.error) || (!item.data && item.error);
   if (error)
     return (
       <>
@@ -100,6 +108,9 @@ function ExistingSeoEditor({
         records,
       }}
       working={working}
+      pending={mutation.pending}
+      saveRecord={mutation.save}
+      saveDefaults={(value) => mutation.save({ ...value, path: "/" })}
     />
   );
 }
@@ -119,7 +130,7 @@ export function SeoEditorForm({
   saved: SeoState;
   working: DraftStore<SeoRecord>;
   pending?: boolean;
-  saveDefaults?: (value: SeoValues) => Promise<void>;
+  saveDefaults?: (value: SeoValues) => Promise<SeoRecord | void>;
   saveRecord?: (value: SeoRecord) => Promise<SeoRecord>;
   deleteRecord?: (id: string) => Promise<void>;
 }) {
@@ -145,15 +156,28 @@ export function SeoEditorForm({
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const revision = useRef(0);
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const focusFirstError = useFirstFieldErrorFocus<keyof SeoErrors>(
+    formRef,
+    defaultsMode ? ["title", "description"] : ["path", "title", "description"],
+  );
+  const [serverErrors, setServerErrors] = useState<SeoErrors>({});
   const [exposed, setExposed] = useState<
     Partial<Record<keyof SeoErrors, boolean>>
   >({});
   const currentErrors = defaultsMode
     ? validateSeoDefaults(value)
     : validateSeoRecord({ ...value, id }, saved.records);
-  const errors: SeoErrors = {};
+  const errors: SeoErrors = { ...serverErrors };
   for (const field of ["path", "title", "description"] as const) {
-    if (exposed[field]) errors[field] = currentErrors[field];
+    if (exposed[field])
+      errors[field] = serverErrors[field] ?? currentErrors[field];
   }
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -162,6 +186,7 @@ export function SeoEditorForm({
   function changeFields(patch: Partial<SeoRecord>) {
     revision.current += 1;
     setError("");
+    setServerErrors({});
     setMessage("");
     setValue((current) => ({ ...current, ...patch }));
   }
@@ -173,22 +198,10 @@ export function SeoEditorForm({
       ...(!defaultsMode && field !== "path" ? { title: true } : {}),
     }));
   }
-
-  function focusFirstError(nextErrors: SeoErrors) {
-    const order = defaultsMode
-      ? (["title", "description"] as const)
-      : (["path", "title", "description"] as const);
-    const first = order.find((field) => nextErrors[field]);
-    if (first)
-      requestAnimationFrame(() =>
-        formRef.current
-          ?.querySelector<HTMLElement>(`[name="${first}"]`)
-          ?.focus(),
-      );
-  }
   async function saveChanges() {
     if (pending || !canSave) return false;
     setError("");
+    setServerErrors({});
     setMessage("");
     const nextErrors = defaultsMode
       ? validateSeoDefaults(value)
@@ -204,25 +217,43 @@ export function SeoEditorForm({
     }
     const submittedRevision = revision.current;
     try {
-      if (defaultsMode && saveDefaults) await saveDefaults(value);
-      else if (saveRecord) {
-        const submitted = await saveRecord({ ...value, id });
-        // Reflect canonicalization only if the user has not typed a newer path.
-        setValue((current) =>
-          current.path === value.path
-            ? { ...current, path: submitted.path }
-            : current,
-        );
-      }
+      const canonical =
+        defaultsMode && saveDefaults
+          ? await saveDefaults(value)
+          : await saveRecord?.({ ...value, id });
+      if (!active.current) return true;
+      // Adopt saved fields only while they still match the submitted snapshot.
+      if (canonical)
+        setValue((current) => {
+          const next = { ...current };
+          for (const field of ["path", "title", "description"] as const)
+            if (
+              current[field] === value[field] &&
+              !(defaultsMode && field === "path")
+            )
+              next[field] = canonical[field];
+          return next;
+        });
       if (revision.current === submittedRevision) setMessage("Saved.");
       return true;
     } catch (failure) {
-      if (revision.current === submittedRevision)
-        setError(
-          failure instanceof Error
-            ? failure.message
-            : "Save failed. Your changes are still here.",
-        );
+      if (active.current && revision.current === submittedRevision) {
+        if (failure instanceof ApiRequestError) {
+          const feedback = seoIssueFeedback(failure.error?.issues);
+          setServerErrors(feedback.fields);
+          focusFirstError(feedback.fields);
+          setError(
+            failure.kind !== "server"
+              ? "Couldn’t confirm the save."
+              : [failure.message, ...feedback.general].join(" "),
+          );
+        } else
+          setError(
+            failure instanceof Error
+              ? failure.message
+              : "Save failed. Your changes are still here.",
+          );
+      }
       return false;
     }
   }
@@ -351,6 +382,7 @@ export function SeoEditorForm({
             revision.current += 1;
             reset(baseline);
             setExposed({});
+            setServerErrors({});
             setError("");
             setMessage("");
           }}

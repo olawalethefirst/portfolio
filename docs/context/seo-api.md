@@ -199,9 +199,27 @@ as explicit input, keeping the prior local draft/Discard behavior and field layo
 New remains on its existing implementation.
 
 Save/Delete operations are explicit optional form dependencies. Server-loaded
-records receive no demo write handlers: Save is disabled and Delete is absent
-until their separate integration slices supply real operations. Existing form
+records receive no demo write handlers. Save uses the real operation described
+below; Delete remains absent until its separate integration slice. Existing form
 operation tests remain at the form boundary; record-loading tests exercise actual
 JSON adapters, saved IDs/content, loading/errors and legacy draft continuity.
 No mutation hook, provider replacement, shared draft machinery or public metadata
 change is included in existing-record loading.
+
+
+## Saving existing records
+
+`seoApi.save` sends PUT with only path, title and description to the persisted
+record UUID. The defaults alias resolves that UUID from saved data and fixes the
+request path to `/`. `useSaveSeoRecord` prevents concurrent submissions, cancels
+in-flight collection/item reads before writing, and updates both caches with the
+canonical response. Transport or response failures invalidate saved reads without
+automatically repeating the write.
+
+The form adopts canonical fields only where the user has not changed them since
+submission. Later edits remain dirty; Discard uses the latest saved baseline.
+Failures preserve input, map known field pointers through shared error focusing,
+and retain unknown issues as general feedback. Cached content remains mounted
+when a background read fails. A save completing after unmount cannot update the
+working draft. Existing local draft storage remains in use; creation recovery is
+a separate scope. Create and Delete are not wired by this integration.
