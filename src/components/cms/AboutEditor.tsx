@@ -2,87 +2,271 @@
 
 import { Maximize2, Save } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Form } from "@heroui/react";
-import { useId, useRef, useState } from "react";
-import { useAbout } from "@/src/cms/AboutProvider";
-import { sameAbout, validateAbout, type AboutDraft, type AboutErrors } from "@/src/cms/about";
+import { Form, Spinner } from "@heroui/react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useAboutQuery, useSaveAbout } from "@/src/cms/about-queries";
+import {
+  aboutDraftSchema,
+  sameAbout,
+  validateAbout,
+  type AboutDraft,
+  type AboutErrors,
+} from "@/src/cms/about";
+import { aboutIssueFeedback } from "@/src/cms/about-api";
+import { ApiRequestError } from "@/src/api/client";
+import {
+  useDraftStore,
+  useReconciledDraft,
+  type DraftStore,
+} from "@/src/cms/working-drafts";
 import { Button } from "@/src/components/ui/Button";
 import { CmsField } from "./CmsField";
-import { CmsEditorContent, CmsFeedback, CmsFieldSection, CmsFooter, CmsPageHeader, CmsToolbar } from "./CmsLayout";
+import {
+  CmsEditorContent,
+  CmsFeedback,
+  CmsFieldSection,
+  CmsFooter,
+  CmsPageHeader,
+  CmsToolbar,
+} from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
-import { useWorkingDraft } from "@/src/cms/working-drafts";
 
-const AboutPreview = dynamic(() => import("./AboutPreview").then((module) => module.AboutPreview), {
-  ssr: false,
-  loading: () => <p role="status">Loading About preview…</p>,
-});
+const AboutPreview = dynamic(
+  () => import("./AboutPreview").then((module) => module.AboutPreview),
+  {
+    ssr: false,
+    loading: () => <p role="status">Loading About preview…</p>,
+  },
+);
 
 export function AboutEditor() {
-  const { saved, save, pending, working } = useAbout();
-  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(working, "about", () => saved);
+  const { data: saved, error: loadError } = useAboutQuery();
+  const working = useDraftStore({
+    namespace: "about",
+    schema: aboutDraftSchema,
+  });
+  if (!saved)
+    return (
+      <>
+        <CmsPageHeader
+          title="About"
+          description="Edit your introduction and biography. The conversation CTA stays fixed."
+        />
+        {loadError ? (
+          <CmsFeedback error="Couldn’t load About content.">{null}</CmsFeedback>
+        ) : (
+          <p role="status" className="flex items-center gap-2">
+            <Spinner size="sm" aria-hidden="true" />
+            Loading saved About…
+          </p>
+        )}
+      </>
+    );
+  return (
+    <AboutEditorForm saved={saved} working={working} loadError={loadError} />
+  );
+}
+
+function AboutEditorForm({
+  saved,
+  working,
+  loadError,
+}: {
+  saved: AboutDraft;
+  working: DraftStore<AboutDraft>;
+  loadError: Error | null;
+}) {
+  const { save, pending, error: saveError, reset: resetSave } = useSaveAbout();
+  const { value, draft, reset, bindField, ready, persistenceStatus } =
+    useReconciledDraft(working, "about", saved, {
+      disabled: pending,
+      onChange: resetSave,
+    });
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
-  const revision = useRef(0);
-  const [exposed, setExposed] = useState<Partial<Record<keyof AboutDraft, boolean>>>({});
+  const [exposed, setExposed] = useState<
+    Partial<Record<keyof AboutDraft, boolean>>
+  >({});
   const currentErrors = validateAbout(value);
-  const errors: AboutErrors = {
-    heading: exposed.heading ? currentErrors.heading : undefined,
-    biography: exposed.biography ? currentErrors.biography : undefined,
-  };
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const feedback = aboutIssueFeedback(
+    saveError instanceof ApiRequestError ? saveError.error?.issues : [],
+  );
+  const errors: AboutErrors = { ...feedback.fields };
+  for (const field of ["heading", "biography"] as const) {
+    if (exposed[field] && currentErrors[field])
+      errors[field] = currentErrors[field];
+  }
+  const saveMessage =
+    saveError instanceof ApiRequestError && saveError.kind !== "server"
+      ? "Couldn’t confirm the save."
+      : saveError?.message;
+  const error = saveError
+    ? [saveMessage, ...feedback.general].join(" ")
+    : loadError
+      ? "Couldn’t load About content."
+      : undefined;
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
   const dirty = !sameAbout(value, saved);
-
-  function changeField(field: keyof AboutDraft, text: string) {
-    revision.current += 1;
-    setError("");
-    setMessage("");
-    setValue((current) => ({ ...current, [field]: text }));
-  }
+  const hasDraft = Boolean(draft && !sameAbout(draft, saved));
 
   function focusFirstError(nextErrors: AboutErrors) {
-    const first = (["heading", "biography"] as const).find((field) => nextErrors[field]);
-    if (first) requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus());
+    const first = (["heading", "biography"] as const).find(
+      (field) => nextErrors[field],
+    );
+    if (first)
+      requestAnimationFrame(() => {
+        if (active.current)
+          formRef.current
+            ?.querySelector<HTMLElement>(`[name="${first}"]`)
+            ?.focus();
+      });
   }
   async function saveChanges() {
     if (pending) return false;
-    setError("");
-    setMessage("");
+    resetSave();
     const nextErrors = validateAbout(value);
     setExposed({ heading: true, biography: true });
     if (Object.values(nextErrors).some(Boolean)) {
       focusFirstError(nextErrors);
       return false;
     }
-    const submittedRevision = revision.current;
     try {
       await save(value);
-      if (revision.current === submittedRevision) setMessage("Saved.");
+      if (active.current) reset();
+      else if (working.drafts.about)
+        working.clear("about", working.drafts.about);
       return true;
     } catch (failure) {
-      if (revision.current === submittedRevision) setError(failure instanceof Error ? failure.message : "Save failed. Your edits are still here.");
+      if (active.current) {
+        const feedback = aboutIssueFeedback(
+          failure instanceof ApiRequestError ? failure.error?.issues : [],
+        );
+        focusFirstError(feedback.fields);
+      } else resetSave();
       return false;
     }
   }
 
   if (!ready) return <p role="status">Restoring local draft…</p>;
-  if (preview) return <CmsPreviewFrame label="About preview" exitLabel="Exit preview" closeRef={closeRef} onExit={() => setPreview(false)}><AboutPreview value={value} /></CmsPreviewFrame>;
-  return <>
-    <CmsPageHeader title="About" description="Edit your introduction and biography. The conversation CTA stays fixed." />
-    <CmsToolbar actions={<Button type="submit" form={formId} variant="outline" isDisabled={pending || !dirty} startContent={<Save aria-hidden="true" className="size-4" />}>Save changes</Button>}>
-      <Button type="button" id="about-preview-trigger" variant="outline" startContent={<Maximize2 aria-hidden="true" className="size-4" />} onPress={() => { capture("about-preview-trigger"); setPreview(true); }}>Preview</Button>
-    </CmsToolbar>
-    <CmsDraftFeedback status={persistenceStatus} />
-    <CmsFeedback label="About save status" error={error}>{pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}{message ? ` ${message}` : ""}</CmsFeedback>
-    <Form id={formId} ref={formRef} className="block" validationBehavior="aria" onSubmit={(event) => { event.preventDefault(); void saveChanges(); }}>
-    <CmsEditorContent><CmsFieldSection title="Content">
-      <CmsField name="heading" label="Heading" value={value.heading} error={errors.heading} onBlur={() => setExposed((current) => ({ ...current, heading: true }))} onChange={(heading) => changeField("heading", heading)} />
-      <CmsField name="biography" label="Biography" multiline="short" value={value.biography} error={errors.biography} onBlur={() => setExposed((current) => ({ ...current, biography: true }))} onChange={(biography) => changeField("biography", biography)} />
-    </CmsFieldSection></CmsEditorContent>
-    </Form>
-    <CmsFooter><Button type="button" variant="ghost" isDisabled={pending || !dirty} onPress={() => { revision.current += 1; reset(saved); setExposed({}); setError(""); setMessage(""); }}>Discard changes</Button></CmsFooter>
-  </>;
+  if (preview)
+    return (
+      <CmsPreviewFrame
+        label="About preview"
+        exitLabel="Exit preview"
+        closeRef={closeRef}
+        onExit={() => setPreview(false)}
+      >
+        <AboutPreview value={value} />
+      </CmsPreviewFrame>
+    );
+  return (
+    <>
+      <CmsPageHeader
+        title="About"
+        description="Edit your introduction and biography. The conversation CTA stays fixed."
+      />
+      <CmsToolbar
+        actions={
+          <Button
+            type="submit"
+            form={formId}
+            variant="outline"
+            isDisabled={pending || !dirty}
+            isLoading={pending}
+            startContent={<Save aria-hidden="true" className="size-4" />}
+          >
+            Save changes
+          </Button>
+        }
+      >
+        <Button
+          type="button"
+          id="about-preview-trigger"
+          variant="outline"
+          isDisabled={pending}
+          startContent={<Maximize2 aria-hidden="true" className="size-4" />}
+          onPress={() => {
+            capture("about-preview-trigger");
+            setPreview(true);
+          }}
+        >
+          Preview
+        </Button>
+      </CmsToolbar>
+      <CmsDraftFeedback status={persistenceStatus} />
+      <CmsFeedback label="About save status" error={error}>
+        {pending ? "Saving…" : dirty ? "Unsaved changes" : "No unsaved changes"}
+      </CmsFeedback>
+      {hasDraft ? (
+        <p role="status" className="my-4 text-sm text-muted">
+          You have local changes. Review them beside each field.
+        </p>
+      ) : null}
+      <Form
+        id={formId}
+        ref={formRef}
+        className="block"
+        validationBehavior="aria"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void saveChanges();
+        }}
+      >
+        <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
+          <CmsEditorContent>
+            <CmsFieldSection title="Content">
+              <CmsField
+                name="heading"
+                label="Heading"
+                error={errors.heading}
+                onBlur={() =>
+                  setExposed((current) => ({ ...current, heading: true }))
+                }
+                {...bindField(
+                  (content) => content.heading,
+                  (content, heading) => ({ ...content, heading }),
+                )}
+              />
+              <CmsField
+                name="biography"
+                label="Biography"
+                multiline="short"
+                error={errors.biography}
+                onBlur={() =>
+                  setExposed((current) => ({ ...current, biography: true }))
+                }
+                {...bindField(
+                  (content) => content.biography,
+                  (content, biography) => ({ ...content, biography }),
+                )}
+              />
+            </CmsFieldSection>
+          </CmsEditorContent>
+        </fieldset>
+      </Form>
+      <CmsFooter>
+        <Button
+          type="button"
+          variant="ghost"
+          isDisabled={pending || (!dirty && !hasDraft)}
+          onPress={() => {
+            reset();
+            resetSave();
+            setExposed({});
+          }}
+        >
+          Discard changes
+        </Button>
+      </CmsFooter>
+    </>
+  );
 }

@@ -4,6 +4,8 @@ import { useHeroQuery } from "@/src/cms/hero-queries";
 import { initialHero } from "@/src/cms/hero";
 import StudioLayout from "./layout";
 
+vi.mock("server-only", () => ({}));
+
 vi.mock("@/src/cms/hero-api", async () => {
   const { initialHero } = await import("@/src/cms/hero");
   return { heroApi: { read: async () => initialHero, save: vi.fn() } };

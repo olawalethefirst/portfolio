@@ -1,6 +1,7 @@
 import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { apiErrorResponse } from "@/src/api/errors";
+import { requireAdminUserId } from "./owner-config";
 import { authorizeAdmin } from "./owner-guard";
 import { createSupabaseServerClient } from "./server";
 import { applySessionResponse } from "./session-response";
@@ -14,8 +15,7 @@ export function withAdminApi<TRequest extends NextRequest, TContext extends unkn
     const session = new NextResponse(null);
     let result: Response;
     try {
-      if (!process.env.ADMIN_USER_ID?.trim())
-        throw new Error("Owner is not configured.");
+      requireAdminUserId();
       const supabase = createSupabaseServerClient(request.cookies, session);
       const authorization = await authorizeAdmin(supabase.auth);
       result = authorization.ok

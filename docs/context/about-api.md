@@ -27,7 +27,39 @@ RLS must be verified using the application connection; no automatic grants or
 schema changes are included. Unexpected permission failures are safe 500 errors,
 not a claim that the authenticated owner lacks authorization.
 
-The About editor still uses its existing local/in-memory provider, and public
-About output still uses sample content. Query/editor reconciliation and public
-server-side reads are separate follow-up slices. Do not retry writes
-automatically after an unconfirmed response.
+## Editor integration
+
+`AboutEditor` owns the existing about draft store and uses `useAboutQuery` and
+`useSaveAbout` instead of the demo AboutProvider/context. The studio's existing
+`CmsQueryProvider` supplies account identity and request/cache isolation.
+`aboutApi` uses the shared typed JSON client; reads receive AbortSignal, requests
+have no automatic retries, and successful saves update the account-specific
+`["cms", accountId, "about"]` query with canonical server content. Save cancels
+outstanding About reads and captures input once through `aboutSchema.parse`.
+An unconfirmed network/malformed response invalidates the saved query but retains
+local input, because a missing response does not prove the write failed.
+
+Initial rendering waits for saved content. Read failures display existing CMS
+feedback without demo fallback or new sign-in/recovery controls. Server validation
+issues use an explicit heading/biography pointer allowlist; unknown issues remain
+form feedback. Focus follows visual order and is guarded against unmounting.
+Mutation state owns Save errors, which reset on typing, field source selection,
+or Discard. Existing blur/local validation timing and Preview/CTA behavior remain.
+
+Shared `useReconciledDraft` and `bindField` initialize the form from saved values
+and expose differing draft alternatives through existing field-label actions.
+The current About key remains `portfolio:cms-drafts:v1:about:about` with the same
+`{ id, value }` format. Preview and Save use assembled form values, not unselected
+alternatives. Successful Save and Discard clear candidates and release the form
+override so it follows current query data again; failures preserve work. A late
+successful save after navigation uses guarded cleanup to retain newer drafts.
+
+Fields, source actions, Preview, Save and Discard lock during Save. The existing
+Save icon is retained with HeroUI loading feedback; ghost source actions stay
+icon-free. Initial loading also uses a Spinner. The former demo revision-counter
+behavior is replaced by the same pending lock already used by Hero. No new
+validation limits, normalization, field types or auth recovery UI are introduced.
+
+Account-scoped local draft keys/migration and cross-tab coordination remain
+separate from the existing account-scoped query cache. Public About output still
+uses sample content; server-side public reads are the next separate slice.

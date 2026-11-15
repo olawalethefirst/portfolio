@@ -10,7 +10,7 @@ This directory stores durable knowledge that future contributors cannot reliably
 ## Current subsystem context
 
 - [`context/about-api.md`](context/about-api.md): protected About read/save endpoints,
-  singleton persistence, validation and pending editor/public integration.
+  singleton persistence, validation, editor reconciliation and pending public integration.
 
 - [`context/hero-api.md`](context/hero-api.md): protected Hero read/save endpoints,
   validation, persistence boundaries, and database permission requirements.

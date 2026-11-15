@@ -3,7 +3,7 @@
 CMS working drafts automatically survive navigation and reloads on the same
 browser. Explicit Save and Publish actions retain their existing meanings.
 
-Hero uses the server-first review behavior in
+Hero and About use the server-first review behavior in
 [draft reconciliation](cms-draft-reconciliation-spec.md). Other editors retain
 the original working-draft behavior described below until their API integration.
 
@@ -19,7 +19,7 @@ Editors use `useWorkingDraft` for `value`, `setValue`, `reset`, `ready`, and
 `persistenceStatus`. Render the loading status until `ready`; show
 `CmsDraftFeedback` beside existing explicit save feedback. Use `reset(saved)`
 for Discard to persist the baseline immediately. For these original consumers, clear a record's draft after successful deletion.
-Hero also clears drafts on successful Save and Discard, as described below. Normal edits need no persistence calls.
+Hero and About also clear drafts on successful Save and Discard, as described below. Normal edits need no persistence calls.
 
 ## Storage contract
 
@@ -37,9 +37,9 @@ remain unscoped; account-scoped storage and migration are deferred.
 Restoration runs after client mounting, before editor interaction or any write.
 Only edited/reset drafts are written. Updates persist after a 300 ms pause;
 editor/provider unmount, pagehide, and a hidden document flush pending writes.
-Discard immediately writes the provider baseline. Deletion removes the draft
+For original consumers, Discard immediately writes the provider baseline. Deletion removes the draft
 and supersedes queued edits. Original consumers do not clear the working draft on explicit save completion.
-Hero clears it after a confirmed successful save, superseding queued writes.
+Hero and About clear it after a confirmed successful save, superseding queued writes.
 
 Malformed entries fall back to provider values with recovery feedback. Read/write
 failures do not block editing. Failed writes/removals remain queued for the next
@@ -49,14 +49,15 @@ to the same draft are not coordinated.
 
 ## Scope and limitations
 
-Hero fetches and saves real server content, as documented in
-[Hero API integration](hero-api.md#hero-editor-integration). It uses
+Hero and About fetch and save real server content, as documented in
+[Hero API integration](hero-api.md#hero-editor-integration) and
+[About editor integration](about-api.md#editor-integration). Each uses
 `useReconciledDraft` with the existing v1 store: current server content initializes
 the form; local draft values remain available through label-side field actions.
 No historical snapshot or extra storage format is required. Account-scoped keys
 and their migration remain deferred.
 
-For editors other than Hero, only working drafts are durable. Provider saved values and record
+For editors other than Hero and About, only working drafts are durable. Provider saved values and record
 collections remain in memory and reinitialize on reload. Discard uses the
 provider's current saved values, which after reload are application initial
 values. This feature does not make newly created saved records available at
@@ -71,7 +72,7 @@ existing form to server values, offer label-side Use draft / Use saved actions,
 and save the assembled form explicitly. A successful save clears the local draft;
 subsequent edits start a new draft. Failed saves preserve it.
 
-Hero implements this behavior. `useReconciledDraft` separates assembled form
+Hero and About implement this behavior. `useReconciledDraft` separates assembled form
 values from the stored candidate. Its `edit` callback must be a pure, field-local
 update: the same update applies to the displayed form and the stored draft, so
 unreviewed values in other fields survive. `choose` updates only the form. On
@@ -82,7 +83,7 @@ The hook's `bindField(read, write)` returns current `value`, `savedValue`,
 optional differing `draftValue`, `isDisabled`, and `onChange`. Configure
 `useReconciledDraft` once with `{ disabled: pending, onChange: resetSave }`.
 Bindings guard changes while disabled and notify the editor before applying
-accepted changes. Hero spreads bindings directly onto `CmsField` and supplies
+accepted changes. Editors spread bindings directly onto `CmsField` and supply
 stage-specific accessible context; no editor-local binding wrapper is needed.
 `CmsField` owns the shared button and derives Use saved when its current value
 equals the draft value, otherwise Use draft. No separate toggle state is needed.

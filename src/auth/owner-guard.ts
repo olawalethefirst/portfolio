@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { requireAdminUserId } from "./owner-config";
 import type { ApiError } from "@/src/api/errors";
 
 type OwnerAuthorization =
@@ -9,7 +10,6 @@ type OwnerAuthorization =
 export async function authorizeAdmin(
   auth: Pick<SupabaseClient["auth"], "getUser">,
 ): Promise<OwnerAuthorization> {
-  const ownerId = process.env.ADMIN_USER_ID?.trim();
   const forbidden: OwnerAuthorization = {
     ok: false,
     error: {
@@ -17,7 +17,8 @@ export async function authorizeAdmin(
       message: "This account doesn’t have admin access.",
     },
   };
-  if (!ownerId) return forbidden;
+  let ownerId: string;
+  try { ownerId = requireAdminUserId(); } catch { return forbidden; }
 
   const unauthenticated: OwnerAuthorization = {
     ok: false,

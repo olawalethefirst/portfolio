@@ -1,30 +1,37 @@
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
-import { AboutProvider, useAbout } from "@/src/cms/AboutProvider";
+import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
+import { useAboutQuery } from "@/src/cms/about-queries";
+import { mockAboutApi } from "@/src/cms/test-support/mockAboutApi";
 import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AboutEditor } from "./AboutEditor";
 
-function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+async function render(ui: ReactNode) {
+  const page = renderPage(<CmsQueryProvider accountId="test-owner">{ui}</CmsQueryProvider>, { wrapper: CmsShell });
+  await screen.findByRole("textbox", { name: "Heading" });
+  return page;
+}
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 
 beforeEach(() => {
+  mockAboutApi();
   push.mockReset();
   vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal("scrollY", 240);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 function Saved() {
-  const { saved } = useAbout();
-  return <output aria-label="Saved biography">{saved.biography}</output>;
+  const { data: saved } = useAboutQuery();
+  return <output aria-label="Saved biography">{saved?.biography}</output>;
 }
 
 it("previews unsaved About content with the fixed CTA without saving or losing edits", async () => {
-  render(<AboutProvider><AboutEditor /><Saved /></AboutProvider>);
+  await render(<><AboutEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved biography").textContent;
   fireEvent.change(screen.getByRole("textbox", { name: "Heading" }), { target: { value: "Meet the maker" } });
   fireEvent.change(screen.getByRole("textbox", { name: "Biography" }), { target: { value: "Unsaved biography\nSecond paragraph." } });
@@ -43,7 +50,7 @@ it("previews unsaved About content with the fixed CTA without saving or losing e
 });
 
 it("validates without changing saved content and discards errors and working edits", async () => {
-  render(<AboutProvider><AboutEditor /><Saved /></AboutProvider>);
+  await render(<><AboutEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved biography").textContent;
   const heading = screen.getByRole("textbox", { name: "Heading" });
   fireEvent.change(heading, { target: { value: " " } });
@@ -63,29 +70,30 @@ it("validates without changing saved content and discards errors and working edi
   expect(screen.getByRole("textbox", { name: "Heading" }).getAttribute("aria-invalid")).not.toBe("true");
 });
 
-it("retains edits during a pending save and restores the submitted snapshot after remount", async () => {
+it("locks fields and actions while saving the captured input", async () => {
   let finish!: () => void;
   const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-  const { rerender } = render(<AboutProvider request={request}><AboutEditor /><Saved /></AboutProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "Biography" }), { target: { value: "Submitted biography" } });
+  mockAboutApi(request);
+  await render(<><AboutEditor /><Saved /></>);
+  const biography = screen.getByRole("textbox", { name: "Biography" }) as HTMLTextAreaElement;
+  fireEvent.change(biography, { target: { value: "Submitted biography" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  expect(request).toHaveBeenCalledTimes(1);
-  fireEvent.change(screen.getByRole("textbox", { name: "Biography" }), { target: { value: "Still editing" } });
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  expect(biography.matches(":disabled")).toBe(true);
+  for (const name of ["Save changes", "Discard changes", "Preview", "Use saved Biography"])
+    expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+  fireEvent.change(biography, { target: { value: "Blocked edit" } });
+  expect(biography.value).toBe("Submitted biography");
   await act(async () => finish());
-  expect(screen.getByLabelText("Saved biography").textContent).toBe("Submitted biography");
-  expect(screen.getByRole("status", { name: "About save status" }).textContent).toContain("Unsaved changes");
-  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-  expect((screen.getByRole("textbox", { name: "Biography" }) as HTMLTextAreaElement).value).toBe("Submitted biography");
-  rerender(<AboutProvider request={request}><Saved /></AboutProvider>);
-  rerender(<AboutProvider request={request}><AboutEditor /><Saved /></AboutProvider>);
-  expect((screen.getByRole("textbox", { name: "Biography" }) as HTMLTextAreaElement).value).toBe("Submitted biography");
+  await waitFor(() => expect(screen.getByLabelText("Saved biography").textContent).toBe("Submitted biography"));
+  expect(biography.matches(":disabled")).toBe(false);
+  expect(screen.getByRole("status", { name: "About save status" }).textContent).toBe("No unsaved changes");
 });
 
-it("preserves About edits through the demo failure control and retries a toolbar save", async () => {
+it("preserves About edits after failure and retries a toolbar save", async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<AboutProvider request={request}><AboutEditor /><Saved /></AboutProvider>);
+  mockAboutApi(request);
+  await render(<><AboutEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved biography").textContent;
   fireEvent.change(screen.getByRole("textbox", { name: "Biography" }), { target: { value: "Retry this biography" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -95,11 +103,11 @@ it("preserves About edits through the demo failure control and retries a toolbar
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(screen.getByLabelText("Saved biography").textContent).toBe("Retry this biography"));
   expect(screen.queryByRole("alert")).toBeNull();
-  expect(screen.getByRole("status", { name: "About save status" }).textContent).toContain("Saved.");
+  expect(screen.getByRole("status", { name: "About save status" }).textContent).toBe("No unsaved changes");
 });
 
-it("shows associated errors on blur and corrects them without exposing untouched fields", () => {
-  render(<AboutProvider><AboutEditor /></AboutProvider>);
+it("shows associated errors on blur and corrects them without exposing untouched fields", async () => {
+  await render(<AboutEditor />);
   const heading = screen.getByRole("textbox", { name: "Heading" });
   const biography = screen.getByRole("textbox", { name: "Biography" });
   fireEvent.change(heading, { target: { value: "" } });
@@ -117,17 +125,16 @@ it("shows associated errors on blur and corrects them without exposing untouched
   expect(heading.getAttribute("aria-invalid")).toBe("true");
 });
 
-it("submits the field-owned form and ignores failures after newer corrections", async () => {
+it("does not apply a late save failure to an editor that has unmounted", async () => {
   let fail!: (reason: Error) => void;
   const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
-  render(<AboutProvider request={request}><AboutEditor /></AboutProvider>);
+  mockAboutApi(request);
+  const page = await render(<AboutEditor />);
   const heading = screen.getByRole("textbox", { name: "Heading" });
   fireEvent.change(heading, { target: { value: "Submitted heading" } });
-  const form = heading.closest("form");
-  expect(form).toBeTruthy();
-  fireEvent.submit(form!);
-  expect(request).toHaveBeenCalledTimes(1);
-  fireEvent.change(heading, { target: { value: "Newer heading" } });
+  fireEvent.submit(heading.closest("form")!);
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  page.unmount();
   await act(async () => fail(new Error("Old failure")));
   expect(screen.queryByRole("alert")).toBeNull();
 });
