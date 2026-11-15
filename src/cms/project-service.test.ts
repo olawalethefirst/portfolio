@@ -5,13 +5,15 @@ vi.mock("@/src/db/projects", () => ({
   insertProject: vi.fn(),
   updateProject: vi.fn(),
   saveAndPublishProject: vi.fn(),
+  deletePublishedProject: vi.fn(),
 }));
 import {
   insertProject,
   updateProject,
   saveAndPublishProject,
+  deletePublishedProject,
 } from "@/src/db/projects";
-import { createProject, publishProject, saveProject } from "./project-service";
+import { createProject, publishProject, saveProject, unpublishProject } from "./project-service";
 import type { ProjectDraft, ProjectRecord } from "./projects";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -114,4 +116,18 @@ it("reports a missing project when publishing", async () => {
     ok: false,
     error: { code: "NOT_FOUND", message: "Project was not found." },
   });
+});
+
+it("unpublishes only the live snapshot and returns removed content", async () => {
+  vi.mocked(deletePublishedProject).mockResolvedValue(complete);
+  expect(await unpublishProject(id)).toEqual({ ok: true, content: complete });
+  expect(deletePublishedProject).toHaveBeenCalledExactlyOnceWith(id);
+  expect(updateProject).not.toHaveBeenCalled();
+});
+
+it("reports when there is no published Project to remove", async () => {
+  vi.mocked(deletePublishedProject).mockResolvedValue(null);
+  expect(await unpublishProject(id)).toEqual({ ok: false, error: {
+    code: "NOT_FOUND", message: "Published Project was not found.",
+  } });
 });

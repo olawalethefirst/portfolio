@@ -4,7 +4,10 @@ import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { listProjects } from "@/src/db/projects";
-import { createProject } from "@/src/cms/project-service";
+import {
+  createAndPublishProject,
+  createProject,
+} from "@/src/cms/project-service";
 import { projectDraftSchema } from "@/src/cms/projects";
 
 export const GET = withAdminApi(async () =>
@@ -25,14 +28,20 @@ export const POST = withSameOrigin(
         });
       }
       const parsed = z
-        .strictObject({ intent: z.literal("save"), draft: projectDraftSchema })
+        .strictObject({
+          intent: z.enum(["save", "publish"]),
+          draft: projectDraftSchema,
+        })
         .safeParse(body);
       if (!parsed.success)
         return apiErrorResponse({
           code: "INVALID_REQUEST",
           message: "Provide a valid Project draft.",
         });
-      const result = await createProject(parsed.data.draft);
+      const result =
+        parsed.data.intent === "publish"
+          ? await createAndPublishProject(parsed.data.draft)
+          : await createProject(parsed.data.draft);
       return result.ok
         ? NextResponse.json(result.content, { status: 201 })
         : apiErrorResponse(result.error);

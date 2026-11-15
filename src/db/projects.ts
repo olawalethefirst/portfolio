@@ -168,3 +168,31 @@ export async function saveAndPublishProject(
     return record(saved, live);
   });
 }
+
+export async function createAndPublishProject(
+  value: ProjectDraft,
+): Promise<ProjectRecord> {
+  return getDb().transaction(async (tx) => {
+    const [saved] = await tx
+      .insert(projects)
+      .values(projectValues(value))
+      .returning();
+    if (!saved) throw new Error("Project creation did not return content.");
+    const [live] = await tx
+      .insert(publishedProjects)
+      .values({ projectId: saved.id, ...projectValues(value) })
+      .returning();
+    if (!live) throw new Error("Project publish did not return content.");
+    return record(saved, live);
+  });
+}
+
+export async function deletePublishedProject(
+  id: string,
+): Promise<ProjectDraft | null> {
+  const [row] = await getDb()
+    .delete(publishedProjects)
+    .where(eq(publishedProjects.projectId, id))
+    .returning();
+  return row ? published(row) : null;
+}
