@@ -7,4 +7,8 @@ const collectionSchema = z.array(seoRecordSchema);
 export const seoApi = {
   list: (signal?: AbortSignal) =>
     requestJson("/api/admin/seo", collectionSchema, { signal }),
+  read: (id: string, signal?: AbortSignal) =>
+    requestJson(`/api/admin/seo/${encodeURIComponent(id)}`, seoRecordSchema, {
+      signal,
+    }),
 };

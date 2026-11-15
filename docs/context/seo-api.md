@@ -3,22 +3,20 @@
 `GET /api/admin/seo` returns the complete JSON array of saved
 `{ id, path, title, description }` resources, including the `/` default.
 `GET /api/admin/seo/:id` returns one saved resource by persistent UUID.
-Both succeed with 200 and `Cache-Control: private, no-store`.
+Both are public and succeed with 200 and `Cache-Control: no-store`.
 No success envelope, pagination, default aliases or default/override flags are
 introduced. Blank override fields remain blank; metadata inheritance is separate.
 
-Both handlers use `withAdminApi` for configured-owner authorization, safe errors
-and session cookie/header preservation. Missing identity returns 401; non-owner
-returns 403. Missing owner configuration and unexpected provider/database failures
-return safe 500 feedback without internal details. GET does not require Origin
-or JSON content-type headers. These endpoints do not grant cross-origin browser
-access or alter existing mutation-origin policy.
+Both GET handlers use `withPublicRead` for safe errors and uncached responses.
+They require no identity, owner/Auth configuration or session and write no auth
+cookies. Proxy also bypasses Auth refresh for these GET/HEAD paths. Database
+failures return safe500. Origin and JSON content-type headers are not required.
+No browser CORS permission is added; mutations remain owner-only as described below.
 
 The item handler awaits Next.js promised route params, validates the ID as a UUID
-after authorization, and returns 400/INVALID_REQUEST for malformed IDs without a
+and returns 400/INVALID_REQUEST for malformed IDs without a
 query. Valid absent IDs return 404/NOT_FOUND. There are no `defaults` or `contact`
-ID aliases; clients use IDs from collection responses. The existing demo editor
-routes are not yet integrated with this API.
+ID aliases; clients use IDs from collection responses. CMS list and record loading use these reads; mutation integration remains separate.
 
 `src/db/seo.ts` maps the existing SQL seo table and returns id/path/title/description
 only. `listSeo()` orders the complete array by unique path; `readSeo(id)` uses a
@@ -181,7 +179,29 @@ successful list. A collection with just the default shows the existing empty
 state. Client-side search, clear-search, fixed icons and navigation controls remain.
 Override links use persistent IDs from the API response.
 
-This is the list-loading slice only. Existing record/default loading and mutations
-still use their prior editor implementation until their own integration slices;
-server-ID links become fully usable as that record-loading slice is delivered.
-No draft storage, recovery, editor form or public metadata behavior changes here.
+List loading introduces no mutation or draft-storage changes. Record/default
+loading is described below; mutation wiring and public metadata remain separate.
+
+
+## Existing record loading
+
+`seoApi.read(id, signal)` and `useSeoRecordQuery(id)` load saved item resources
+under account-scoped collection/item keys. The UI `/admin/seo/defaults` alias
+resolves the `/` row from the collection, then requests that persistent UUID;
+there is no API `defaults` alias. Override IDs load their own item while the
+collection supplies persisted default inheritance. A direct default UUID also
+selects the defaults form. The item query is skipped until an ID is available.
+
+Existing record loading uses shared LoadingState with no visible loading text.
+Read errors/missing initialized defaults show feedback without fixture fallback;
+missing or failed item reads provide Back to SEO. The form receives server content
+as explicit input, keeping the prior local draft/Discard behavior and field layout.
+New remains on its existing implementation.
+
+Save/Delete operations are explicit optional form dependencies. Server-loaded
+records receive no demo write handlers: Save is disabled and Delete is absent
+until their separate integration slices supply real operations. Existing form
+operation tests remain at the form boundary; record-loading tests exercise actual
+JSON adapters, saved IDs/content, loading/errors and legacy draft continuity.
+No mutation hook, provider replacement, shared draft machinery or public metadata
+change is included in existing-record loading.
