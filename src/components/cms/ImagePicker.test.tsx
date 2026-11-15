@@ -1,6 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useImageUpload } from "@/src/media/use-image-upload";
+const { uploadImage } = vi.hoisted(() => ({ uploadImage: vi.fn() }));
+vi.mock("@/src/media/upload-client", () => ({ uploadImage }));
 import { ImagePicker } from "./ImagePicker";
 
 const decode = vi.fn();
@@ -56,4 +60,31 @@ it("rejects oversized files before reading them", () => {
   expect(screen.getByRole("alert").textContent).toContain("10 MiB");
   expect(decode).not.toHaveBeenCalled();
   expect(screen.getByAltText("Current cover").getAttribute("src")).toBe("/publication-cover.svg");
+});
+
+
+function UploadExample() {
+  const [value, setValue] = useState("/publication-cover.svg");
+  const upload = useImageUpload({ url: "https://example.supabase.co", publishableKey: "public" });
+  const select = (file: File) => upload.mutate(file, { onSuccess: (image) => setValue(image.source) });
+  return <ImagePicker value={value} alt="Current cover" onChange={setValue}
+    onFileSelect={select} isPending={upload.isPending} error={upload.error?.message}
+    onRetry={upload.isError && upload.variables ? () => select(upload.variables!) : undefined} />;
+}
+it("pairs existing fields with mutation state, preserves failures and retries explicitly", async () => {
+  let finish!: (value: { source: string }) => void;
+  uploadImage.mockReset().mockRejectedValueOnce(new Error("Upload failed."))
+    .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  render(<QueryClientProvider client={new QueryClient()}><UploadExample /></QueryClientProvider>);
+  choose();
+  await screen.findByRole("button", { name: "Retry upload" });
+  expect(screen.getByAltText("Current cover").getAttribute("src")).toBe("/publication-cover.svg");
+  expect(uploadImage).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Retry upload" }));
+  await waitFor(() => expect(screen.getByLabelText("Replace image").matches(":disabled")).toBe(true));
+  expect(screen.getByRole("button", { name: "Remove image" }).matches(":disabled")).toBe(true);
+  await act(async () => finish({ source: "https://example.supabase.co/confirmed.png" }));
+  await waitFor(() => expect(screen.getByAltText("Current cover").getAttribute("src")).toBe("https://example.supabase.co/confirmed.png"));
+  expect(uploadImage).toHaveBeenCalledTimes(2);
+  expect(screen.getByLabelText("Replace image").matches(":disabled")).toBe(false);
 });

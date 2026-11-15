@@ -1,13 +1,39 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from "react";
+import { RotateCw } from "lucide-react";
+import { Spinner } from "@heroui/react/spinner";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+} from "react";
 import { Button } from "@/src/components/ui/Button";
 
 const maxBytes = 10 * 1024 * 1024;
 
 /** Local demo images use data URLs so saved previews outlive the picker. */
-export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", children, onBlur, onSelect, inputRef, presentation = "picker" }: {
+export function ImagePicker({
+  value,
+  alt,
+  onChange,
+  error,
+  name = "coverSrc",
+  children,
+  onBlur,
+  onSelect,
+  inputRef,
+  presentation = "picker",
+  onFileSelect,
+  isPending = false,
+  onRetry,
+}: {
+  onFileSelect?: (file: File) => void;
+  isPending?: boolean;
+  onRetry?: () => void;
   value: string;
   alt: string;
   onChange: (source: string) => void;
@@ -26,15 +52,21 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
   const reader = useRef<FileReader | null>(null);
   const generation = useRef(0);
   const change = useRef(onChange);
-  useEffect(() => { change.current = onChange; }, [onChange]);
-  useEffect(() => () => {
-    generation.current += 1;
-    reader.current?.abort();
-  }, []);
+  useEffect(() => {
+    change.current = onChange;
+  }, [onChange]);
+  useEffect(
+    () => () => {
+      generation.current += 1;
+      reader.current?.abort();
+    },
+    [],
+  );
 
   function select(file: File | undefined) {
-    if (!file) return;
+    if (!file || isPending) return;
     onSelect?.();
+    if (onFileSelect) { onFileSelect(file); return; }
     const current = ++generation.current;
     reader.current?.abort();
     setPending(false);
@@ -54,15 +86,20 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
     function fail() {
       if (current !== generation.current) return;
       setPending(false);
-      setFileError(presentation === "insertion"
-        ? "This image could not be read. Try another file. Your article is unchanged."
-        : "This image could not be read. Try another file. Your previous image is unchanged.");
+      setFileError(
+        presentation === "insertion"
+          ? "This image could not be read. Try another file. Your article is unchanged."
+          : "This image could not be read. Try another file. Your previous image is unchanged.",
+      );
     }
     next.onerror = fail;
     next.onload = async () => {
       if (current !== generation.current) return;
       const source = next.result;
-      if (typeof source !== "string") { fail(); return; }
+      if (typeof source !== "string") {
+        fail();
+        return;
+      }
       const image = new window.Image();
       image.src = source;
       try {
@@ -71,31 +108,92 @@ export function ImagePicker({ value, alt, onChange, error, name = "coverSrc", ch
         change.current(source);
         setPending(false);
         setFeedback(`${file.name} selected.`);
-      } catch { fail(); }
+      } catch {
+        fail();
+      }
     };
     next.readAsDataURL(file);
   }
 
   const insertion = presentation === "insertion";
-  return <div className={insertion ? "text-sm" : "space-y-3"}>
-    {!insertion ? value ? children ?? <div className="relative aspect-[16/10] overflow-hidden border border-border">
-      <Image src={value} alt={alt} fill sizes="(max-width: 1279px) 80vw, 288px" className="object-cover" />
-    </div> : <p className="border border-dashed border-border p-6 text-sm text-muted">No image selected</p> : null}
-    {!insertion ? <label htmlFor={id} className="block text-sm font-medium">{value ? "Replace image" : "Choose image"}</label> : null}
-    <input ref={inputRef} hidden={insertion} aria-label={insertion ? "Article image" : undefined} onBlur={onBlur} id={id} name={name} type="file" accept="image/jpeg,image/png,image/webp"
-      aria-invalid={Boolean(fileError || error)} aria-describedby={insertion ? `${id}-error` : `${id}-hint ${id}-error`}
-      className="block min-h-11 w-full min-w-0 text-sm file:mr-3 file:border-0 file:bg-default file:px-3 file:py-3 file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
-      onChange={(event) => { select(event.target.files?.[0]); event.target.value = ""; }} />
-    {!insertion ? <p id={`${id}-hint`} className="text-xs text-muted">JPEG, PNG or WebP · up to 10 MiB.</p> : null}
-    <p role="status" className="text-xs text-muted">{pending ? "Reading image…" : feedback}</p>
-    <p id={`${id}-error`} role={fileError || error ? "alert" : undefined} className="text-sm text-danger">{fileError || error}</p>
-    {!insertion && value ? <Button variant="ghost" size="sm" onPress={() => {
-      generation.current += 1;
-      reader.current?.abort();
-      setPending(false);
-      setFileError("");
-      setFeedback("Image removed.");
-      onChange("");
-    }}>Remove image</Button> : null}
-  </div>;
+  return (
+    <div className={insertion ? "text-sm" : "space-y-3"}>
+      {!insertion ? (
+        value ? (
+          (children ?? (
+            <div className="relative aspect-[16/10] overflow-hidden border border-border">
+              <Image
+                src={value}
+                unoptimized={Boolean(onFileSelect)}
+                alt={alt}
+                fill
+                sizes="(max-width: 1279px) 80vw, 288px"
+                className="object-cover"
+              />
+            </div>
+          ))
+        ) : (
+          <p className="border border-dashed border-border p-6 text-sm text-muted">
+            No image selected
+          </p>
+        )
+      ) : null}
+      {!insertion ? (
+        <label htmlFor={id} className="block text-sm font-medium">
+          {value ? "Replace image" : "Choose image"}
+        </label>
+      ) : null}
+      <input
+        ref={inputRef}
+        hidden={insertion}
+        aria-label={insertion ? "Article image" : undefined}
+        onBlur={onBlur}
+        id={id}
+        name={name}
+        disabled={isPending}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        aria-invalid={Boolean(fileError || error)}
+        aria-describedby={insertion ? `${id}-error` : `${id}-hint ${id}-error`}
+        className="block min-h-11 w-full min-w-0 text-sm file:mr-3 file:border-0 file:bg-default file:px-3 file:py-3 file:text-foreground focus-visible:outline-2 focus-visible:outline-focus"
+        onChange={(event) => {
+          select(event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+      {!insertion ? (
+        <p id={`${id}-hint`} className="text-xs text-muted">
+          JPEG, PNG or WebP · up to 10 MiB.
+        </p>
+      ) : null}
+      <p role="status" className="text-xs text-muted">
+        {isPending ? <Spinner aria-label="Uploading image" size="sm" /> : pending ? "Reading image…" : feedback}
+      </p>
+      <p
+        id={`${id}-error`}
+        role={fileError || error ? "alert" : undefined}
+        className="text-sm text-danger"
+      >
+        {fileError || error}
+      </p>
+      {onRetry && !isPending ? <Button variant="outline" size="sm" startContent={<RotateCw aria-hidden="true" className="size-4" />} onPress={onRetry}>Retry upload</Button> : null}
+      {!insertion && value ? (
+        <Button
+          isDisabled={isPending}
+          variant="ghost"
+          size="sm"
+          onPress={() => {
+            generation.current += 1;
+            reader.current?.abort();
+            setPending(false);
+            setFileError("");
+            setFeedback("Image removed.");
+            onChange("");
+          }}
+        >
+          Remove image
+        </Button>
+      ) : null}
+    </div>
+  );
 }

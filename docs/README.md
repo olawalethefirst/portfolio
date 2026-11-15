@@ -62,6 +62,12 @@ This directory stores durable knowledge that future contributors cannot reliably
 - [`context/cms-homepage-text-limits.md`](context/cms-homepage-text-limits.md):
   approved initial Hero, Project and Publication homepage text budgets and migration enforcement.
 
+- [`context/media-upload-picker-spec.md`](context/media-upload-picker-spec.md): reusable
+  upload hook, existing image-field pairing and explicit Retry for 07.02.
+
+- [`context/media-upload-api.md`](context/media-upload-api.md): owner-only
+  upload permission contract, signing boundary and verification for 07.01.
+
 - [`contracts/cms-content-schema.md`](contracts/cms-content-schema.md): current
   CMS fields, validation and lifecycle requirements, with database-design
   decisions and visitor persistence kept explicit before SQL migrations.
