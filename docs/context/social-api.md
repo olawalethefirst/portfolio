@@ -31,6 +31,34 @@ The existing SQL trigger owns updated_at; initialization remains seed-owned.
 No schema/grants or hosted changes are included. Live database permissions must
 be verified through the application connection, separately from automated tests.
 
-Contact editor integration and persisted public Social output remain separate
-work. This route follows installed Next.js guidance in
+Persisted public Social output remains separate work. This route follows installed Next.js guidance in
 `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`.
+
+
+## Editor integration
+
+`ContactEditor` reads/saves through `socialApi`, `useSocialQuery` and
+`useSaveSocial`, using the studio CmsQueryProvider account identity. The query key
+is `["cms", accountId, "social"]`. Reads receive AbortSignal; automatic retries
+remain disabled. Save captures validated input, blocks duplicate submissions,
+cancels active reads and adopts canonical server data. An unconfirmed response
+invalidates the query but keeps the local form because the write may have succeeded.
+
+The demo SocialProvider is replaced by editor-owned `useDraftStore` and shared
+`useReconciledDraft`/`bindField`. The existing key remains
+`portfolio:cms-drafts:v1:social:contact` with `{ id: "contact", value }`.
+The form starts from saved server values; label-side actions select differing
+local alternatives per field. Preview and Save use the assembled values.
+Save and Discard clear recovery alternatives and release local form overrides;
+failed saves preserve work. A late successful save uses guarded draft cleanup
+so later work after navigation survives. Account-scoped draft storage/migration
+and cross-tab coordination remain deferred.
+
+Fields, source actions, Preview, Save and Discard lock while saving. Existing
+URL validation, field icons, preview links and focus/scroll restoration remain.
+Server field pointers map only to github/linkedin/x through the shared issue
+mapper; unknown issues remain form feedback. Focus follows visual profile order.
+Typing or choosing a source resets mutation feedback; loading failure displays
+feedback without demo fallback or new authentication controls. Native URL inputs
+retain browser whitespace sanitization; the API adapter/query does not introduce
+additional normalization. Public links still use their existing separate data.

@@ -1,7 +1,6 @@
 import { requireAdminUserId } from "@/src/auth/owner-config";
 import { CmsShell } from "@/src/components/cms/CmsShell";
 import { SeoProvider } from "@/src/cms/SeoProvider";
-import { SocialProvider } from "@/src/cms/SocialProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
 import { CmsProvider } from "@/src/cms/CmsProvider";
 import type { ReactNode } from "react";
@@ -14,11 +13,9 @@ export default function StudioLayout({ children }: { children: ReactNode }) {
     <CmsQueryProvider accountId={accountId}>
       <CmsProvider>
         <ProjectProvider>
-          <SocialProvider>
-            <SeoProvider>
-              <CmsShell>{children}</CmsShell>
-            </SeoProvider>
-          </SocialProvider>
+          <SeoProvider>
+            <CmsShell>{children}</CmsShell>
+          </SeoProvider>
         </ProjectProvider>
       </CmsProvider>
     </CmsQueryProvider>

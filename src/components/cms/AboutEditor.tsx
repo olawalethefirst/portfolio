@@ -31,6 +31,7 @@ import {
 } from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
+import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 
 const AboutPreview = dynamic(
   () => import("./AboutPreview").then((module) => module.AboutPreview),
@@ -118,18 +119,7 @@ function AboutEditorForm({
   const dirty = !sameAbout(value, saved);
   const hasDraft = Boolean(draft && !sameAbout(draft, saved));
 
-  function focusFirstError(nextErrors: AboutErrors) {
-    const first = (["heading", "biography"] as const).find(
-      (field) => nextErrors[field],
-    );
-    if (first)
-      requestAnimationFrame(() => {
-        if (active.current)
-          formRef.current
-            ?.querySelector<HTMLElement>(`[name="${first}"]`)
-            ?.focus();
-      });
-  }
+  const focusFirstError = useFirstFieldErrorFocus(formRef, ["heading", "biography"] as const);
   async function saveChanges() {
     if (pending) return false;
     resetSave();

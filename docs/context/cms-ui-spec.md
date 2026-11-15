@@ -496,12 +496,13 @@ There are no custom profile records, image controls, create or delete actions.
 `/admin/social`, `/admin/contact/new` and `/admin/contact/[id]` redirect to this
 editor for existing links.
 
-Each URL must be complete HTTPS without sign-in credentials. SocialProvider
-retains the last demo-saved destinations across CMS navigation. Saving captures
-the submitted URLs; newer edits remain dirty, failures preserve values and retry
-is explicit. Discard restores saved values and clears validation/feedback.
-Working drafts survive editor unmounts without navigation prompts. Reload restores
-fixtures. There is no backend, durable storage or inquiry inbox.
+Each URL must be complete HTTPS without sign-in credentials. The editor loads
+and saves through the protected Social API and account-scoped query cache.
+Fields and actions lock during Save; failures retain values for explicit retry.
+Server-first local draft review offers field-level alternatives. Save and Discard
+clear recovery alternatives; late-save cleanup preserves later work.
+See [Social editor integration](social-api.md#editor-integration) for the contract.
+Inquiry submission and persisted public links remain separate work.
 
 Preview hides the shared shell chrome through CmsPreviewFrame and shows the full public
 contact section with the working URLs and three-step form. Invalid

@@ -5,7 +5,7 @@ import { mockHeroApi } from "@/src/cms/test-support/mockHeroApi";
 import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
 import { SeoProvider } from "@/src/cms/SeoProvider";
-import { SocialProvider } from "@/src/cms/SocialProvider";
+import { mockSocialApi } from "@/src/cms/test-support/mockSocialApi";
 import { fireEvent, render as renderPage, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -21,12 +21,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: ()
 beforeEach(() => {
   mockHeroApi();
   mockAboutApi();
+  mockSocialApi();
   push.mockReset();
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })));
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 function Providers({ children }: { children: ReactNode }) {
-  return <CmsProvider><ProjectProvider><CmsQueryProvider accountId="test-owner"><SocialProvider><SeoProvider><CmsShell>{children}</CmsShell></SeoProvider></SocialProvider></CmsQueryProvider></ProjectProvider></CmsProvider>;
+  return <CmsProvider><ProjectProvider><CmsQueryProvider accountId="test-owner"><SeoProvider><CmsShell>{children}</CmsShell></SeoProvider></CmsQueryProvider></ProjectProvider></CmsProvider>;
 }
 async function render(ui: ReactNode) { const page = renderPage(ui); await screen.findAllByRole("textbox"); return page; }
 const editors = [
@@ -52,7 +53,7 @@ it.each(editors)("retains the %s working draft across navigation without confirm
   expect(unload.defaultPrevented).toBe(false);
   rerender(<Providers>{null}</Providers>);
   rerender(<Providers>{editor()}</Providers>);
-  if (_name === "Hero" || _name === "About") {
+  if (_name === "Hero" || _name === "About" || _name === "Contact") {
     await screen.findByRole("button", { name: `Use draft ${field}` });
     fireEvent.click(screen.getByRole("button", { name: `Use draft ${field}` }));
   }
@@ -65,7 +66,7 @@ it.each(editors)("restores the %s working draft after providers remount", async 
   fireEvent.change(screen.getByRole("textbox", { name: field }), { target: { value: "Recovered after reload" } });
   first.unmount();
   await render(<Providers>{editor()}</Providers>);
-  if (_name === "Hero" || _name === "About") {
+  if (_name === "Hero" || _name === "About" || _name === "Contact") {
     fireEvent.click(screen.getByRole("button", { name: `Use draft ${field}` }));
   }
   expect((screen.getByRole("textbox", { name: field }) as HTMLInputElement).value).toBe("Recovered after reload");

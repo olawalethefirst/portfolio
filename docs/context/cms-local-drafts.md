@@ -3,7 +3,7 @@
 CMS working drafts automatically survive navigation and reloads on the same
 browser. Explicit Save and Publish actions retain their existing meanings.
 
-Hero and About use the server-first review behavior in
+Hero, About and Contact use the server-first review behavior in
 [draft reconciliation](cms-draft-reconciliation-spec.md). Other editors retain
 the original working-draft behavior described below until their API integration.
 
@@ -19,7 +19,7 @@ Editors use `useWorkingDraft` for `value`, `setValue`, `reset`, `ready`, and
 `persistenceStatus`. Render the loading status until `ready`; show
 `CmsDraftFeedback` beside existing explicit save feedback. Use `reset(saved)`
 for Discard to persist the baseline immediately. For these original consumers, clear a record's draft after successful deletion.
-Hero and About also clear drafts on successful Save and Discard, as described below. Normal edits need no persistence calls.
+Hero, About and Contact also clear drafts on successful Save and Discard, as described below. Normal edits need no persistence calls.
 
 ## Storage contract
 
@@ -39,7 +39,7 @@ Only edited/reset drafts are written. Updates persist after a 300 ms pause;
 editor/provider unmount, pagehide, and a hidden document flush pending writes.
 For original consumers, Discard immediately writes the provider baseline. Deletion removes the draft
 and supersedes queued edits. Original consumers do not clear the working draft on explicit save completion.
-Hero and About clear it after a confirmed successful save, superseding queued writes.
+Hero, About and Contact clear it after a confirmed successful save, superseding queued writes.
 
 Malformed entries fall back to provider values with recovery feedback. Read/write
 failures do not block editing. Failed writes/removals remain queued for the next
@@ -49,15 +49,16 @@ to the same draft are not coordinated.
 
 ## Scope and limitations
 
-Hero and About fetch and save real server content, as documented in
-[Hero API integration](hero-api.md#hero-editor-integration) and
-[About editor integration](about-api.md#editor-integration). Each uses
+Hero, About and Contact fetch and save real server content, as documented in
+[Hero API integration](hero-api.md#hero-editor-integration),
+[About editor integration](about-api.md#editor-integration) and
+[Contact editor integration](social-api.md#editor-integration). Each uses
 `useReconciledDraft` with the existing v1 store: current server content initializes
 the form; local draft values remain available through label-side field actions.
 No historical snapshot or extra storage format is required. Account-scoped keys
 and their migration remain deferred.
 
-For editors other than Hero and About, only working drafts are durable. Provider saved values and record
+For editors other than Hero, About and Contact, only working drafts are durable. Provider saved values and record
 collections remain in memory and reinitialize on reload. Discard uses the
 provider's current saved values, which after reload are application initial
 values. This feature does not make newly created saved records available at
@@ -72,7 +73,7 @@ existing form to server values, offer label-side Use draft / Use saved actions,
 and save the assembled form explicitly. A successful save clears the local draft;
 subsequent edits start a new draft. Failed saves preserve it.
 
-Hero and About implement this behavior. `useReconciledDraft` separates assembled form
+Hero, About and Contact implement this behavior. `useReconciledDraft` separates assembled form
 values from the stored candidate. Its `edit` callback must be a pure, field-local
 update: the same update applies to the displayed form and the stored draft, so
 unreviewed values in other fields survive. `choose` updates only the form. On

@@ -10,7 +10,7 @@ This directory stores durable knowledge that future contributors cannot reliably
 ## Current subsystem context
 
 - [`context/social-api.md`](context/social-api.md): protected Social read/save endpoints,
-  URL validation and singleton persistence.
+  URL validation, singleton persistence and Contact editor reconciliation.
 
 - [`context/about-api.md`](context/about-api.md): protected About read/save endpoints,
   singleton persistence, validation, editor reconciliation and request-time public output.

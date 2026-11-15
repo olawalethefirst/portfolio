@@ -1,25 +1,32 @@
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
-import { SocialProvider, useSocial } from "@/src/cms/SocialProvider";
+import { useSocialQuery } from "@/src/cms/social-queries";
+import { mockSocialApi } from "@/src/cms/test-support/mockSocialApi";
+import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ContactEditor } from "./ContactEditor";
 
-function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+async function render(ui: ReactNode) {
+  const page = renderPage(<CmsQueryProvider accountId="test-owner"><CmsShell>{ui}</CmsShell></CmsQueryProvider>);
+  await screen.findByRole("textbox", { name: "GitHub URL" });
+  return page;
+}
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 beforeEach(() => {
+  mockSocialApi();
   push.mockReset();
   vi.stubGlobal("scrollTo", vi.fn());
   vi.stubGlobal("scrollY", 280);
   vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn() })));
 });
-afterEach(() => vi.unstubAllGlobals());
-function Saved() { const { saved } = useSocial(); return <output aria-label="Saved GitHub">{saved.github}</output>; }
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+function Saved() { const { data: saved } = useSocialQuery(); return <output aria-label="Saved GitHub">{saved?.github}</output>; }
 
 it("previews working URLs through public social links with direct links without saving or losing values", async () => {
-  render(<SocialProvider><ContactEditor /><Saved /></SocialProvider>);
+  await render(<><ContactEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved GitHub").textContent;
   fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/new-profile" } });
   fireEvent.click(screen.getByRole("button", { name: "Preview contact" }));
@@ -41,7 +48,7 @@ it("previews working URLs through public social links with direct links without 
 });
 
 it("validates unsafe and blank URLs, keeps invalid previews inert and discards errors to saved values", async () => {
-  render(<SocialProvider><ContactEditor /><Saved /></SocialProvider>);
+  await render(<><ContactEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved GitHub").textContent;
   const github = screen.getByRole("textbox", { name: "GitHub URL" });
   fireEvent.change(github, { target: { value: "javascript:alert(1)" } });
@@ -67,29 +74,28 @@ it("validates unsafe and blank URLs, keeps invalid previews inert and discards e
   expect(screen.getByRole("textbox", { name: "GitHub URL" }).getAttribute("aria-invalid")).not.toBe("true");
 });
 
-it("captures the submitted URLs, blocks duplicates and retains newer edits and saved values across remount", async () => {
+it("locks fields, Preview and Discard during Save and adopts the saved URLs", async () => {
   let finish!: () => void;
   const request = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-  const { rerender } = render(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
-  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/submitted" } });
+  mockSocialApi(request);
+  await render(<><ContactEditor /><Saved /></>);
+  const github = screen.getByRole("textbox", { name: "GitHub URL" });
+  fireEvent.change(github, { target: { value: "https://github.com/submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-  expect(request).toHaveBeenCalledTimes(1);
-  expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/newer-edit" } });
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  expect((github as HTMLInputElement).disabled || github.closest("fieldset")?.disabled).toBe(true);
+  for (const name of ["Save changes", "Preview contact", "Discard changes"]) {
+    expect(screen.getByRole("button", { name }).hasAttribute("disabled")).toBe(true);
+  }
   await act(async () => finish());
-  expect(screen.getByLabelText("Saved GitHub").textContent).toBe("https://github.com/submitted");
-  expect(screen.getByRole("status", { name: "Contact save status" }).textContent).toContain("Unsaved changes");
-  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/submitted");
-  rerender(<SocialProvider request={request}><Saved /></SocialProvider>);
-  rerender(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
-  expect((screen.getByRole("textbox", { name: "GitHub URL" }) as HTMLInputElement).value).toBe("https://github.com/submitted");
+  await waitFor(() => expect(screen.getByLabelText("Saved GitHub").textContent).toBe("https://github.com/submitted"));
+  expect(screen.getByRole("status", { name: "Contact save status" }).textContent).toBe("No unsaved changes");
 });
 
-it("preserves URLs through a demo toolbar failure and retries", async () => {
+it("preserves URLs through a toolbar failure and retries", async () => {
   const request = vi.fn().mockRejectedValueOnce(new Error("Save failed")).mockResolvedValue(undefined);
-  render(<SocialProvider request={request}><ContactEditor /><Saved /></SocialProvider>);
+  mockSocialApi(request);
+  await render(<><ContactEditor /><Saved /></>);
   const saved = screen.getByLabelText("Saved GitHub").textContent;
   fireEvent.change(screen.getByRole("textbox", { name: "GitHub URL" }), { target: { value: "https://github.com/retry" } });
   fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -100,8 +106,8 @@ it("preserves URLs through a demo toolbar failure and retries", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
-it("shows associated URL errors after blur and clears them during correction without exposing untouched fields", () => {
-  render(<SocialProvider><ContactEditor /></SocialProvider>);
+it("shows associated URL errors after blur and clears them during correction without exposing untouched fields", async () => {
+  await render(<ContactEditor />);
   const github = screen.getByRole("textbox", { name: "GitHub URL" });
   const linkedin = screen.getByRole("textbox", { name: "LinkedIn URL" });
   fireEvent.change(github, { target: { value: "https://user:password@example.com" } });
@@ -119,18 +125,16 @@ it("shows associated URL errors after blur and clears them during correction wit
   expect(github.getAttribute("aria-invalid")).toBe("true");
 });
 
-it("submits its ARIA form using schema URL acceptance and suppresses obsolete request errors", async () => {
-  let fail!: (reason: Error) => void;
-  const request = vi.fn(() => new Promise<void>((_, reject) => { fail = reject; }));
-  render(<SocialProvider request={request}><ContactEditor /></SocialProvider>);
+it("submits its ARIA form using schema URL acceptance and retains a failed save", async () => {
+  const request = vi.fn().mockRejectedValue(new Error("Save failed"));
+  mockSocialApi(request);
+  await render(<ContactEditor />);
   const github = screen.getByRole("textbox", { name: "GitHub URL" });
   fireEvent.change(github, { target: { value: "  HTTPS://code.example.com/profile  " } });
   const form = github.closest("form");
-  expect(form).toBeTruthy();
-  expect(form!.noValidate).toBe(true);
+  expect(form?.noValidate).toBe(true);
   fireEvent.submit(form!);
+  await screen.findByRole("alert");
   expect(request).toHaveBeenCalledTimes(1);
-  fireEvent.change(github, { target: { value: "https://example.com/newer" } });
-  await act(async () => fail(new Error("Obsolete failure")));
-  expect(screen.queryByRole("alert")).toBeNull();
+  expect((github as HTMLInputElement).value).toBe("HTTPS://code.example.com/profile");
 });

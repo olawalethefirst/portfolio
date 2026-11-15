@@ -14,6 +14,7 @@ import {
 } from "@/src/cms/hero";
 import { Button } from "@/src/components/ui/Button";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
+import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import {
   useDraftStore,
   useReconciledDraft,
@@ -114,23 +115,13 @@ function HeroEditorForm({
     setExposed((current) => ({ ...current, [field]: true }));
   const dirty = !sameHero(value, saved);
   const hasDraft = Boolean(draft && !sameHero(draft, saved));
-  function focusFirstError(nextErrors: HeroErrors) {
-    const order: HeroField[] = [
-      "eyebrow",
-      "headline",
-      ...stages.flatMap(
-        ([key]) => [`${key}-tagline`, `${key}-description`] as const,
-      ),
-    ];
-    const first = order.find((field) => nextErrors[field]);
-    if (first)
-      requestAnimationFrame(() => {
-        if (active.current)
-          formRef.current
-            ?.querySelector<HTMLElement>(`[name="${first}"]`)
-            ?.focus();
-      });
-  }
+  const focusFirstError = useFirstFieldErrorFocus<HeroField>(formRef, [
+    "eyebrow",
+    "headline",
+    ...stages.flatMap(
+      ([key]) => [`${key}-tagline`, `${key}-description`] as const,
+    ),
+  ]);
   async function saveChanges() {
     if (pending) return false;
     resetSave();
