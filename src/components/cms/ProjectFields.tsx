@@ -4,6 +4,7 @@ import { Link } from "lucide-react";
 import type { ProjectDraft, ProjectErrors } from "@/src/cms/projects";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
 import { CmsField } from "./CmsField";
+import type { ComponentProps } from "react";
 import { ImagePicker } from "./ImagePicker";
 
 const platforms = [
@@ -11,10 +12,10 @@ const platforms = [
   { value: "mobile", label: "Mobile" },
 ] as const;
 
-export function ProjectFields({ value, errors, onChange, onBlur, imageReset, onImageSelect }: { value: ProjectDraft; errors: ProjectErrors; onChange: (value: ProjectDraft) => void; onBlur?: (field: keyof ProjectDraft) => void; imageReset?: number; onImageSelect?: () => void }) {
+export function ProjectFields({ value, errors, onChange, onBlur, imageReset, onImageSelect, imagePickerProps }: { value: ProjectDraft; errors: ProjectErrors; onChange: (value: ProjectDraft) => void; onBlur?: (field: keyof ProjectDraft) => void; imageReset?: number; onImageSelect?: () => void; imagePickerProps?: Pick<ComponentProps<typeof ImagePicker>, "onFileSelect" | "isPending" | "onRetry" | "error" | "onChange"> }) {
   function field<K extends keyof ProjectDraft>(key: K, next: ProjectDraft[K]) { onChange({ ...value, [key]: next }); }
   const supporting = <CmsFieldSection title="Screenshot">
-      <ImagePicker key={imageReset} onSelect={onImageSelect} onBlur={() => onBlur?.("screenshot")} name="screenshot" value={value.screenshot} alt={value.screenshotAlt} onChange={(source) => field("screenshot", source)} error={errors.screenshot} />
+      <ImagePicker key={imageReset} onSelect={onImageSelect} onBlur={() => onBlur?.("screenshot")} name="screenshot" value={value.screenshot} alt={value.screenshotAlt} onChange={(source) => field("screenshot", source)} {...imagePickerProps} error={imagePickerProps?.error ?? errors.screenshot} />
       <CmsField name="screenshotAlt" onBlur={() => onBlur?.("screenshotAlt")} label="Image description" value={value.screenshotAlt} onChange={(next) => field("screenshotAlt", next)} error={errors.screenshotAlt} />
     </CmsFieldSection>;
   return <CmsEditorContent supporting={supporting}>

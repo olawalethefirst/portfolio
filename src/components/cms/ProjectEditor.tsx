@@ -23,6 +23,8 @@ import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
+import { useImageUpload } from "@/src/media/use-image-upload";
+import type { UploadConfig } from "@/src/media/upload-reference";
 import { ProjectFields } from "./ProjectFields";
 
 const ProjectPreview = dynamic(
@@ -33,7 +35,13 @@ const ProjectPreview = dynamic(
   },
 );
 
-export function ProjectEditor({ id }: { id: string }) {
+export function ProjectEditor({
+  id,
+  uploadConfig = { url: "", publishableKey: "" },
+}: {
+  id: string;
+  uploadConfig?: UploadConfig;
+}) {
   const { records } = useProjects();
   const router = useRouter();
   const record = records.find((item) => item.id === id);
@@ -48,15 +56,19 @@ export function ProjectEditor({ id }: { id: string }) {
         />
       </>
     );
-  return <ProjectEditorForm initialRecord={record} />;
+  return (
+    <ProjectEditorForm initialRecord={record} uploadConfig={uploadConfig} />
+  );
 }
 function ProjectEditorForm({
   initialRecord,
+  uploadConfig,
 }: {
   initialRecord?: ProjectRecord;
+  uploadConfig: UploadConfig;
 }) {
   const router = useRouter();
-  const { records, commit, pending, working } = useProjects();
+  const { records, commit, pending: saving, working } = useProjects();
   const { id, value, setValue, reset, ready, persistenceStatus } =
     useWorkingDraft(
       working,
@@ -64,6 +76,8 @@ function ProjectEditorForm({
       () => initialRecord?.draft ?? emptyProject(),
       initialRecord?.id,
     );
+  const imageUpload = useImageUpload(uploadConfig);
+  const pending = saving || imageUpload.isPending;
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [exposed, setExposed] = useState<
@@ -91,6 +105,15 @@ function ProjectEditorForm({
     setError("");
     setMessage("");
     setValue(next);
+  }
+  function selectImage(file: File) {
+    setError("");
+    setMessage("");
+    imageUpload.mutate(file, {
+      onSuccess: (image) => {
+        setValue((current) => ({ ...current, screenshot: image.source }));
+      },
+    });
   }
   const expose = (field: keyof ProjectDraft) =>
     setExposed((current) => ({ ...current, [field]: true }));
@@ -142,10 +165,10 @@ function ProjectEditorForm({
       return true;
     } catch (failure) {
       setError(
-          failure instanceof Error
-            ? failure.message
-            : "The request failed. Try again.",
-        );
+        failure instanceof Error
+          ? failure.message
+          : "The request failed. Try again.",
+      );
       return false;
     }
   }
@@ -191,7 +214,8 @@ function ProjectEditorForm({
               name="intent"
               value="publish"
               startContent={<Send aria-hidden="true" className="size-4" />}
-              isLoading={pending}
+              isLoading={saving}
+              isDisabled={pending}
             >
               {record?.published ? "Update published" : "Publish"}
             </Button>
@@ -219,7 +243,9 @@ function ProjectEditorForm({
         error={!dialog ? error : undefined}
       >
         {pending
-          ? "Saving…"
+          ? imageUpload.isPending
+            ? "Uploading image…"
+            : "Saving…"
           : dirty
             ? "Unsaved changes"
             : record
@@ -244,6 +270,19 @@ function ProjectEditorForm({
       >
         <fieldset disabled={pending} aria-busy={pending} className="min-w-0">
           <ProjectFields
+            imagePickerProps={{
+              onFileSelect: selectImage,
+              isPending: imageUpload.isPending,
+              error: imageUpload.error?.message,
+              onRetry:
+                imageUpload.isError && imageUpload.variables
+                  ? () => selectImage(imageUpload.variables!)
+                  : undefined,
+              onChange: (screenshot) => {
+                imageUpload.reset();
+                setValue((current) => ({ ...current, screenshot }));
+              },
+            }}
             value={value}
             errors={errors}
             onChange={changeValue}
@@ -294,6 +333,7 @@ function ProjectEditorForm({
               !Object.keys(exposed).length)
           }
           onPress={() => {
+            imageUpload.reset();
             reset(record?.draft ?? emptyProject());
             setExposed({});
             setPublishAttempted(false);

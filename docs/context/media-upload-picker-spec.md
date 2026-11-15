@@ -49,9 +49,22 @@ unmount. The previous field value remains on failure. A caller can use the retur
 reference when its persistence API is implemented. Publishable URL/key configuration
 is supplied by the caller; secret keys stay server-only.
 
-No second picker, Project schemas, editor-wide pending state, route configuration,
-draft storage or content API integration belongs to this slice. Current production
-fields are not switched to uploads here. Consumer integration is separate work.
+## First consumer integration
+
+The owner authorized parent-managed field wiring after the hook slice. ProjectEditor
+now owns useImageUpload and passes callbacks, pending state, errors and explicit
+Retry through ProjectFields to the existing ImagePicker. A successful upload updates
+only screenshot with a functional draft update; failures retain the prior source.
+Removal and Discard reset mutation feedback. Existing editor locks derive from
+saving || imageUpload.isPending; no separate upload pending state is added.
+
+The Project server page passes only SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY as
+configuration. Missing values produce the existing upload configuration feedback
+on selection. No secret key reaches the client. Current source strings continue to
+use the existing draft storage. The returned asset descriptor remains available
+in the parent mutation result; durable asset association belongs to 07.03/08.08.
+No new draft schema or storage migration is introduced. Publications keep their
+existing local selection pending their own consumer integration.
 
 ## Verification
 

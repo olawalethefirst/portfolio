@@ -1,3 +1,4 @@
+import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
 import { labProjects } from "@/src/components/project-item/lab-projects";
@@ -6,9 +7,10 @@ import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ProjectEditor } from "./ProjectEditor";
 import { ProjectList } from "./ProjectList";
-function render(ui: ReactNode) { return renderPage(ui, { wrapper: CmsShell }); }
+function render(ui: ReactNode) { return renderPage(<CmsQueryProvider accountId="owner">{ui}</CmsQueryProvider>, { wrapper: CmsShell }); }
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+const { push, uploadImage } = vi.hoisted(() => ({ push: vi.fn(), uploadImage: vi.fn() }));
+vi.mock("@/src/media/upload-client", () => ({ uploadImage }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: () => "/admin/publications" }));
 
 vi.mock("@/src/components/project-item/ProjectDeviceStage", () => ({
@@ -28,6 +30,7 @@ beforeEach(() => {
     disconnect = vi.fn();
   });
   push.mockReset();
+  uploadImage.mockReset().mockResolvedValue(uploadedScreenshot);
   vi.stubGlobal(
     "matchMedia",
     vi.fn(() => ({
@@ -332,10 +335,11 @@ it("focuses URL before screenshot and updates conditional image-description erro
   expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
 });
 
-it("clears failed replacement feedback on discard without losing the saved image", () => {
+it("clears failed replacement feedback on discard without losing the saved image", async () => {
+  uploadImage.mockRejectedValueOnce(new Error("Choose a JPEG, PNG or WebP image."));
   render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
   fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["bad"], "bad.txt", { type: "text/plain" })] } });
-  expect(screen.getByRole("alert").textContent).toContain("JPEG, PNG or WebP");
+  expect((await screen.findByRole("alert")).textContent).toContain("JPEG, PNG or WebP");
   fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByLabelText("Replace image")).toBeTruthy();
@@ -357,27 +361,63 @@ it("unlocks fields after a failed save and permits correction and retry", async 
   await waitFor(() => expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("Saved."));
 });
 
-it("cancels a pending image replacement on discard so late decoding cannot replace the baseline", async () => {
-  let finish!: () => void;
-  const decode = vi.fn(() => new Promise<void>((resolve) => { finish = resolve; }));
-  Object.defineProperty(HTMLImageElement.prototype, "decode", { configurable: true, value: decode });
-  try {
-    render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
-    const original = screen.getByRole("img").getAttribute("src");
-    fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["image"], "new.png", { type: "image/png" })] } });
-    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-    await act(async () => finish());
-    expect(screen.getByRole("img").getAttribute("src")).toBe(original);
-    expect(screen.queryByText("new.png selected.")).toBeNull();
-    expect(screen.getByRole("button", { name: "Discard changes" }).hasAttribute("disabled")).toBe(true);
-  } finally {
-    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-  }
+it("ignores pending image replacement after unmount so late upload cannot change the draft", async () => {
+  let finish!: (image: typeof uploadedScreenshot) => void;
+  uploadImage.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+  const view = render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  const original = screen.getByRole("img").getAttribute("src");
+  chooseScreenshot();
+  await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("button", { name: "Discard changes" }).matches(":disabled")).toBe(true);
+  view.unmount();
+  await act(async () => finish(uploadedScreenshot));
+  render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  expect(screen.getByRole("img").getAttribute("src")).toBe(original);
+  expect(screen.getByRole("button", { name: "Discard changes" }).matches(":disabled")).toBe(true);
 });
 
 it("requires an image description after a publish attempt", () => {
   render(<ProjectProvider><ProjectEditor id="new" /></ProjectProvider>);
   fireEvent.click(screen.getByRole("button", { name: "Publish" }));
   expect(screen.getByRole("textbox", { name: "Image description" }).getAttribute("aria-invalid")).toBe("true");
+});
+
+
+const uploadedScreenshot = {
+  source: "https://example.supabase.co/storage/v1/object/public/media/screenshot.png",
+  descriptor: { assetId: "12345678-1234-4234-8234-123456789abc", bucket: "media", path: "12345678-1234-4234-8234-123456789abc.png" },
+};
+function chooseScreenshot() {
+  fireEvent.change(screen.getByLabelText("Replace image"), { target: { files: [new File(["image"], "screenshot.png", { type: "image/png" })] } });
+}
+it("uploads from the existing screenshot picker and locks actions until success", async () => {
+  let finish!: (image: typeof uploadedScreenshot) => void;
+  uploadImage.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  fireEvent.change(screen.getByRole("textbox", { name: "Name" }), { target: { value: "My edits" } });
+  chooseScreenshot();
+  await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("button", { name: "Save draft" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("button", { name: "Update published" }).matches(":disabled")).toBe(true);
+  expect(screen.getByRole("textbox", { name: "Name" }).matches(":disabled")).toBe(true);
+  await act(async () => finish(uploadedScreenshot));
+  await waitFor(() => expect(screen.getByAltText("Field Notes interface").getAttribute("src")).toBe(uploadedScreenshot.source));
+  expect((screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value).toBe("My edits");
+  expect(screen.getByRole("textbox", { name: "Name" }).matches(":disabled")).toBe(false);
+});
+it("retains the screenshot on upload failure, retries explicitly, and clears retry on removal", async () => {
+  uploadImage.mockRejectedValueOnce(new Error("Upload failed. Retry or choose another image.")).mockResolvedValue(uploadedScreenshot);
+  render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
+  const previous = screen.getByAltText("Field Notes interface").getAttribute("src");
+  chooseScreenshot();
+  const retry = await screen.findByRole("button", { name: "Retry upload" });
+  expect(screen.getByAltText("Field Notes interface").getAttribute("src")).toBe(previous);
+  expect(uploadImage).toHaveBeenCalledTimes(1);
+  fireEvent.click(retry);
+  await waitFor(() => expect(screen.getByAltText("Field Notes interface").getAttribute("src")).toBe(uploadedScreenshot.source));
+  expect(uploadImage).toHaveBeenCalledTimes(2);
+  fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+  expect(screen.queryByRole("button", { name: "Retry upload" })).toBeNull();
+  expect(screen.queryByAltText("Field Notes interface")).toBeNull();
+  expect(previous).not.toBe(uploadedScreenshot.source);
 });
