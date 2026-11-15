@@ -5,7 +5,7 @@ const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
 
-import { deleteSeoOverride, insertSeo, listSeo, readSeo, updateSeo } from "./seo";
+import { deleteSeoOverride, insertSeo, listSeo, readSeo, readSeoByPath, updateSeo } from "./seo";
 
 const defaults = { id: "00000000-0000-4000-8000-000000000001", path: "/", title: "Portfolio", description: "Default description" };
 const override = { id: "00000000-0000-4000-8000-000000000002", path: "/contact", title: "", description: "Contact description" };
@@ -122,5 +122,20 @@ it("preserves driver failure from deletion without retries", async () => {
   const failure = new Error("Database unavailable");
   execute.mockRejectedValue(failure);
   await expect(deleteSeoOverride(override.id)).rejects.toMatchObject({ cause: failure });
+  expect(execute).toHaveBeenCalledTimes(1);
+});
+
+
+it("reads SEO by exact path with a parameterized predicate and preserves blank fields", async () => {
+  execute.mockResolvedValue({ rows: [row(override)] });
+  expect(await readSeoByPath(override.path)).toEqual(override);
+  const [sql, params] = execute.mock.calls[0];
+  expect(sql).toContain('where "seo"."path" = $1');
+  expect(params).toEqual([override.path]);
+});
+
+it("returns null for a missing path without another query or fallback", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await readSeoByPath("/missing")).toBeNull();
   expect(execute).toHaveBeenCalledTimes(1);
 });

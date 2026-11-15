@@ -147,9 +147,9 @@ require separate design before affected consumers are implemented.
 
 ## Public read authorization
 
-Hero/About/Social/SEO GET collection/item resources are anonymously readable,
+Hero/About/Social/SEO GET collection/item resources (including SEO exact-path lookup) are anonymously readable,
 including with no owner/Auth configuration. They use no-store rather than the
 private, no-store mutation policy, and do not write session cookies. Their
-malformed-ID/missing-data/database error contracts remain 400/404/safe500.
+malformed-ID or path/missing-data/database error contracts remain 400/404/safe500.
 Owner-only POST/PUT/DELETE still return authorization errors and preserve session
 writes. No browser CORS permission is added by making read authorization public.

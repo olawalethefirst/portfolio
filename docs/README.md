@@ -9,7 +9,7 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
-- [`context/seo-api.md`](context/seo-api.md): public SEO reads and owner-only writes, persistent UUIDs, shared domain validation
+- [`context/seo-api.md`](context/seo-api.md): public SEO reads and owner-only writes, persistent UUIDs and exact-path lookup, shared domain validation
   and default/override resource projection.
 
 - [`context/social-api.md`](context/social-api.md): public Social reads and protected saves,

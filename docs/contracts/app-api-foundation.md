@@ -14,6 +14,7 @@ ledgers, upload-reference signing schemes or numeric limits.
 | GET, PUT | /api/admin/about | About editor read/save |
 | GET, PUT | /api/admin/social | Contact/social editor read/save |
 | GET, POST | /api/admin/seo | List all SEO records/create override |
+| GET | /api/admin/seo/by-path?path=... | Public saved SEO lookup by exact normalized path |
 | GET, PUT, DELETE | /api/admin/seo/:id | Read/update record; delete overrides only |
 | GET, POST | /api/admin/projects | List/create project |
 | GET, PUT, DELETE | /api/admin/projects/:id | Read/save draft/delete |
@@ -26,7 +27,7 @@ ledgers, upload-reference signing schemes or numeric limits.
 | POST | /api/admin/media/uploads | Authorize direct Supabase SDK upload |
 | GET | /media/:assetId | Open persisted canonical image reference |
 
-17 route patterns / 31 method-route operations. No session-discovery, logout,
+18 route patterns / 32 method-route operations. No session-discovery, logout,
 upload completion/status/renewal, standalone media-resolution, separate default
 SEO or duplicate public-only JSON routes are included. Every additional route needs a named
 app consumer and an explicit scope decision. Public server pages call server
@@ -37,7 +38,7 @@ filtering, ordering and section previews; pagination is not selected.
 
 Saved Hero, About, Social and SEO content is public. Anonymous GET requests to
 `/api/admin/hero`, `/api/admin/about`, `/api/admin/social`, `/api/admin/seo` and
-`/api/admin/seo/:id` return the same saved resources without owner/session checks.
+`/api/admin/seo/:id` and `/api/admin/seo/by-path?path=...` return the same saved resources without owner/session checks.
 The existing URL names remain for compatibility; `/admin` in these API paths does
 not make their GET methods private. POST/PUT/DELETE remain configured-owner only.
 Other future admin reads are not made public by this policy; draft/published

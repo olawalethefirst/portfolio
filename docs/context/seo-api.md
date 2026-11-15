@@ -3,11 +3,11 @@
 `GET /api/admin/seo` returns the complete JSON array of saved
 `{ id, path, title, description }` resources, including the `/` default.
 `GET /api/admin/seo/:id` returns one saved resource by persistent UUID.
-Both are public and succeed with 200 and `Cache-Control: no-store`.
+These reads are public and succeed with 200 and `Cache-Control: no-store`.
 No success envelope, pagination, default aliases or default/override flags are
 introduced. Blank override fields remain blank; metadata inheritance is separate.
 
-Both GET handlers use `withPublicRead` for safe errors and uncached responses.
+The GET handlers use `withPublicRead` for safe errors and uncached responses.
 They require no identity, owner/Auth configuration or session and write no auth
 cookies. Proxy also bypasses Auth refresh for these GET/HEAD paths. Database
 failures return safe500. Origin and JSON content-type headers are not required.
@@ -30,6 +30,29 @@ No SQL/schema/grants or hosted operations are part of these reads.
 
 Route params and JSON responses follow installed Next.js guidance in
 `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/route.md`.
+
+
+## Exact path lookup
+
+Public clients can request `GET /api/admin/seo/by-path?path=%2Fcontact` to fetch
+one saved SEO resource without knowing its UUID. Encode the path as a query
+parameter (for example with `new URLSearchParams({ path: "/contact" })`), so nested
+paths and encoded characters are preserved. The static `by-path` route is distinct
+from the UUID item route; existing editor reads/writes continue to use UUIDs.
+
+Exactly one `path` parameter is required. The handler uses the same
+`normalizeSeoPath` function as writes: `/contact/` and `/%63ontact/` look up
+`/contact`, while `/` fetches saved defaults. Invalid, missing or repeated path
+parameters return 400/INVALID_REQUEST without a database query. An absent saved
+path returns 404/NOT_FOUND; blank fields remain blank. This is a saved-record
+lookup; effective metadata inheritance is a separate capability.
+
+`readSeoByPath(canonicalPath)` performs a parameterized equality query on the
+existing unique path column and returns a saved row or null. No collection scan,
+extra service layer, default synthesis, schema change or fallback query is needed.
+The HTTP handler uses withPublicRead, requires no identity/config/session, writes
+no auth cookies, and returns no-store on success and errors with safe500 database
+feedback. The existing public GET/HEAD proxy exception already includes this route.
 
 
 ## Insert/update query layer

@@ -21,6 +21,11 @@ export async function readSeo(id: string): Promise<SeoRecord | null> {
   return row ?? null;
 }
 
+export async function readSeoByPath(path: string): Promise<SeoRecord | null> {
+  const [row] = await getDb().select().from(seo).where(eq(seo.path, path));
+  return row ?? null;
+}
+
 type SeoInput = Omit<SeoRecord, "id">;
 
 export async function insertSeo(value: SeoInput): Promise<SeoRecord> {
