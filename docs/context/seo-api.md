@@ -106,8 +106,8 @@ from the persisted path. It converts schema issues to request-field API issues;
 it does not import CMS error maps, demo records or validation-only identities.
 The database imports its record type from the same domain module.
 
-`src/cms/seo.ts` owns demo state, form error adapters, editor comparisons and
-preview metadata resolution. Its contextual record schema extends the shared
+`src/cms/seo.ts` owns demo state, form error adapters and editor comparisons,
+and re-exports shared metadata resolution for previews. Its contextual record schema extends the shared
 override schema with editor identity and local duplicate feedback. Existing CMS
 schema/type exports re-export the domain definitions so editor imports remain
 compatible. Server uniqueness still relies on the database constraint, not that
@@ -286,4 +286,24 @@ Unfinished New work and failed or unconfirmed creation retain their drafts.
 The existing unmount guard prevents late creation responses from clearing a newer
 session's work. No draft is rekeyed or transferred to the created UUID. Storage
 removal failures retain the store's existing feedback and lifecycle retry behavior.
-Public page metadata resolution remains separate.
+Public page metadata resolution is described below.
+
+## Public page metadata
+
+The homepage, Contact and publication details lab export Next.js
+`generateMetadata`, calling `src/seo/metadata.ts` with their exact public paths.
+The server-only reader awaits `connection()` before reading saved `/` defaults
+and the normalized exact-path override directly from the database. There is no
+browser API round trip, persistent metadata cache or write-side invalidation.
+Saved changes apply on the next server request; an already open document requires
+a reload to inspect new metadata. The publication lab now requires request-time
+database access for metadata.
+
+`resolveSeo` in `src/seo/content.ts` is shared with CMS previews: title and
+description resolve independently, trimming values and inheriting saved defaults
+for blank or absent override fields. The homepage uses the `/` default itself.
+Parent-path overrides do not apply to descendants. Missing initialized defaults
+and database failures propagate as errors, consistent with public content reads.
+No fixture metadata is returned on failure. Root layout static metadata remains
+the baseline for routes outside these three public pages; admin metadata is
+unchanged. Future public routes must explicitly call the same reader.

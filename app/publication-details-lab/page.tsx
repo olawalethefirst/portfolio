@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { readSeoMetadata } from "@/src/seo/metadata";
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
 import { PublicationComments } from "@/src/components/publication-comments/PublicationComments";
 
@@ -9,11 +9,9 @@ import { LabThemeShell } from "../LabThemeShell";
 import { PublicationDetailsLabActionBar } from "./PublicationDetailsLabActionBar";
 import { sampleComments } from "./sample-comments";
 
-export const metadata: Metadata = {
-  description:
-    "A publication details layout lab for long-form, Markdown-authored writing.",
-  title: "Publication Details Lab",
-};
+export async function generateMetadata() {
+  return readSeoMetadata("/publication-details-lab");
+}
 
 export default function PublicationDetailsLabPage() {
   return (

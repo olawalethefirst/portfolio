@@ -1,7 +1,12 @@
 import { connection } from "next/server";
 import { readAbout } from "@/src/db/about";
 import { readHero } from "@/src/db/hero";
+import { readSeoMetadata } from "@/src/seo/metadata";
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
+
+export async function generateMetadata() {
+  return readSeoMetadata("/");
+}
 
 export default async function Home() {
   await connection();

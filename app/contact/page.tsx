@@ -1,15 +1,13 @@
-import type { Metadata } from "next";
 import { connection } from "next/server";
 import { readSocial } from "@/src/db/social";
+import { readSeoMetadata } from "@/src/seo/metadata";
 
 import { LabThemeShell } from "../LabThemeShell";
 import { ContactPreview } from "./ContactPreview";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description:
-    "Start a conversation about a project, collaboration, or question.",
-};
+export async function generateMetadata() {
+  return readSeoMetadata("/contact");
+}
 
 export default async function ContactPage() {
   await connection();

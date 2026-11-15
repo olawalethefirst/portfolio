@@ -14,6 +14,15 @@ export type SeoValues = z.infer<typeof seoValuesSchema>;
 export type SeoInput = z.infer<typeof seoInputSchema>;
 export type SeoRecord = z.infer<typeof seoRecordSchema>;
 
+export function resolveSeo(defaults: SeoValues, override: SeoValues) {
+  return {
+    title: override.title.trim() || defaults.title.trim(),
+    description: override.description.trim() || defaults.description.trim(),
+    titleSource: override.title.trim() ? "Override" : "Default",
+    descriptionSource: override.description.trim() ? "Override" : "Default",
+  };
+}
+
 export function normalizeSeoPath(value: string): string | undefined {
   if (
     !value.startsWith("/") ||

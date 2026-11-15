@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { normalizeSeoPath, seoDefaultsSchema, seoOverrideSchema, type SeoValues, type SeoRecord } from "@/src/seo/content";
-export { normalizeSeoPath, seoDefaultsSchema, seoRecordSchema, type SeoValues, type SeoRecord } from "@/src/seo/content";
+export { normalizeSeoPath, resolveSeo, seoDefaultsSchema, seoRecordSchema, type SeoValues, type SeoRecord } from "@/src/seo/content";
 
 export interface SeoState {
   defaults: SeoValues;
@@ -35,14 +35,6 @@ export function initialSeo(): SeoState {
           "A publication details layout lab for long-form, Markdown-authored writing.",
       },
     ],
-  };
-}
-export function resolveSeo(defaults: SeoValues, override: SeoValues) {
-  return {
-    title: override.title.trim() || defaults.title.trim(),
-    description: override.description.trim() || defaults.description.trim(),
-    titleSource: override.title.trim() ? "Override" : "Default",
-    descriptionSource: override.description.trim() ? "Override" : "Default",
   };
 }
 export const sameSeoValues = (a: SeoValues, b: SeoValues) =>
