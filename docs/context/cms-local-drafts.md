@@ -40,6 +40,10 @@ editor/provider unmount, pagehide, and a hidden document flush pending writes.
 For original consumers, Discard immediately writes the provider baseline. Deletion removes the draft
 and supersedes queued edits. Original consumers do not clear the working draft on explicit save completion.
 Hero, About and Contact clear it after a confirmed successful save, superseding queued writes.
+SEO also clears the completed New draft after confirmed creation, before UUID
+navigation, superseding queued writes and removing its in-memory alias. Unfinished
+New work and failed or unconfirmed creation retain their drafts. A late creation
+response after unmount does not clear drafts or navigate a newer session.
 
 Malformed entries fall back to provider values with recovery feedback. Read/write
 failures do not block editing. Failed writes/removals remain queued for the next

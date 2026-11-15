@@ -80,6 +80,42 @@ it("validates blank fields and normalized saved path collisions before sending P
   expect(replace).not.toHaveBeenCalled();
 });
 
+it.each(["navigation", "reload"])("opens New with empty fields after confirmed creation and %s", async (reopen) => {
+  const page = render(<Page />);
+  await fill();
+  change("SEO description override", "Submitted description");
+  save();
+  await waitFor(() => expect(replace).toHaveBeenCalledExactlyOnceWith(`/admin/seo/${createdId}`));
+  page.rerender(<Page id={createdId} />);
+  await waitFor(() => expect(input("Path").value).toBe("/canonical"));
+  if (reopen === "reload") {
+    page.unmount();
+    render(<Page />);
+  } else page.rerender(<Page />);
+  await screen.findByRole("textbox", { name: "Path" });
+  for (const name of ["Path", "SEO title override", "SEO description override"])
+    expect(input(name).value).toBe("");
+  expect(posts()).toHaveLength(1);
+});
+
+it("resumes unfinished New work after navigation and reload", async () => {
+  const page = render(<Page />);
+  await fill();
+  change("SEO description override", "Unfinished description");
+  page.rerender(<Page list />);
+  page.rerender(<Page />);
+  await screen.findByRole("textbox", { name: "Path" });
+  expect(input("Path").value).toBe("/submitted/");
+  expect(input("SEO title override").value).toBe("Submitted");
+  page.unmount();
+  render(<Page />);
+  await screen.findByRole("textbox", { name: "Path" });
+  expect(input("Path").value).toBe("/submitted/");
+  expect(input("SEO title override").value).toBe("Submitted");
+  expect(input("SEO description override").value).toBe("Unfinished description");
+  expect(posts()).toHaveLength(0);
+});
+
 it("blocks duplicate submits and waits for the canonical response before navigating", async () => {
   let finish!: () => void;
   post = (value) => new Promise((resolve) => { finish = () => resolve(Response.json({ ...value, id: createdId }, { status: 201 })); });
@@ -116,11 +152,17 @@ it.each(["network", "invalid-response"])("retains input without reposting or nav
     if (failure === "network") throw new TypeError("Response lost");
     return Response.json({ id: "new", path: "/submitted", title: "Submitted", description: "" }, { status: 201 });
   };
-  render(<Page />); await fill(); save();
+  const page = render(<Page />); await fill(); save();
   expect(await screen.findByText("Couldn’t confirm the save.")).toBeTruthy();
   expect(input("Path").value).toBe("/submitted/");
   expect(posts()).toHaveLength(1);
   expect(replace).not.toHaveBeenCalled();
+  page.unmount();
+  render(<Page />);
+  await screen.findByRole("textbox", { name: "Path" });
+  expect(input("Path").value).toBe("/submitted/");
+  expect(input("SEO title override").value).toBe("Submitted");
+  expect(posts()).toHaveLength(1);
 });
 
 it("loads saved context with the shared text-free spinner and refuses fixture fallback", async () => {

@@ -279,6 +279,11 @@ Save, Discard and Back remain locked through that transition. A failed request
 keeps input and unlocks correction; uncertain outcomes refresh reads without
 repeating POST. Late completion after unmount does not navigate or rewrite drafts.
 
-Local New draft cleanup/handoff and reload recovery remain a separate scope. This
-basic create integration leaves the New draft in storage; it does not rekey it or
-transfer it to the created UUID. Public page metadata resolution is also separate.
+After confirmed creation, the mounted form clears its completed New working draft
+before UUID navigation. The existing store removes the in-memory New alias and
+supersedes queued writes, so opening New again or reloading starts empty.
+Unfinished New work and failed or unconfirmed creation retain their drafts.
+The existing unmount guard prevents late creation responses from clearing a newer
+session's work. No draft is rekeyed or transferred to the created UUID. Storage
+removal failures retain the store's existing feedback and lifecycle retry behavior.
+Public page metadata resolution remains separate.

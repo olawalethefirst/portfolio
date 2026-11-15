@@ -258,6 +258,7 @@ export function SeoEditorForm({
           : await saveRecord?.({ ...value, id });
       if (!active.current) return true;
       if (canonical && onCreated) {
+        working.clear(id);
         onCreated(canonical);
         return true;
       }
