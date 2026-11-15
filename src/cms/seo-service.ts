@@ -1,7 +1,7 @@
 import "server-only";
 import { DrizzleQueryError } from "drizzle-orm";
 import type { ApiError, ApiIssue } from "@/src/api/errors";
-import { insertSeo, readSeo, updateSeo } from "@/src/db/seo";
+import { deleteSeoOverride, insertSeo, readSeo, updateSeo } from "@/src/db/seo";
 import {
   normalizeSeoPath, seoDefaultInputSchema, seoOverrideSchema,
   type SeoInput, type SeoRecord,
@@ -71,4 +71,14 @@ export async function saveSeo(id: string, value: SeoInput): Promise<SeoResult> {
   const path = normalizeSeoPath(submitted.path);
   if (!path) return invalid([{ pointer: "/path", message: "Enter a valid site path." }]);
   return persist(() => updateSeo(id, { ...submitted, path }));
+}
+
+export async function deleteSeo(id: string): Promise<SeoResult> {
+  const current = await readSeo(id);
+  if (!current) return missing();
+  if (current.path === "/") return { ok: false, error: {
+    code: "CONFLICT", message: "The default SEO record cannot be deleted.",
+  } };
+  const content = await deleteSeoOverride(id);
+  return content ? { ok: true, content } : missing();
 }

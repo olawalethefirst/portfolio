@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 import type { SeoRecord } from "@/src/seo/content";
 import { getDb } from "./client";
@@ -48,6 +48,14 @@ export async function updateSeo(
       description: value.description,
     })
     .where(eq(seo.id, id))
+    .returning();
+  return row ?? null;
+}
+
+export async function deleteSeoOverride(id: string): Promise<SeoRecord | null> {
+  const [row] = await getDb()
+    .delete(seo)
+    .where(and(eq(seo.id, id), ne(seo.path, "/")))
     .returning();
   return row ?? null;
 }

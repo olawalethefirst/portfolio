@@ -27,7 +27,7 @@ null. Neither query synthesizes defaults or resolves blank fields. Application D
 permissions and seed availability require live verification separately from tests.
 
 No read service is needed: query output already equals the accepted projection,
-and layer rules prohibit pass-through wrappers. Deletion, editor integration and public metadata resolution remain separate capabilities.
+and layer rules prohibit pass-through wrappers. Editor integration and public metadata resolution remain separate capabilities.
 No SQL/schema/grants or hosted operations are part of these reads.
 
 Route params and JSON responses follow installed Next.js guidance in
@@ -114,5 +114,51 @@ existing admin wrapper. No CORS policy or authentication logic changes.
 Creation cannot target `/`; updating a default must retain `/` and provide both
 content fields. Overrides preserve blank field inheritance and normalized paths.
 Only the accepted create/save service owns those rules; routes contain no SQL or
-editor validation. SEO deletion, creation recovery, editor wiring and public
-metadata integration remain unimplemented by these endpoints.
+editor validation. Creation recovery, editor wiring and public metadata integration remain separate
+from these endpoints.
+
+
+## Override deletion query
+
+`deleteSeoOverride(id)` issues a single DELETE RETURNING restricted to matching
+persistent ID and `path <> '/'`. It returns the removed saved record or null when
+nothing matched. The predicate protects the default in the deleting statement,
+independently of any earlier read; existing SQL triggers remain an additional
+protection. Driver failures propagate without retries or alternate deletion.
+
+The query deliberately does not distinguish a missing ID from a protected default;
+the deletion service owns that application feedback. The HTTP handler uses the
+service rather than calling this query directly. No schema, trigger,
+grant or hosted data change is part of this implementation.
+
+
+## Override deletion service
+
+`deleteSeo(id)` reads the persisted record before invoking `deleteSeoOverride`.
+An absent target returns NOT_FOUND; a record with path `/` returns CONFLICT with
+safe default-protection feedback and no deletion attempt. Identity/default status
+comes from saved data, never a client flag. The query retains its atomic default
+exclusion independently of the service read.
+
+Success returns the actually removed resource internally. No eligible row at the
+delete step returns NOT_FOUND, including a target removed after the initial read.
+Unexpected read/delete failures propagate unchanged to the future HTTP safe-error
+boundary. There are no retries, fallback deletes, conflict overwrites or cache
+side effects. The service is transport-independent; CMS confirmation/cache
+integration remains later work.
+
+
+## DELETE HTTP endpoint
+
+`DELETE /api/admin/seo/:id` composes existing same-origin and owner guards,
+awaits route params, validates the UUID, and calls `deleteSeo`. No request body
+or content-type header is needed. Success is 204 with no response body or JSON
+content type. The shared admin wrapper preserves session writes and private
+no-store caching, including on empty success responses and failures.
+
+Malformed UUID returns 400/INVALID_REQUEST; protected default returns 409/CONFLICT;
+absent target before or during deletion returns 404/NOT_FOUND. Unauthenticated
+and non-owner requests return 401/403, invalid origin returns 403, and unexpected
+provider/database errors return safe 500 feedback. No CORS or authentication
+policy changed. Confirmation UI, query invalidation and draft cleanup belong to
+the later editor integration, not this transport handler.

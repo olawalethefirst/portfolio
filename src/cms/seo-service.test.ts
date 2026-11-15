@@ -2,9 +2,9 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { DrizzleQueryError } from "drizzle-orm";
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/src/db/seo", () => ({ insertSeo: vi.fn(), readSeo: vi.fn(), updateSeo: vi.fn() }));
-import { insertSeo, readSeo, updateSeo } from "@/src/db/seo";
-import { createSeo, saveSeo } from "./seo-service";
+vi.mock("@/src/db/seo", () => ({ insertSeo: vi.fn(), readSeo: vi.fn(), updateSeo: vi.fn(), deleteSeoOverride: vi.fn() }));
+import { deleteSeoOverride, insertSeo, readSeo, updateSeo } from "@/src/db/seo";
+import { createSeo, deleteSeo, saveSeo } from "./seo-service";
 
 const defaults = { id: "00000000-0000-4000-8000-000000000001", path: "/", title: "Default", description: "Description" };
 const override = { ...defaults, id: "00000000-0000-4000-8000-000000000002", path: "/contact", title: "Contact", description: "" };
@@ -101,4 +101,41 @@ it("captures update input before the asynchronous current-record read", async ()
   finish(override);
   await saving;
   expect(updateSeo).toHaveBeenCalledExactlyOnceWith(override.id, { path: "/submitted", title: "Submitted", description: "" });
+});
+
+
+it("deletes an existing override and returns the actual removed record", async () => {
+  const removed = { ...override, path: "/changed-before-delete" };
+  vi.mocked(deleteSeoOverride).mockResolvedValue(removed);
+  expect(await deleteSeo(override.id)).toEqual({ ok: true, content: removed });
+  expect(deleteSeoOverride).toHaveBeenCalledExactlyOnceWith(override.id);
+  expect(insertSeo).not.toHaveBeenCalled();
+  expect(updateSeo).not.toHaveBeenCalled();
+});
+
+it("rejects deleting the persisted default without issuing a delete", async () => {
+  vi.mocked(readSeo).mockResolvedValue(defaults);
+  expect(await deleteSeo(defaults.id)).toEqual({ ok: false, error: {
+    code: "CONFLICT", message: "The default SEO record cannot be deleted.",
+  } });
+  expect(deleteSeoOverride).not.toHaveBeenCalled();
+});
+
+it.each(["before", "during"])("reports missing deletion target %s persistence", async (when) => {
+  if (when === "before") vi.mocked(readSeo).mockResolvedValue(null);
+  else vi.mocked(deleteSeoOverride).mockResolvedValue(null);
+  expect(await deleteSeo(override.id)).toEqual({ ok: false, error: {
+    code: "NOT_FOUND", message: "SEO content was not found.",
+  } });
+  if (when === "before") expect(deleteSeoOverride).not.toHaveBeenCalled();
+  else expect(deleteSeoOverride).toHaveBeenCalledTimes(1);
+});
+
+it.each(["read", "delete"])("propagates unexpected deletion %s failures without retries", async (operation) => {
+  const failure = new Error("private DB failure");
+  if (operation === "read") vi.mocked(readSeo).mockRejectedValue(failure);
+  else vi.mocked(deleteSeoOverride).mockRejectedValue(failure);
+  await expect(deleteSeo(override.id)).rejects.toBe(failure);
+  if (operation === "read") expect(deleteSeoOverride).not.toHaveBeenCalled();
+  else expect(deleteSeoOverride).toHaveBeenCalledTimes(1);
 });

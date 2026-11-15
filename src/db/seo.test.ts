@@ -5,7 +5,7 @@ const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
 
-import { insertSeo, listSeo, readSeo, updateSeo } from "./seo";
+import { deleteSeoOverride, insertSeo, listSeo, readSeo, updateSeo } from "./seo";
 
 const defaults = { id: "00000000-0000-4000-8000-000000000001", path: "/", title: "Portfolio", description: "Default description" };
 const override = { id: "00000000-0000-4000-8000-000000000002", path: "/contact", title: "", description: "Contact description" };
@@ -96,5 +96,31 @@ it.each(["insert", "update"])("propagates unexpected %s failures without fallbac
   const failure = new Error("Database unavailable");
   execute.mockRejectedValue(failure);
   await expect(operation === "insert" ? insertSeo(override) : updateSeo(override.id, override)).rejects.toMatchObject({ cause: failure });
+  expect(execute).toHaveBeenCalledTimes(1);
+});
+
+
+it("deletes only the identified override and returns its stored content", async () => {
+  execute.mockResolvedValue({ rows: [row(override)] });
+  expect(await deleteSeoOverride(override.id)).toEqual(override);
+  expect(execute).toHaveBeenCalledTimes(1);
+  const [sql, params] = execute.mock.calls[0];
+  expect(sql).toMatch(/^delete from "seo"/);
+  expect(sql).toContain('where ("seo"."id" = $1 and "seo"."path" <> $2)');
+  expect(sql).toContain("returning");
+  expect(params).toEqual([override.id, "/"]);
+});
+
+it.each([defaults, override])("returns null when $path is protected or absent without a fallback delete", async (record) => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await deleteSeoOverride(record.id)).toBeNull();
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(execute.mock.calls[0][1]).toEqual([record.id, "/"]);
+});
+
+it("preserves driver failure from deletion without retries", async () => {
+  const failure = new Error("Database unavailable");
+  execute.mockRejectedValue(failure);
+  await expect(deleteSeoOverride(override.id)).rejects.toMatchObject({ cause: failure });
   expect(execute).toHaveBeenCalledTimes(1);
 });

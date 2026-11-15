@@ -9,7 +9,7 @@ This directory stores durable knowledge that future contributors cannot reliably
 
 ## Current subsystem context
 
-- [`context/seo-api.md`](context/seo-api.md): protected SEO reads/create/update, persistent UUIDs, shared domain validation
+- [`context/seo-api.md`](context/seo-api.md): protected SEO CRUD endpoints, persistent UUIDs, shared domain validation
   and default/override resource projection.
 
 - [`context/social-api.md`](context/social-api.md): protected Social read/save endpoints,
