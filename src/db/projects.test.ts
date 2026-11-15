@@ -7,6 +7,7 @@ vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
 
 import type { ProjectDraft } from "@/src/cms/projects";
 import {
+  deleteProject,
   deletePublishedProject,
   insertProject,
   listProjects,
@@ -209,6 +210,28 @@ it("deletes only the published snapshot and returns its stored content", async (
 it("returns null when no published snapshot exists", async () => {
   execute.mockResolvedValue({ rows: [] });
   expect(await deletePublishedProject(id)).toBeNull();
+});
+
+it("deletes only the requested project, leaving media untouched and snapshot removal to the database cascade", async () => {
+  execute.mockResolvedValue({ rows: [[id]] });
+  expect(await deleteProject(id)).toBe(id);
+  expect(execute).toHaveBeenCalledTimes(1);
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toBe(
+    'delete from "projects" where "projects"."id" = $1 returning "id"',
+  );
+  expect(params).toEqual([id]);
+});
+
+it("returns null when deleting a missing project", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await deleteProject(id)).toBeNull();
+});
+
+it("propagates project deletion failures rather than reporting success", async () => {
+  const failure = new Error("Database unavailable");
+  execute.mockRejectedValue(failure);
+  await expect(deleteProject(id)).rejects.toMatchObject({ cause: failure });
 });
 
 it.each(["list", "read"])(

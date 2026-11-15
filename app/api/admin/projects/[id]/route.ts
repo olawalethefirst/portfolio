@@ -3,7 +3,7 @@ import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { readProject } from "@/src/db/projects";
+import { deleteProject, readProject } from "@/src/db/projects";
 import { saveProject } from "@/src/cms/project-service";
 import { projectDraftSchema } from "@/src/cms/projects";
 
@@ -69,5 +69,29 @@ export const PUT = withSameOrigin(
           : apiErrorResponse(result.error);
       },
     ),
+  ),
+);
+
+export const DELETE = withSameOrigin(
+  withAdminApi(
+    async (
+      _request: NextRequest,
+      { params }: { params: Promise<{ id: string }> },
+    ) => {
+      const { id } = await params;
+      const parsed = idSchema.safeParse(id);
+      if (!parsed.success)
+        return apiErrorResponse({
+          code: "INVALID_REQUEST",
+          message: "Provide a valid Project ID.",
+        });
+      const deletedId = await deleteProject(parsed.data);
+      return deletedId
+        ? new NextResponse(null, { status: 204 })
+        : apiErrorResponse({
+            code: "NOT_FOUND",
+            message: "Project was not found.",
+          });
+    },
   ),
 );

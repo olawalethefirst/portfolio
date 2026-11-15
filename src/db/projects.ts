@@ -196,3 +196,12 @@ export async function deletePublishedProject(
     .returning();
   return row ? published(row) : null;
 }
+
+export async function deleteProject(id: string): Promise<string | null> {
+  // The authoritative FK cascades published snapshots; media is retained.
+  const [row] = await getDb()
+    .delete(projects)
+    .where(eq(projects.id, id))
+    .returning({ id: projects.id });
+  return row?.id ?? null;
+}

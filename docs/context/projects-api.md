@@ -21,3 +21,19 @@ snapshots. Saved edits do not substitute for live content. Registered screenshot
 references use `/media/:assetId`; absent references become empty strings. Serving
 that URL and registering uploaded assets are separate Media capabilities.
 No separate read service is required by the current operation.
+
+## Project deletion
+
+`DELETE /api/admin/projects/:id` requires a same-origin request and the configured
+owner. It accepts no body and requires no Content-Type header. Invalid UUIDs
+receive 400/INVALID_REQUEST; an absent Project receives 404/NOT_FOUND. Success
+returns 204 with no body. Unexpected failures use safe 500/INTERNAL_ERROR feedback.
+The shared owner wrapper preserves session writes and private/no-store responses;
+the origin guard rejects missing, opaque or mismatched origins before auth or DB
+access.
+
+One parameterized DELETE removes the saved Project. The authoritative SQL foreign
+key cascades removal to its published snapshot. Media records and physical objects
+remain. There is no separate deletion service: cascade persistence belongs to the
+DB layer, while validation, authorization and status mapping belong to the route.
+CMS deletion UI integration remains a separate capability.
