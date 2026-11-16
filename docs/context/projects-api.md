@@ -79,7 +79,25 @@ IDs, so the two paths cannot collide.
 
 There is no ordering service. A fixed request schema belongs at the route, and
 membership is already enforced by persistence, so a service would only forward a
-parsed array and wrap one result. Ordering UI integration remains 08.07.
+parsed array and wrap one result.
+
+## Client server-state
+
+`src/cms/project-api.ts` owns transport only: the collection read and the order
+write, each validating responses against `projectRecordSchema`.
+`src/cms/project-queries.ts` owns cache behavior under the per-account key
+`["cms", accountId, "projects"]`. A reorder applies the submitted order to the
+cache immediately, then replaces it with the response, so the server stays
+authoritative over anything the client guessed. Any failure restores the prior
+order. A membership conflict or a lost response additionally refetches, because
+in both cases the client cannot know current truth; an ordinary server error
+does not, since the write provably did not land. The submitted IDs must match
+the cached collection exactly or the optimistic step is skipped, leaving the
+server to answer.
+
+The hook holds no in-flight lock of its own. It reports `pending`, and callers
+disable their ordering controls while it is true, which is the control the list
+already applies. Component wiring is 08.07.2.
 
 ## Draft write validation
 
