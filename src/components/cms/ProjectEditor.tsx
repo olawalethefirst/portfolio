@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
 import { useId, useRef, useState } from "react";
 import { useProjects } from "@/src/cms/ProjectProvider";
+import { useProjectsQuery } from "@/src/cms/project-queries";
 import {
   emptyProject,
   projectDraftSchema,
@@ -17,7 +18,14 @@ import {
   type ProjectRecord,
 } from "@/src/cms/projects";
 import { Button } from "@/src/components/ui/Button";
-import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
+import { LoadingState } from "@/src/components/ui/LoadingState";
+import {
+  CmsEmptyState,
+  CmsFeedback,
+  CmsPageHeader,
+  CmsToolbar,
+  CmsFooter,
+} from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
@@ -42,19 +50,32 @@ export function ProjectEditor({
   id: string;
   uploadConfig?: UploadConfig;
 }) {
-  const { records } = useProjects();
   const router = useRouter();
-  const record = records.find((item) => item.id === id);
-  if (id !== "new" && !record)
+  // "new" needs no existing record, so it never waits on the collection.
+  const { data, isPending, isError, refetch } = useProjectsQuery();
+  if (id === "new") return <ProjectEditorForm uploadConfig={uploadConfig} />;
+  if (isPending) return <LoadingState label="Loading project" />;
+  if (isError)
     return (
-      <>
-        <CmsPageHeader
-          onBack={() => router.push("/admin/projects")}
-          backLabel="Back to projects"
-          title="Project unavailable"
-          description="Return to projects to start again."
-        />
-      </>
+      <CmsEmptyState
+        title="Couldn’t load this project"
+        description="The project could not be read. Check your connection and try again."
+        action={
+          <Button variant="ghost" onPress={() => void refetch()}>
+            Try again
+          </Button>
+        }
+      />
+    );
+  const record = data.find((item) => item.id === id);
+  if (!record)
+    return (
+      <CmsPageHeader
+        onBack={() => router.push("/admin/projects")}
+        backLabel="Back to projects"
+        title="Project unavailable"
+        description="Return to projects to start again."
+      />
     );
   return (
     <ProjectEditorForm initialRecord={record} uploadConfig={uploadConfig} />

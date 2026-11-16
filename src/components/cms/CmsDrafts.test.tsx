@@ -6,7 +6,9 @@ import { CmsProvider } from "@/src/cms/CmsProvider";
 import { mockHeroApi } from "@/src/cms/test-support/mockHeroApi";
 import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
+import { initialProjects } from "@/src/cms/projects";
 import { SeoProvider } from "@/src/cms/SeoProvider";
+import { mockProjectApi } from "@/src/cms/test-support/mockProjectApi";
 import { mockSocialApi } from "@/src/cms/test-support/mockSocialApi";
 import {
   fireEvent,
@@ -31,6 +33,7 @@ beforeEach(() => {
   mockHeroApi();
   mockAboutApi();
   mockSocialApi();
+  mockProjectApi(async () => {}, initialProjects());
   const state = initialSeo();
   const records = [
     {

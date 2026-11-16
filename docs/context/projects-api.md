@@ -111,9 +111,23 @@ reorder clears the move announcement and reports the server's message in an
 alert; a membership conflict then refetches, so the list snaps to server truth.
 
 `ProjectProvider` no longer carries `move`. It still holds `records`, `commit`
-and the working-draft store for the editor, and `ProjectEditor` still reads its
-records, so opening a server Project from the list reports "Project
-unavailable" until 08.07.2b moves that lookup to the query.
+and the working-draft store for the editor.
+
+## Editor existence check
+
+`ProjectEditor`'s outer "does this Project exist" check reads
+`useProjectsQuery` directly, so any Project the server returns opens, including
+one absent from `ProjectProvider`'s local demo content. `id === "new"` skips
+the query entirely, since a new draft needs no existing record. A collection
+read failure shows a retry; a missing ID shows "Project unavailable".
+
+`ProjectEditorForm`'s own record lookup and `commit` are unchanged and still
+read `ProjectProvider`'s demo array, because `commit` does not yet write to the
+query cache; that lands with real persistence in 08.08. Until then, a Project
+that exists on the server but not in the two-item demo fixture opens, but
+renders as a blank new draft rather than its real saved content — the editor
+cannot show content it has no connected source for. Save, publish, unpublish
+and delete keep operating on the demo array for every Project until 08.08.
 
 ## Draft write validation
 
