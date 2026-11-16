@@ -22,6 +22,20 @@ references use `/media/:assetId`; absent references become empty strings. Servin
 that URL and registering uploaded assets are separate Media capabilities.
 No separate read service is required by the current operation.
 
+## Public read
+
+`listPublishedProjects()` inner-joins `published_projects` to `projects`, so an
+unpublished or deleted Project is simply absent — there is no separate denial
+path to get wrong. Ordering matches the admin collection: position then ID.
+Each entry is `{ id, ...PublishedProject }`, the published snapshot's content
+fields plus the Project's persistent ID; there is no draft/published envelope,
+since a public reader has no use for draft content.
+
+This has no HTTP route. Like `readHero`/`readAbout`, the public homepage calls
+it directly from a Server Component; `/api/admin/projects` remains owner-only
+and continues to expose drafts, so it cannot serve this purpose even with a
+public wrapper.
+
 ## Project deletion
 
 `DELETE /api/admin/projects/:id` requires a same-origin request and the configured
