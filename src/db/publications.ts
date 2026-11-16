@@ -82,3 +82,42 @@ export async function readPublication(
 
   return row ? record(row.publication, row.published ?? undefined) : null;
 }
+
+type PublicationInput = PublicationDraft;
+
+function publicationValues(value: PublicationInput) {
+  const coverAssetId =
+    value.coverSrc.match(/^\/media\/([0-9a-f-]{36})$/i)?.[1] ?? null;
+  return {
+    title: value.title,
+    summary: value.summary,
+    bodyMarkdown: value.bodyMarkdown,
+    coverAssetId,
+    coverAlt: value.coverAlt,
+    tagsText: value.tagsText,
+    publishedOn: value.publishedOn || null,
+  };
+}
+
+export async function insertPublication(
+  value: PublicationInput,
+): Promise<PublicationRecord> {
+  const [row] = await getDb()
+    .insert(publications)
+    .values(publicationValues(value))
+    .returning();
+  if (!row) throw new Error("Publication insert did not return content.");
+  return record(row, undefined);
+}
+
+export async function updatePublication(
+  id: string,
+  value: PublicationInput,
+): Promise<PublicationRecord | null> {
+  const [row] = await getDb()
+    .update(publications)
+    .set(publicationValues(value))
+    .where(eq(publications.id, id))
+    .returning();
+  return row ? record(row, undefined) : null;
+}
