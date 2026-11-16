@@ -62,6 +62,9 @@ export const projectRecordSchema = z.object({
   draft: projectDraftSchema,
   published: projectDraftSchema.nullable(),
 });
+export interface PublishedProject extends ProjectDraft {
+  id: string;
+}
 export type ProjectAction = "save" | "publish" | "unpublish" | "delete";
 export type ProjectErrors = Partial<Record<keyof ProjectDraft, string>>;
 export function emptyProject(): ProjectDraft {

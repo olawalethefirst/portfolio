@@ -21,6 +21,7 @@ import {
   deletePublishedProject,
   insertProject,
   listProjects,
+  listPublishedProjects,
   readProject,
   reorderProjects,
   updateProject,
@@ -70,6 +71,21 @@ it("lists saved and published snapshots independently in stable editorial order"
   expect(execute.mock.calls[0][0]).toContain(
     'order by "projects"."position" asc, "projects"."id" asc',
   );
+});
+
+it("lists only published projects, with id, in editorial order", async () => {
+  execute.mockResolvedValue({ rows: [[...live]] });
+  expect(await listPublishedProjects()).toEqual([
+    { id, ...content("Live version", `/media/${asset}`) },
+  ]);
+  expect(execute.mock.calls[0][0]).toBe(
+    'select "published_projects"."project_id", "published_projects"."name", "published_projects"."summary", "published_projects"."what", "published_projects"."how", "published_projects"."platform", "published_projects"."screenshot_asset_id", "published_projects"."screenshot_alt", "published_projects"."live_url" from "published_projects" inner join "projects" on "projects"."id" = "published_projects"."project_id" order by "projects"."position" asc, "projects"."id" asc',
+  );
+});
+
+it("excludes a project with no published snapshot", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await listPublishedProjects()).toEqual([]);
 });
 
 it("preserves draft-only records and empty screenshot references", async () => {
