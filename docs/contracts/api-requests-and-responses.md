@@ -39,7 +39,7 @@ association inputs and upload permission inputs require their own
 consumer-specific design before implementation. Do not treat a screenshot
 or coverSrc string as proof of upload ownership/existence.
 
-Project ordering uses collection `PUT /api/admin/projects` with
+Project ordering uses `PUT /api/admin/projects/order` with
 { ids: complete array of Project UUIDs in intended order }, returning 200 plus
 the canonical ordered collection. Incomplete or stale membership is 409/CONFLICT
 without writes. Publication ordering is not specified by this entry.

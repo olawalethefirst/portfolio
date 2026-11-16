@@ -18,7 +18,7 @@ const ordered = [
   { id: first, draft, published: null },
 ];
 const request = (body: unknown, headers: Record<string, string> = {}) =>
-  new NextRequest("https://portfolio.test/api/admin/projects", {
+  new NextRequest("https://portfolio.test/api/admin/projects/order", {
     method: "PUT",
     body: JSON.stringify(body),
     headers: {
@@ -65,7 +65,7 @@ it("reports stale membership as a conflict without reading the collection", asyn
 
 it("rejects a malformed JSON body before persistence", async () => {
   const response = await PUT(
-    new NextRequest("https://portfolio.test/api/admin/projects", {
+    new NextRequest("https://portfolio.test/api/admin/projects/order", {
       method: "PUT",
       body: "{",
       headers: {

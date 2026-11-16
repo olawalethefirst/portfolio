@@ -62,16 +62,20 @@ test-driver results alone do not prove live permissions, locking or rollback.
 
 ## Ordering endpoint
 
-Order is a property of the collection, so owner-only `PUT /api/admin/projects`
-carries `{ ids: [...] }` rather than a separate ordering resource. The route owns
-the fixed schema: a strict object whose `ids` is an array of UUIDs. Structural
+Owner-only `PUT /api/admin/projects/order` carries `{ ids: [...] }`. Order is
+collection state and the body is its complete replacement, so PUT matches the
+URL it writes and repeating a request changes nothing; a collection PUT would
+instead claim to replace the projects themselves. The route owns the fixed
+schema: a strict object whose `ids` is an array of UUIDs. Structural
 failures and malformed JSON are 400/INVALID_REQUEST before any persistence. The
 route adds no membership checking of its own; exactness must stay inside the
 locked transaction to remain atomic, so a persistence conflict maps to
 409/CONFLICT. Success returns 200 and the canonical ordered collection in the
 same shape as the collection GET, letting the client adopt server order without
 a second request. Same-origin and JSON content-type guards precede authorization,
-and `withAdminApi` applies `private, no-store` to every outcome.
+and `withAdminApi` applies `private, no-store` to every outcome. The static
+`order` segment resolves before `[id]`, and the detail route rejects non-UUID
+IDs, so the two paths cannot collide.
 
 There is no ordering service. A fixed request schema belongs at the route, and
 membership is already enforced by persistence, so a service would only forward a
