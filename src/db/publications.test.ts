@@ -4,14 +4,24 @@ import { drizzle } from "drizzle-orm/pg-proxy";
 const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("server-only", () => ({}));
 vi.mock("./client", () => ({
-  getDb: () => drizzle(execute),
+  getDb: () => {
+    const db = drizzle(execute);
+    // The proxy compiles real SQL but cannot open transactions. Real PostgreSQL
+    // locking/rollback verification remains a separate controller check.
+    return Object.assign(db, {
+      transaction: async <T>(operation: (tx: typeof db) => Promise<T>) =>
+        operation(db),
+    });
+  },
 }));
 
 import type { PublicationDraft } from "@/src/cms/publications";
 import {
+  createAndPublishPublication,
   insertPublication,
   listPublications,
   readPublication,
+  saveAndPublishPublication,
   updatePublication,
 } from "./publications";
 
@@ -168,5 +178,75 @@ it("reports an insert without a returned row", async () => {
   execute.mockResolvedValue({ rows: [] });
   await expect(insertPublication(draftInput)).rejects.toThrow(
     "Publication insert did not return content.",
+  );
+});
+
+it("saves and publishes an existing publication atomically", async () => {
+  execute
+    .mockResolvedValueOnce({ rows: [saved] })
+    .mockResolvedValueOnce({ rows: [live] });
+  expect(
+    await saveAndPublishPublication(
+      id,
+      content("Live version", `/media/${asset}`, "2026-01-01"),
+    ),
+  ).toEqual({
+    id,
+    draft: content("Saved edits", `/media/${asset}`, "2026-01-02"),
+    published: content("Live version", `/media/${asset}`, "2026-01-01"),
+  });
+  const [updateQuery] = execute.mock.calls[0];
+  expect(updateQuery).toMatch(/^update "publications"/);
+  const [insertQuery] = execute.mock.calls[1];
+  expect(insertQuery).toMatch(/^insert into "published_publications"/);
+  expect(insertQuery).toContain('on conflict ("publication_id") do update');
+});
+
+it("returns null when saving a missing publication, without publishing", async () => {
+  execute.mockResolvedValueOnce({ rows: [] });
+  expect(await saveAndPublishPublication(id, draftInput)).toBeNull();
+  expect(execute).toHaveBeenCalledTimes(1);
+});
+
+it("throws when publish persistence returns no row after a successful save", async () => {
+  execute
+    .mockResolvedValueOnce({ rows: [inserted] })
+    .mockResolvedValueOnce({ rows: [] });
+  await expect(saveAndPublishPublication(id, draftInput)).rejects.toThrow(
+    "Publication publish did not return content.",
+  );
+});
+
+it("creates and publishes a new publication atomically", async () => {
+  execute
+    .mockResolvedValueOnce({ rows: [inserted] })
+    .mockResolvedValueOnce({
+      rows: [[id, ...snapshot("Draft", asset, "2026-01-01")]],
+    });
+  expect(await createAndPublishPublication(draftInput)).toEqual({
+    id,
+    draft: content("Draft", `/media/${asset}`),
+    published: content("Draft", `/media/${asset}`),
+  });
+  const [insertPubQuery] = execute.mock.calls[0];
+  expect(insertPubQuery).toMatch(/^insert into "publications"/);
+  const [insertLiveQuery] = execute.mock.calls[1];
+  expect(insertLiveQuery).toMatch(/^insert into "published_publications"/);
+  expect(insertLiveQuery).not.toContain("on conflict");
+});
+
+it("throws when a first-publish create does not return a saved row", async () => {
+  execute.mockResolvedValueOnce({ rows: [] });
+  await expect(createAndPublishPublication(draftInput)).rejects.toThrow(
+    "Publication creation did not return content.",
+  );
+});
+
+it("throws when first-publish persistence returns no live row", async () => {
+  execute
+    .mockResolvedValueOnce({ rows: [inserted] })
+    .mockResolvedValueOnce({ rows: [] });
+  await expect(createAndPublishPublication(draftInput)).rejects.toThrow(
+    "Publication publish did not return content.",
   );
 });

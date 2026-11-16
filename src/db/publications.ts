@@ -1,7 +1,10 @@
 import "server-only";
 import { asc, eq } from "drizzle-orm";
 import { date, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import type { PublicationDraft, PublicationRecord } from "@/src/cms/publications";
+import type {
+  PublicationDraft,
+  PublicationRecord,
+} from "@/src/cms/publications";
 import { getDb } from "./client";
 
 // Query mappings only; supabase/migrations remains the schema authority.
@@ -29,7 +32,9 @@ const publishedPublications = pgTable("published_publications", {
 });
 
 function draft(
-  row: typeof publications.$inferSelect | typeof publishedPublications.$inferSelect,
+  row:
+    | typeof publications.$inferSelect
+    | typeof publishedPublications.$inferSelect,
 ): PublicationDraft {
   return {
     title: row.title,
@@ -120,4 +125,46 @@ export async function updatePublication(
     .where(eq(publications.id, id))
     .returning();
   return row ? record(row, undefined) : null;
+}
+
+export async function saveAndPublishPublication(
+  id: string,
+  value: PublicationDraft,
+): Promise<PublicationRecord | null> {
+  return getDb().transaction(async (tx) => {
+    const [saved] = await tx
+      .update(publications)
+      .set(publicationValues(value))
+      .where(eq(publications.id, id))
+      .returning();
+    if (!saved) return null;
+    const [live] = await tx
+      .insert(publishedPublications)
+      .values({ publicationId: id, ...publicationValues(value) })
+      .onConflictDoUpdate({
+        target: publishedPublications.publicationId,
+        set: publicationValues(value),
+      })
+      .returning();
+    if (!live) throw new Error("Publication publish did not return content.");
+    return record(saved, live);
+  });
+}
+
+export async function createAndPublishPublication(
+  value: PublicationDraft,
+): Promise<PublicationRecord> {
+  return getDb().transaction(async (tx) => {
+    const [saved] = await tx
+      .insert(publications)
+      .values(publicationValues(value))
+      .returning();
+    if (!saved) throw new Error("Publication creation did not return content.");
+    const [live] = await tx
+      .insert(publishedPublications)
+      .values({ publicationId: saved.id, ...publicationValues(value) })
+      .returning();
+    if (!live) throw new Error("Publication publish did not return content.");
+    return record(saved, live);
+  });
 }
