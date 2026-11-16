@@ -18,6 +18,7 @@ vi.mock("./client", () => ({
 import type { PublicationDraft } from "@/src/cms/publications";
 import {
   createAndPublishPublication,
+  deletePublishedPublication,
   insertPublication,
   listPublications,
   readPublication,
@@ -249,4 +250,21 @@ it("throws when first-publish persistence returns no live row", async () => {
   await expect(createAndPublishPublication(draftInput)).rejects.toThrow(
     "Publication publish did not return content.",
   );
+});
+
+it("deletes only the published snapshot and returns its stored content", async () => {
+  execute.mockResolvedValue({ rows: [live] });
+  expect(await deletePublishedPublication(id)).toEqual(
+    content("Live version", `/media/${asset}`, "2026-01-01"),
+  );
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toMatch(/^delete from "published_publications"/);
+  expect(query).toContain('where "published_publications"."publication_id" = $1');
+  expect(query).toContain("returning");
+  expect(params).toEqual([id]);
+});
+
+it("returns null when no published publication exists", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await deletePublishedPublication(id)).toBeNull();
 });

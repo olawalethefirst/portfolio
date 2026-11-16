@@ -151,6 +151,16 @@ export async function saveAndPublishPublication(
   });
 }
 
+export async function deletePublishedPublication(
+  id: string,
+): Promise<PublicationDraft | null> {
+  const [row] = await getDb()
+    .delete(publishedPublications)
+    .where(eq(publishedPublications.publicationId, id))
+    .returning();
+  return row ? draft(row) : null;
+}
+
 export async function createAndPublishPublication(
   value: PublicationDraft,
 ): Promise<PublicationRecord> {
