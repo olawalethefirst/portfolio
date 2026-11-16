@@ -161,8 +161,35 @@ membership-style conflict — refetches, the same rule `useReorderProjects`
 uses. An ordinary rejected write (validation, not found) does not; the
 component already surfaces that through the thrown error.
 
-No component reads this yet. `ProjectEditorForm` still calls
-`ProjectProvider`'s demo `commit`.
+## Editor write wiring
+
+`ProjectEditorForm` calls `useProjectMutations().commit(recordId, value, action)`
+directly, where `recordId` is `initialRecord?.id ?? "new"` — the persisted ID,
+never the working-draft's own local identity (a client-generated UUID used only
+for localStorage matching). The two must stay distinct: the local draft needs
+an identity before any Project exists server-side, but every write to the
+server must key off the real persisted ID, or a "new" draft's own random ID
+could be mistaken for one.
+
+The dirty-check and Save/Publish/Unpublish/Delete availability all read
+`useProjectsQuery().data`, the same cache `commit` patches, so they reflect a
+just-saved value immediately, including a Save that must not disturb the
+cached `published` field (see above).
+
+A successful `new`-draft Save or Publish always creates, so its result is
+always a `ProjectRecord`. The editor clears the local `"new"` draft and
+redirects to `/admin/projects/:id` with the created ID. Without the redirect, a
+second Save would call `create` again — the component has no other way to
+learn that this draft now has a server identity — so this is required, not
+cosmetic.
+
+`ProjectProvider` keeps only the shared local-draft store (`working`), since
+the list's "New project" action and the editor's draft recovery must agree on
+one store instance; it holds no server state. `commit`'s own synchronous
+in-flight flag is intentionally local to the form (`saving` state set before
+calling `commit`, not `useProjectMutations().pending`): `useMutation` does not
+guarantee its `isPending` flips within the same tick as the call that starts
+it, and the fieldset's disable-on-submit contract needs that guarantee.
 
 ## Draft write validation
 

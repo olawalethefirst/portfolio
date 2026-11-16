@@ -143,9 +143,12 @@ export function useProjectMutations() {
     draft: ProjectDraft,
     action: ProjectAction,
   ) {
+    // Start the mutation first so `pending` flips true in this same tick,
+    // matching the fieldset's synchronous disable-on-submit contract.
+    const request = mutation.mutateAsync({ id, draft, action });
     try {
       await client.cancelQueries({ queryKey });
-      const result = await mutation.mutateAsync({ id, draft, action });
+      const result = await request;
       client.setQueryData<ProjectRecord[]>(queryKey, (records) =>
         applyCommit(records, result),
       );

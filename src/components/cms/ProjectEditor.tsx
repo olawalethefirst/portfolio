@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
 import { useId, useRef, useState } from "react";
 import { useProjects } from "@/src/cms/ProjectProvider";
-import { useProjectsQuery } from "@/src/cms/project-queries";
+import {
+  useProjectMutations,
+  useProjectsQuery,
+} from "@/src/cms/project-queries";
 import {
   emptyProject,
   projectDraftSchema,
@@ -89,15 +92,22 @@ function ProjectEditorForm({
   uploadConfig: UploadConfig;
 }) {
   const router = useRouter();
-  const { records, commit, pending: saving, working } = useProjects();
-  const { id, value, setValue, reset, ready, persistenceStatus } =
-    useWorkingDraft(
-      working,
-      initialRecord?.id ?? "new",
-      () => initialRecord?.draft ?? emptyProject(),
-      initialRecord?.id,
-    );
+  const { working } = useProjects();
+  const { data: records } = useProjectsQuery();
+  const { commit } = useProjectMutations();
+  // No record yet means "new": the real ID only exists once the first
+  // Save/Publish succeeds, at which point the editor redirects to it.
+  const recordId = initialRecord?.id ?? "new";
+  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(
+    working,
+    recordId,
+    () => initialRecord?.draft ?? emptyProject(),
+    initialRecord?.id,
+  );
   const imageUpload = useImageUpload(uploadConfig);
+  // The mutation's own isPending can lag a tick behind this click; set
+  // synchronously so the fieldset locks in the same render as the submit.
+  const [saving, setSaving] = useState(false);
   const pending = saving || imageUpload.isPending;
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -118,7 +128,7 @@ function ProjectEditorForm({
   const [dialog, setDialog] = useState<"unpublish" | "delete" | null>(null);
   const [preview, setPreview] = useState(false);
   const { closeRef, capture } = useCmsPreview(preview, () => setPreview(false));
-  const record = records.find((item) => item.id === id);
+  const record = records?.find((item) => item.id === recordId);
   const dirty = !sameProject(value, record?.draft ?? emptyProject());
 
   function changeValue(next: ProjectDraft) {
@@ -171,8 +181,17 @@ function ProjectEditorForm({
       );
       return false;
     }
+    setSaving(true);
     try {
-      await commit(id, value, action);
+      const result = await commit(recordId, value, action);
+      if (recordId === "new") {
+        // "new" only ever saves or publishes, which always create and
+        // return the canonical record; move to it so the next Save updates
+        // this Project instead of creating another one.
+        working.clear("new");
+        router.push(`/admin/projects/${(result as ProjectRecord).id}`);
+        return true;
+      }
       setDialog(null);
       if (action === "delete") router.push("/admin/projects");
       else
@@ -191,6 +210,8 @@ function ProjectEditorForm({
           : "The request failed. Try again.",
       );
       return false;
+    } finally {
+      setSaving(false);
     }
   }
   if (!ready) return <p role="status">Restoring local draft…</p>;
