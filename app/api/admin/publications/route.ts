@@ -4,6 +4,7 @@ import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
 import { insertPublication, listPublications } from "@/src/db/publications";
+import { createAndPublishPublication } from "@/src/cms/publication-service";
 import { publicationDraftSchema } from "@/src/cms/publications";
 
 export const GET = withAdminApi(async () =>
@@ -25,7 +26,7 @@ export const POST = withSameOrigin(
       }
       const parsed = z
         .strictObject({
-          intent: z.enum(["save"]),
+          intent: z.enum(["save", "publish"]),
           draft: publicationDraftSchema,
         })
         .safeParse(body);
@@ -34,9 +35,15 @@ export const POST = withSameOrigin(
           code: "INVALID_REQUEST",
           message: "Provide a valid Publication draft.",
         });
-      return NextResponse.json(await insertPublication(parsed.data.draft), {
-        status: 201,
-      });
+      if (parsed.data.intent === "save") {
+        return NextResponse.json(await insertPublication(parsed.data.draft), {
+          status: 201,
+        });
+      }
+      const result = await createAndPublishPublication(parsed.data.draft);
+      return result.ok
+        ? NextResponse.json(result.content, { status: 201 })
+        : apiErrorResponse(result.error);
     }),
   ),
 );

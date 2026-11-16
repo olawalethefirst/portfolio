@@ -2,9 +2,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { emptyPublication } from "@/src/cms/publications";
 
-const { insert, update, getUser, client } = vi.hoisted(() => ({
+const { insert, update, firstPublish, getUser, client } = vi.hoisted(() => ({
   insert: vi.fn(),
   update: vi.fn(),
+  firstPublish: vi.fn(),
   getUser: vi.fn(),
   client: vi.fn(),
 }));
@@ -12,6 +13,9 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/src/db/publications", () => ({
   insertPublication: insert,
   updatePublication: update,
+}));
+vi.mock("@/src/cms/publication-service", () => ({
+  createAndPublishPublication: firstPublish,
 }));
 vi.mock("@/src/auth/server", () => ({ createSupabaseServerClient: client }));
 import { POST } from "./route";
@@ -105,7 +109,27 @@ it("returns not found when saving an absent Publication", async () => {
 });
 
 it("rejects an unsupported POST intent before persistence", async () => {
-  const response = await POST(request("POST", { intent: "publish", draft }));
+  const response = await POST(request("POST", { intent: "archive", draft }));
   expect(response.status).toBe(400);
+  expect(insert).not.toHaveBeenCalled();
+});
+
+it("creates and publishes through the service on a publish intent", async () => {
+  const published = { id, draft, published: draft };
+  firstPublish.mockResolvedValue({ ok: true, content: published });
+  const response = await POST(request("POST", { intent: "publish", draft }));
+  expect(response.status).toBe(201);
+  expect(await response.json()).toEqual(published);
+  expect(firstPublish).toHaveBeenCalledExactlyOnceWith(draft);
+  expect(insert).not.toHaveBeenCalled();
+});
+
+it("reports first-publish validation errors instead of persisting", async () => {
+  firstPublish.mockResolvedValue({
+    ok: false,
+    error: { code: "VALIDATION_ERROR", message: "Check the highlighted fields.", issues: [] },
+  });
+  const response = await POST(request("POST", { intent: "publish", draft }));
+  expect(response.status).toBe(422);
   expect(insert).not.toHaveBeenCalled();
 });
