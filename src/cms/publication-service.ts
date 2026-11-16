@@ -3,6 +3,7 @@ import type { ApiError, ApiIssue } from "@/src/api/errors";
 import { toApiIssues } from "@/src/api/zod-issues";
 import {
   createAndPublishPublication as persistFirstPublish,
+  deletePublishedPublication,
   saveAndPublishPublication,
 } from "@/src/db/publications";
 import {
@@ -13,6 +14,9 @@ import {
 
 type PublicationWriteResult =
   | { ok: true; content: PublicationRecord }
+  | { ok: false; error: ApiError };
+type PublicationUnpublishResult =
+  | { ok: true; content: PublicationDraft }
   | { ok: false; error: ApiError };
 
 function invalid(issues: ApiIssue[]): PublicationWriteResult {
@@ -53,4 +57,19 @@ export async function createAndPublishPublication(
   const result = createPublicationPublishSchema(today).safeParse(value);
   if (!result.success) return invalid(toApiIssues(result.error.issues));
   return { ok: true, content: await persistFirstPublish(result.data) };
+}
+
+export async function unpublishPublication(
+  id: string,
+): Promise<PublicationUnpublishResult> {
+  const content = await deletePublishedPublication(id);
+  return content
+    ? { ok: true, content }
+    : {
+        ok: false,
+        error: {
+          code: "NOT_FOUND",
+          message: "Published Publication was not found.",
+        },
+      };
 }

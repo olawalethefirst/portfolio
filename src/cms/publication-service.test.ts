@@ -4,14 +4,17 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/src/db/publications", () => ({
   saveAndPublishPublication: vi.fn(),
   createAndPublishPublication: vi.fn(),
+  deletePublishedPublication: vi.fn(),
 }));
 import {
   createAndPublishPublication as persistFirstPublish,
+  deletePublishedPublication,
   saveAndPublishPublication,
 } from "@/src/db/publications";
 import {
   createAndPublishPublication,
   publishPublication,
+  unpublishPublication,
 } from "./publication-service";
 import { emptyPublication, type PublicationDraft } from "./publications";
 
@@ -104,9 +107,7 @@ it("creates and publishes valid first-publish input through the atomic database 
 });
 
 it("defaults to the real current date when none is supplied", async () => {
-  const tomorrow = new Date(Date.now() + 86_400_000)
-    .toISOString()
-    .slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const result = await publishPublication(id, {
     ...complete,
     publishedOn: tomorrow,
@@ -116,4 +117,24 @@ it("defaults to the real current date when none is supplied", async () => {
     error: { code: "VALIDATION_ERROR" },
   });
   expect(saveAndPublishPublication).not.toHaveBeenCalled();
+});
+
+it("unpublishes only the live snapshot and returns removed content", async () => {
+  vi.mocked(deletePublishedPublication).mockResolvedValue(complete);
+  expect(await unpublishPublication(id)).toEqual({
+    ok: true,
+    content: complete,
+  });
+  expect(deletePublishedPublication).toHaveBeenCalledExactlyOnceWith(id);
+});
+
+it("reports when there is no published Publication to remove", async () => {
+  vi.mocked(deletePublishedPublication).mockResolvedValue(null);
+  expect(await unpublishPublication(id)).toEqual({
+    ok: false,
+    error: {
+      code: "NOT_FOUND",
+      message: "Published Publication was not found.",
+    },
+  });
 });
