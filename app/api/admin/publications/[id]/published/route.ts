@@ -3,7 +3,10 @@ import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { publishPublication } from "@/src/cms/publication-service";
+import {
+  publishPublication,
+  unpublishPublication,
+} from "@/src/cms/publication-service";
 import { publicationDraftSchema } from "@/src/cms/publications";
 
 export const PUT = withSameOrigin(
@@ -47,5 +50,26 @@ export const PUT = withSameOrigin(
           : apiErrorResponse(result.error);
       },
     ),
+  ),
+);
+
+export const DELETE = withSameOrigin(
+  withAdminApi(
+    async (
+      _request: NextRequest,
+      { params }: { params: Promise<{ id: string }> },
+    ) => {
+      const { id } = await params;
+      const parsed = z.uuid().safeParse(id);
+      if (!parsed.success)
+        return apiErrorResponse({
+          code: "INVALID_REQUEST",
+          message: "Provide a valid Publication ID.",
+        });
+      const result = await unpublishPublication(parsed.data);
+      return result.ok
+        ? NextResponse.json(result.content)
+        : apiErrorResponse(result.error);
+    },
   ),
 );
