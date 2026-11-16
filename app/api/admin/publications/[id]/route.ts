@@ -3,7 +3,11 @@ import { z } from "zod";
 import { apiErrorResponse } from "@/src/api/errors";
 import { withContentType, withSameOrigin } from "@/src/api/request";
 import { withAdminApi } from "@/src/auth/admin-api";
-import { readPublication, updatePublication } from "@/src/db/publications";
+import {
+  deletePublication,
+  readPublication,
+  updatePublication,
+} from "@/src/db/publications";
 import { publicationDraftSchema } from "@/src/cms/publications";
 
 const idSchema = z.uuid();
@@ -74,5 +78,29 @@ export const PUT = withSameOrigin(
             });
       },
     ),
+  ),
+);
+
+export const DELETE = withSameOrigin(
+  withAdminApi(
+    async (
+      _request: NextRequest,
+      { params }: { params: Promise<{ id: string }> },
+    ) => {
+      const { id } = await params;
+      const parsed = idSchema.safeParse(id);
+      if (!parsed.success)
+        return apiErrorResponse({
+          code: "INVALID_REQUEST",
+          message: "Provide a valid Publication ID.",
+        });
+      const deletedId = await deletePublication(parsed.data);
+      return deletedId
+        ? new NextResponse(null, { status: 204 })
+        : apiErrorResponse({
+            code: "NOT_FOUND",
+            message: "Publication was not found.",
+          });
+    },
   ),
 );
