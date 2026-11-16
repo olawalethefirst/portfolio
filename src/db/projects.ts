@@ -1,5 +1,5 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import type { ProjectDraft, ProjectRecord } from "@/src/cms/projects";
 import { getDb } from "./client";
@@ -204,4 +204,35 @@ export async function deleteProject(id: string): Promise<string | null> {
     .where(eq(projects.id, id))
     .returning({ id: projects.id });
   return row?.id ?? null;
+}
+
+/** Caller validates UUID structure; membership and writes share one transaction. */
+export async function reorderProjects(
+  ids: readonly string[],
+): Promise<{ status: "saved" | "conflict" }> {
+  const orderedIds = ids.map((id) => id.toLowerCase());
+  const requested = new Set(orderedIds);
+  if (requested.size !== orderedIds.length) return { status: "conflict" };
+
+  return getDb().transaction(async (tx) => {
+    // Row locks cannot protect against new rows. This self-exclusive table lock
+    // also serializes reorders while permitting ordinary collection reads.
+    // https://www.postgresql.org/docs/current/explicit-locking.html
+    await tx.execute(sql`lock table ${projects} in share row exclusive mode`);
+    const current = await tx.select({ id: projects.id }).from(projects);
+    if (
+      current.length !== orderedIds.length ||
+      current.some(({ id }) => !requested.has(id))
+    ) return { status: "conflict" };
+
+    if (orderedIds.length) {
+      const positions = orderedIds.map(
+        (id, position) => sql`when ${id}::uuid then ${position}::integer`,
+      );
+      await tx.update(projects).set({
+        position: sql`case ${projects.id} ${sql.join(positions, sql` `)} end`,
+      });
+    }
+    return { status: "saved" };
+  }, { isolationLevel: "read committed" });
 }

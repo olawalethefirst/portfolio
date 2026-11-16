@@ -3,7 +3,17 @@ import { drizzle } from "drizzle-orm/pg-proxy";
 
 const { execute } = vi.hoisted(() => ({ execute: vi.fn() }));
 vi.mock("server-only", () => ({}));
-vi.mock("./client", () => ({ getDb: () => drizzle(execute) }));
+vi.mock("./client", () => ({
+  getDb: () => {
+    const db = drizzle(execute);
+    // The proxy compiles real SQL but cannot open transactions. Real PostgreSQL
+    // locking/rollback verification remains a separate controller check.
+    return Object.assign(db, {
+      transaction: async <T>(operation: (tx: typeof db) => Promise<T>) =>
+        operation(db),
+    });
+  },
+}));
 
 import type { ProjectDraft } from "@/src/cms/projects";
 import {
@@ -12,6 +22,7 @@ import {
   insertProject,
   listProjects,
   readProject,
+  reorderProjects,
   updateProject,
   upsertPublishedProject,
 } from "./projects";
@@ -244,3 +255,88 @@ it.each(["list", "read"])(
     ).rejects.toMatchObject({ cause: failure });
   },
 );
+
+it("persists the complete requested order using bound IDs and only updates positions", async () => {
+  execute
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [[id], [asset]] })
+    .mockResolvedValueOnce({ rows: [] });
+  expect(await reorderProjects([asset, id])).toEqual({ status: "saved" });
+  const [lock, membership, update] = execute.mock.calls;
+  expect(lock[0]).toBe('lock table "projects" in share row exclusive mode');
+  expect(membership[0]).toBe('select "id" from "projects"');
+  expect(update[0]).toBe(
+    'update "projects" set "position" = case "projects"."id" when $1::uuid then $2::integer when $3::uuid then $4::integer end',
+  );
+  expect(update[1]).toEqual([asset, 0, id, 1]);
+});
+
+it.each([
+  ["duplicate", [id, id]],
+  ["missing", [id]],
+  ["unknown", [id, "33333333-3333-4333-8333-333333333333"]],
+  ["empty stale list", []],
+])("rejects %s membership without writing positions", async (_label, ids) => {
+  execute
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [[id], [asset]] });
+  expect(await reorderProjects(ids)).toEqual({ status: "conflict" });
+  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
+});
+
+it("accepts an empty ordering only when the collection is empty", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await reorderProjects([])).toEqual({ status: "saved" });
+  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
+});
+
+it("rejects an unknown ID in an empty collection", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await reorderProjects([id])).toEqual({ status: "conflict" });
+});
+
+it("compares UUID identity without case sensitivity", async () => {
+  const uuid = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  execute
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [[uuid]] })
+    .mockResolvedValueOnce({ rows: [] });
+  expect(await reorderProjects([uuid.toUpperCase()])).toEqual({ status: "saved" });
+  expect(execute.mock.calls[2][1]).toEqual([uuid, 0]);
+});
+
+it("rejects duplicate UUID identities even with different casing", async () => {
+  const uuid = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  expect(await reorderProjects([uuid, uuid.toUpperCase()])).toEqual({ status: "conflict" });
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it("repeating an order assigns the same positions", async () => {
+  execute.mockImplementation(async (query: string) => ({
+    rows: query.startsWith("select ") ? [[id], [asset]] : [],
+  }));
+  expect(await reorderProjects([asset, id])).toEqual({ status: "saved" });
+  expect(await reorderProjects([asset, id])).toEqual({ status: "saved" });
+  const updates = execute.mock.calls.filter(([query]) => query.startsWith("update "));
+  expect(updates.map(([, params]) => params)).toEqual([
+    [asset, 0, id, 1],
+    [asset, 0, id, 1],
+  ]);
+});
+
+it.each(["lock", "membership"])("does not write when %s fails", async (stage) => {
+  const failure = new Error("Database unavailable");
+  if (stage === "membership") execute.mockResolvedValueOnce({ rows: [] });
+  execute.mockRejectedValueOnce(failure);
+  await expect(reorderProjects([id])).rejects.toMatchObject({ cause: failure });
+  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
+});
+
+it("propagates a failed ordering write instead of reporting success", async () => {
+  const failure = new Error("Write failed");
+  execute
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [[id], [asset]] })
+    .mockRejectedValueOnce(failure);
+  await expect(reorderProjects([asset, id])).rejects.toMatchObject({ cause: failure });
+});

@@ -38,6 +38,29 @@ remain. There is no separate deletion service: cascade persistence belongs to th
 DB layer, while validation, authorization and status mapping belong to the route.
 CMS deletion UI integration remains a separate capability.
 
+## Ordering persistence boundary
+
+The DB ordering operation accepts the complete sequence of saved Project IDs,
+including unpublished drafts. IDs must identify every current Project exactly
+once. UUID case does not change identity. Duplicate, unknown or missing IDs return
+a membership conflict without writes; an empty order succeeds only for an empty
+collection. The caller validates UUID structure before invoking persistence.
+
+Membership verification and the position-only update share a read-committed
+transaction. A SHARE ROW EXCLUSIVE table lock serializes reorders and blocks
+Project inserts/updates/deletes until transaction end, including inserts into an
+empty collection; ordinary reads remain available. Row locks alone would not
+protect against new Projects appearing during membership verification. Keep the
+transaction short and do not add external work inside it. Existing draft,
+published-snapshot and media content is preserved. Repeating an order with
+unchanged membership yields the same zero-based positions. A later create retains
+the existing database default position; append-on-create is not implied.
+
+The configured database role must support this lock as well as Project reads and
+updates. Unexpected database failures propagate and roll back the transaction;
+test-driver results alone do not prove live permissions, locking or rollback.
+This persistence boundary does not expose an ordering HTTP endpoint.
+
 ## Draft write validation
 
 Project POST with Save intent and item PUT validate the request structure once
