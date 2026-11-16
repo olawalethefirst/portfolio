@@ -18,6 +18,7 @@ vi.mock("./client", () => ({
 import type { PublicationDraft } from "@/src/cms/publications";
 import {
   createAndPublishPublication,
+  deletePublication,
   deletePublishedPublication,
   insertPublication,
   listPublications,
@@ -267,4 +268,26 @@ it("deletes only the published snapshot and returns its stored content", async (
 it("returns null when no published publication exists", async () => {
   execute.mockResolvedValue({ rows: [] });
   expect(await deletePublishedPublication(id)).toBeNull();
+});
+
+it("deletes only the requested publication, leaving media untouched and snapshot removal to the database cascade", async () => {
+  execute.mockResolvedValue({ rows: [[id]] });
+  expect(await deletePublication(id)).toBe(id);
+  expect(execute).toHaveBeenCalledTimes(1);
+  const [query, params] = execute.mock.calls[0];
+  expect(query).toBe(
+    'delete from "publications" where "publications"."id" = $1 returning "id"',
+  );
+  expect(params).toEqual([id]);
+});
+
+it("returns null when deleting a missing publication", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await deletePublication(id)).toBeNull();
+});
+
+it("propagates publication deletion failures rather than reporting success", async () => {
+  const failure = new Error("Database unavailable");
+  execute.mockRejectedValue(failure);
+  await expect(deletePublication(id)).rejects.toMatchObject({ cause: failure });
 });

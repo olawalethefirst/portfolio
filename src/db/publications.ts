@@ -178,3 +178,12 @@ export async function createAndPublishPublication(
     return record(saved, live);
   });
 }
+
+export async function deletePublication(id: string): Promise<string | null> {
+  // The authoritative FK cascades published snapshots; media is retained.
+  const [row] = await getDb()
+    .delete(publications)
+    .where(eq(publications.id, id))
+    .returning({ id: publications.id });
+  return row?.id ?? null;
+}
