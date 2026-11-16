@@ -4,8 +4,8 @@ import { useRef } from "react";
 
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
 import type { AboutContent } from "@/src/components/about-cta/about-content";
+import type { PublishedProject } from "@/src/cms/projects";
 import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
-import { labProjects } from "@/src/components/project-item/lab-projects";
 import { PublicationsSection } from "@/src/components/home-sections/PublicationsSection";
 import {
   PrismHeroLayout,
@@ -22,12 +22,24 @@ import { labPublications } from "./lab-publications";
 export function PrismHeroLayoutLab({
   content,
   about,
+  projects,
 }: {
   content: PrismHeroContent;
   about: AboutContent;
+  projects: readonly PublishedProject[];
 }) {
   const heroRef = useRef<PrismHeroLayoutHandle>(null);
   const scrollOriginRef = usePrismDiscoveryScroll(heroRef);
+  const projectItems = projects.map((project) => ({
+    id: project.id,
+    name: project.name,
+    summary: project.summary,
+    platform: project.platform,
+    what: project.what,
+    how: project.how,
+    liveHref: project.liveUrl,
+    screenTextureSrc: project.screenshot || undefined,
+  }));
 
   return (
     <LabThemeShell>
@@ -63,7 +75,7 @@ export function PrismHeroLayoutLab({
           >
             <div className="grid">
               <div className="min-w-0 [grid-area:1/1]">
-                <ProjectsSection projects={labProjects} />
+                <ProjectsSection projects={projectItems} />
                 <PublicationsSection publications={labPublications} />
                 <AboutCtaSection
                   heading={about.heading}
