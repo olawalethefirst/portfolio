@@ -3,10 +3,9 @@ import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
 import { labProjects } from "@/src/components/project-item/lab-projects";
 import { ProjectProvider, useProjects } from "@/src/cms/ProjectProvider";
-import { act, fireEvent, render as renderPage, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPage, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ProjectEditor } from "./ProjectEditor";
-import { ProjectList } from "./ProjectList";
 function render(ui: ReactNode) { return renderPage(<CmsQueryProvider accountId="owner">{ui}</CmsQueryProvider>, { wrapper: CmsShell }); }
 
 const { push, uploadImage } = vi.hoisted(() => ({ push: vi.fn(), uploadImage: vi.fn() }));
@@ -16,12 +15,6 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }), usePathname: ()
 vi.mock("@/src/components/project-item/ProjectDeviceStage", () => ({
   ProjectDeviceStage: ({ platform }: { platform: string }) => <p>{platform} device preview</p>,
 }));
-
-async function chooseStatus(label: string) {
-  fireEvent.click(screen.getByRole("button", { name: /Status/ }));
-  fireEvent.click(await screen.findByRole("option", { name: label }));
-  await waitFor(() => expect(screen.queryByRole("listbox")).toBeNull());
-}
 
 beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", class {
@@ -119,14 +112,6 @@ it("publishes, unpublishes without losing edits, and confirms deletion", async (
   await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/projects"));
 });
 
-it("lists current fixtures and distinguishes no search results", () => {
-  render(<ProjectProvider><ProjectList /></ProjectProvider>);
-  expect(screen.getByRole("heading", { name: "Field Notes" })).toBeTruthy();
-  expect(screen.getByRole("heading", { name: "Relay" })).toBeTruthy();
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search projects" }), { target: { value: "missing" } });
-  expect(screen.getByRole("heading", { name: "No matching projects" })).toBeTruthy();
-});
-
 it("previews unsaved content on demand and restores editing focus and values", async () => {
   render(<ProjectProvider><ProjectEditor id="field-notes" /></ProjectProvider>);
   expect(screen.queryByText("mobile device preview")).toBeNull();
@@ -144,27 +129,6 @@ it("previews unsaved content on demand and restores editing focus and values", a
   fireEvent.click(screen.getByRole("radio", { name: "Web" }));
   fireEvent.click(screen.getByRole("button", { name: "Preview project" }));
   expect(await screen.findByText("web device preview")).toBeTruthy();
-});
-
-it("reorders whole projects and disables ordering in filtered results and at boundaries", async () => {
-  render(<ProjectProvider><ProjectList /><Published /></ProjectProvider>);
-  expect(screen.getByRole("button", { name: "Move Field Notes up" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Move Relay up" }));
-  const list = screen.getByRole("list");
-  expect(within(list).getAllByRole("heading").map((heading) => heading.textContent)).toEqual(["Relay", "Field Notes"]);
-  expect(screen.getByLabelText("Published name").textContent).toBe("Relay");
-  expect(screen.getByRole("status", { name: "Project order" }).textContent).toContain("position 1 of 2");
-  await chooseStatus("Published");
-  expect(within(list).getAllByRole("heading")).toHaveLength(2);
-  expect(screen.getByRole("button", { name: "Move Relay down" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Move Relay down" }));
-  await chooseStatus("All projects");
-  expect(within(list).getAllByRole("heading").map((heading) => heading.textContent)).toEqual(["Relay", "Field Notes"]);
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search projects" }), { target: { value: "Relay" } });
-  expect(screen.getByRole("button", { name: "Move Relay down" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search projects" }), { target: { value: "" } });
-  fireEvent.click(screen.getByRole("button", { name: "Move Relay down" }));
-  expect(within(list).getAllByRole("heading").map((heading) => heading.textContent)).toEqual(["Field Notes", "Relay"]);
 });
 
 it.each(["field-notes", "new"])("discards to the last saved project draft for %s without publishing", async (id) => {
@@ -192,96 +156,6 @@ it.each(["field-notes", "new"])("discards to the last saved project draft for %s
   expect(screen.getByRole("status", { name: "Project save status" }).textContent).toContain("No unsaved changes");
   expect(screen.getByLabelText("Published name").textContent).toBe(id === "new" ? "Unpublished" : published);
   expect(request).toHaveBeenCalledTimes(1);
-});
-
-function FilterExamples() {
-  const { records, commit } = useProjects();
-  return <button onClick={async () => {
-    const fieldNotes = records.find((item) => item.id === "field-notes")!;
-    const relay = records.find((item) => item.id === "relay")!;
-    await commit(fieldNotes.id, { ...fieldNotes.draft, summary: "Draft revision" }, "save");
-    await commit(relay.id, relay.draft, "unpublish");
-  }}>Prepare filter examples</button>;
-}
-
-it("combines project search and status, clears both filters, and preserves whole-list order", async () => {
-  render(<ProjectProvider request={async () => {}}><ProjectList /><FilterExamples /></ProjectProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Prepare filter examples" }));
-  await screen.findByText("Draft");
-  const search = screen.getByRole("searchbox", { name: "Search projects" }) as HTMLInputElement;
-  await chooseStatus("Drafts");
-  expect(screen.getByRole("heading", { name: "Relay" })).toBeTruthy();
-  expect(screen.queryByRole("heading", { name: "Field Notes" })).toBeNull();
-  fireEvent.change(search, { target: { value: "  FIELD  " } });
-  expect(screen.getByRole("heading", { name: "No matching projects" })).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-  expect(search.value).toBe("");
-  expect(screen.getByRole("button", { name: /Status/ }).textContent).toContain("All projects");
-  const names = () => within(screen.getByRole("list")).getAllByRole("heading").map((heading) => heading.textContent);
-  expect(names()).toEqual(["Field Notes", "Relay"]);
-  await chooseStatus("Published");
-  expect(screen.getByRole("heading", { name: "Field Notes" })).toBeTruthy();
-  expect(screen.getByText("Published · Unpublished changes")).toBeTruthy();
-  expect(screen.queryByRole("heading", { name: "Relay" })).toBeNull();
-  fireEvent.change(search, { target: { value: "  DRAFT REVISION  " } });
-  expect(screen.getByRole("heading", { name: "Field Notes" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Move Field Notes down" }).hasAttribute("disabled")).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Move Field Notes down" }));
-  fireEvent.change(search, { target: { value: "" } });
-  await chooseStatus("All projects");
-  expect(names()).toEqual(["Field Notes", "Relay"]);
-  expect(screen.getByRole("button", { name: "Move Field Notes down" }).hasAttribute("disabled")).toBe(false);
-});
-
-it("mounts the full published project section on demand and restores filtered list state", async () => {
-  render(<ProjectProvider request={async () => {}}><ProjectList /><FilterExamples /></ProjectProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Prepare filter examples" }));
-  await screen.findByText("Draft");
-  fireEvent.change(screen.getByRole("searchbox", { name: "Search projects" }), { target: { value: "Relay" } });
-  await chooseStatus("Drafts");
-  expect(screen.queryByText("mobile device preview")).toBeNull();
-  vi.stubGlobal("scrollY", 480);
-  fireEvent.click(screen.getByRole("button", { name: "Preview projects" }));
-  expect(await screen.findByRole("article", { name: "Field Notes" })).toBeTruthy();
-  expect(screen.queryByRole("article", { name: "Relay" })).toBeNull();
-  expect(screen.queryByText("Draft revision")).toBeNull();
-  expect(screen.getByText("mobile device preview")).toBeTruthy();
-  expect(screen.queryByRole("navigation", { name: "Content navigation" })).toBeNull();
-  expect(screen.getByRole("link", { name: "View Field Notes live" }).getAttribute("href")).toBe(labProjects[0].liveHref);
-  expect(screen.queryByRole("dialog")).toBeNull();
-  fireEvent.keyDown(window, { key: "Escape" });
-  expect((screen.getByRole("searchbox", { name: "Search projects" }) as HTMLInputElement).value).toBe("Relay");
-  expect(screen.getByRole("button", { name: /Status/ }).textContent).toContain("Drafts");
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "Preview projects" }));
-  expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 480, behavior: "instant" });
-  expect(screen.queryByText("mobile device preview")).toBeNull();
-});
-
-it("renders the published project stack in current demo order", async () => {
-  render(<ProjectProvider><ProjectList /></ProjectProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Move Relay up" }));
-  fireEvent.click(screen.getByRole("button", { name: "Preview projects" }));
-  await screen.findByRole("article", { name: "Relay" });
-  expect(screen.getAllByRole("article").map((article) => within(article).getByRole("heading").textContent)).toEqual(["Relay", "Field Notes"]);
-  fireEvent.click(screen.getByRole("button", { name: "Exit project section preview" }));
-  expect(within(screen.getByRole("list")).getAllByRole("heading").map((heading) => heading.textContent)).toEqual(["Relay", "Field Notes"]);
-});
-
-function WithdrawProjects() {
-  const { records, commit } = useProjects();
-  return <button onClick={async () => {
-    for (const record of records) await commit(record.id, record.draft, "unpublish");
-  }}>Withdraw demo projects</button>;
-}
-
-it("shows an empty project section when every record is unpublished", async () => {
-  render(<ProjectProvider request={async () => {}}><ProjectList /><WithdrawProjects /></ProjectProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Withdraw demo projects" }));
-  await waitFor(() => expect(screen.getAllByText("Draft")).toHaveLength(2));
-  fireEvent.click(screen.getByRole("button", { name: "Preview projects" }));
-  expect(await screen.findByRole("heading", { name: "No published projects" })).toBeTruthy();
-  expect(screen.queryByRole("article")).toBeNull();
-  expect(screen.queryByText("mobile device preview")).toBeNull();
 });
 
 it("saves an incomplete over-limit draft on implicit submission and never publishes", async () => {

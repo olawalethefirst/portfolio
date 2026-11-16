@@ -10,7 +10,6 @@ async function demoRequest() {
 }
 interface ProjectContextValue {
   records: ProjectRecord[];
-  move: (id: string, direction: -1 | 1) => void;
   pending: boolean;
   working: DraftStore<ProjectDraft>;
   commit: (id: string, draft: ProjectDraft, action: ProjectAction) => Promise<void>;
@@ -42,18 +41,7 @@ export function ProjectProvider({ children, request = demoRequest }: { children:
       });
     } finally { busy.current = false; setPending(false); }
   }
-  function move(id: string, direction: -1 | 1) {
-    if (busy.current) return;
-    setRecords((current) => {
-      const index = current.findIndex((item) => item.id === id);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= current.length) return current;
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-  return <Context value={{ working, records, move, pending, commit }}>{children}</Context>;
+  return <Context value={{ working, records, pending, commit }}>{children}</Context>;
 }
 export function useProjects() {
   const context = useContext(Context);

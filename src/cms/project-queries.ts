@@ -38,7 +38,10 @@ function needsServerTruth(failure: unknown) {
 export function useReorderProjects() {
   const queryKey = projectsQueryKey(useCmsAccount());
   const client = useQueryClient();
-  const mutation = useMutation({ mutationFn: projectApi.order });
+  // Forward only the IDs; useMutation also passes its own context argument.
+  const mutation = useMutation({
+    mutationFn: (ids: readonly string[]) => projectApi.order(ids),
+  });
   async function reorder(ids: readonly string[]) {
     const previous = client.getQueryData<ProjectRecord[]>(queryKey);
     try {

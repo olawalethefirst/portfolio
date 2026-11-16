@@ -97,7 +97,23 @@ server to answer.
 
 The hook holds no in-flight lock of its own. It reports `pending`, and callers
 disable their ordering controls while it is true, which is the control the list
-already applies. Component wiring is 08.07.2.
+already applies.
+
+## List screen
+
+`ProjectList` reads the collection through the query and owns the whole-list
+view: loading, a read failure with retry, search, status filter and the section
+preview. Moving a row submits the complete ID order, never a single move, so
+the request always states the full intended order. Ordering controls are
+disabled while a reorder is pending and while a filter hides rows, because a
+position shown inside a filtered view would not match the collection. A failed
+reorder clears the move announcement and reports the server's message in an
+alert; a membership conflict then refetches, so the list snaps to server truth.
+
+`ProjectProvider` no longer carries `move`. It still holds `records`, `commit`
+and the working-draft store for the editor, and `ProjectEditor` still reads its
+records, so opening a server Project from the list reports "Project
+unavailable" until 08.07.2b moves that lookup to the query.
 
 ## Draft write validation
 

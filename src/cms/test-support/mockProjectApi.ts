@@ -21,8 +21,11 @@ export function projectRecords(): ProjectRecord[] {
 }
 
 /** Install in setup and restore with vi.restoreAllMocks during cleanup. */
-export function mockProjectApi(request: () => Promise<void> = async () => {}) {
-  let saved = projectRecords();
+export function mockProjectApi(
+  request: () => Promise<void> = async () => {},
+  seed: ProjectRecord[] = projectRecords(),
+) {
+  let saved = structuredClone(seed);
   vi.spyOn(projectApi, "list").mockImplementation(async () =>
     structuredClone(saved),
   );
