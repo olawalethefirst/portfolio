@@ -35,9 +35,14 @@ tagsText, publishedOn. No kind or externalUrl. Keep date-only publishedOn as
 YYYY-MM-DD, not a JavaScript Date or timezone timestamp.
 
 These field sets do not finalize new-upload descriptor representation. Media
-association inputs, upload permission inputs and ordering inputs require their
-own consumer-specific design before implementation. Do not treat a screenshot
+association inputs and upload permission inputs require their own
+consumer-specific design before implementation. Do not treat a screenshot
 or coverSrc string as proof of upload ownership/existence.
+
+Project ordering uses collection `PUT /api/admin/projects` with
+{ ids: complete array of Project UUIDs in intended order }, returning 200 plus
+the canonical ordered collection. Incomplete or stale membership is 409/CONFLICT
+without writes. Publication ordering is not specified by this entry.
 
 Keep complete editable strings, including blanks for incomplete draft Save.
 Server validation applies action-specific structural/date/reference rules;
@@ -146,8 +151,9 @@ Do not infer idempotency support from PUT/DELETE names alone.
 6. POST response lost: retain local work and report uncertain outcome; no blind
    automatic creation retry or invented receipt protocol.
 
-Ordering/upload payloads, concurrent-write handling and creation-retry recovery
-require separate design before affected consumers are implemented.
+Upload payloads, concurrent-write handling and creation-retry recovery require
+separate design before affected consumers are implemented. The ordering payload
+is specified above; its UI integration and conflict recovery remain 08.07.
 
 
 ## Public read authorization

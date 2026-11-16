@@ -59,7 +59,23 @@ the existing database default position; append-on-create is not implied.
 The configured database role must support this lock as well as Project reads and
 updates. Unexpected database failures propagate and roll back the transaction;
 test-driver results alone do not prove live permissions, locking or rollback.
-This persistence boundary does not expose an ordering HTTP endpoint.
+
+## Ordering endpoint
+
+Order is a property of the collection, so owner-only `PUT /api/admin/projects`
+carries `{ ids: [...] }` rather than a separate ordering resource. The route owns
+the fixed schema: a strict object whose `ids` is an array of UUIDs. Structural
+failures and malformed JSON are 400/INVALID_REQUEST before any persistence. The
+route adds no membership checking of its own; exactness must stay inside the
+locked transaction to remain atomic, so a persistence conflict maps to
+409/CONFLICT. Success returns 200 and the canonical ordered collection in the
+same shape as the collection GET, letting the client adopt server order without
+a second request. Same-origin and JSON content-type guards precede authorization,
+and `withAdminApi` applies `private, no-store` to every outcome.
+
+There is no ordering service. A fixed request schema belongs at the route, and
+membership is already enforced by persistence, so a service would only forward a
+parsed array and wrap one result. Ordering UI integration remains 08.07.
 
 ## Draft write validation
 
