@@ -127,7 +127,42 @@ query cache; that lands with real persistence in 08.08. Until then, a Project
 that exists on the server but not in the two-item demo fixture opens, but
 renders as a blank new draft rather than its real saved content — the editor
 cannot show content it has no connected source for. Save, publish, unpublish
-and delete keep operating on the demo array for every Project until 08.08.
+and delete keep operating on the demo array for every Project until the editor
+is wired to the write module below.
+
+## Write server-state module
+
+`project-api.ts` adds `create`, `save`, `publish`, `unpublish` and `remove`,
+each a thin call to its existing endpoint. `project-queries.ts` adds
+`useProjectMutations()`, exposing a single `commit(id, draft, action)` that
+matches `ProjectEditorForm`'s existing call shape, so wiring it in only swaps
+the implementation the component calls, not the call itself.
+
+`commit` dispatches by `id`/`action` to the right endpoint, then patches the
+cached collection array to match what each endpoint actually proves:
+
+- a `new` ID always creates, appending the response at the end of the cached
+  array. Its DB-default position is not authoritative; the existing reorder
+  control places it correctly, so no refetch is forced.
+- **Save never touches the cached `published` field.** `PUT /:id` reports
+  `published: null` unconditionally — it does not own that field, only the
+  `/published` endpoints and first-publish create do — so applying its
+  response verbatim would make a published Project look unpublished after
+  every draft Save. The merge keeps whatever `published` the cache already
+  had and takes everything else from the response.
+- publish replaces the record outright; the response is authoritative for
+  both draft and the new published snapshot.
+- unpublish clears only the cached `published` field, from the response's
+  returned draft id, not a full record.
+- delete removes the entry.
+
+A failure that leaves the client unsure of truth — a lost response, or a
+membership-style conflict — refetches, the same rule `useReorderProjects`
+uses. An ordinary rejected write (validation, not found) does not; the
+component already surfaces that through the thrown error.
+
+No component reads this yet. `ProjectEditorForm` still calls
+`ProjectProvider`'s demo `commit`.
 
 ## Draft write validation
 
