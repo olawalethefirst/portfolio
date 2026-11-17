@@ -5,6 +5,10 @@ import { useRef } from "react";
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
 import type { AboutContent } from "@/src/components/about-cta/about-content";
 import type { PublishedProject } from "@/src/cms/projects";
+import {
+  publicationTags,
+  type PublishedPublication,
+} from "@/src/cms/publications";
 import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
 import { PublicationsSection } from "@/src/components/home-sections/PublicationsSection";
 import {
@@ -17,16 +21,17 @@ import { Surface } from "@/src/components/ui/Surface";
 import { LabThemeShell } from "./LabThemeShell";
 
 import { usePrismDiscoveryScroll } from "./usePrismDiscoveryScroll";
-import { labPublications } from "./lab-publications";
 
 export function PrismHeroLayoutLab({
   content,
   about,
   projects,
+  publications,
 }: {
   content: PrismHeroContent;
   about: AboutContent;
   projects: readonly PublishedProject[];
+  publications: readonly PublishedPublication[];
 }) {
   const heroRef = useRef<PrismHeroLayoutHandle>(null);
   const scrollOriginRef = usePrismDiscoveryScroll(heroRef);
@@ -39,6 +44,15 @@ export function PrismHeroLayoutLab({
     how: project.how,
     liveHref: project.liveUrl,
     screenTextureSrc: project.screenshot || undefined,
+  }));
+  const publicationItems = publications.map((publication) => ({
+    id: publication.id,
+    title: publication.title,
+    summary: publication.summary,
+    date: publication.publishedOn,
+    cover: { src: publication.coverSrc, alt: publication.coverAlt },
+    tags: publicationTags(publication.tagsText),
+    href: `/publications/${publication.id}`,
   }));
 
   return (
@@ -76,7 +90,7 @@ export function PrismHeroLayoutLab({
             <div className="grid">
               <div className="min-w-0 [grid-area:1/1]">
                 <ProjectsSection projects={projectItems} />
-                <PublicationsSection publications={labPublications} />
+                <PublicationsSection publications={publicationItems} />
                 <AboutCtaSection
                   heading={about.heading}
                   summary={about.biography}

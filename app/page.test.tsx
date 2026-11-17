@@ -2,17 +2,20 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { initialAbout } from "@/src/cms/about";
 import { initialHero } from "@/src/cms/hero";
 import type { PublishedProject } from "@/src/cms/projects";
+import type { PublishedPublication } from "@/src/cms/publications";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({ connection: vi.fn(async () => {}) }));
 vi.mock("@/src/db/about", () => ({ readAbout: vi.fn() }));
 vi.mock("@/src/db/hero", () => ({ readHero: vi.fn() }));
 vi.mock("@/src/db/projects", () => ({ listPublishedProjects: vi.fn() }));
+vi.mock("@/src/db/publications", () => ({ listPublishedPublications: vi.fn() }));
 vi.mock("./PrismHeroLayoutLab", () => ({ PrismHeroLayoutLab: () => null }));
 
 import { readAbout } from "@/src/db/about";
 import { readHero } from "@/src/db/hero";
 import { listPublishedProjects } from "@/src/db/projects";
+import { listPublishedPublications } from "@/src/db/publications";
 import Home from "./page";
 
 const publishedProject: PublishedProject = {
@@ -27,10 +30,22 @@ const publishedProject: PublishedProject = {
   liveUrl: "https://example.com/field-notes",
 };
 
+const publishedPublication: PublishedPublication = {
+  id: "publication-1",
+  title: "Designing for trust",
+  summary: "A practical framework for legible decisions.",
+  bodyMarkdown: "Body",
+  coverSrc: "/media/asset-2",
+  coverAlt: "Layered geometric forms",
+  tagsText: "Product strategy, Research",
+  publishedOn: "2026-09-18",
+};
+
 beforeEach(() => {
   vi.mocked(readHero).mockReset().mockResolvedValue(initialHero);
   vi.mocked(readAbout).mockReset().mockResolvedValue(initialAbout);
   vi.mocked(listPublishedProjects).mockReset().mockResolvedValue([publishedProject]);
+  vi.mocked(listPublishedPublications).mockReset().mockResolvedValue([publishedPublication]);
 });
 
 it("passes current saved Hero content to the homepage on each server request", async () => {
@@ -85,4 +100,22 @@ it("renders an empty public project list rather than a sample fallback", async (
 it("propagates Projects database failures instead of displaying sample work", async () => {
   vi.mocked(listPublishedProjects).mockRejectedValue(new Error("Projects read failed"));
   await expect(Home()).rejects.toThrow("Projects read failed");
+});
+
+it("passes current published Publications to the homepage on each server request", async () => {
+  const first = [publishedPublication];
+  const updated = [publishedPublication, { ...publishedPublication, id: "publication-2", title: "Designing with constraints" }];
+  vi.mocked(listPublishedPublications).mockResolvedValueOnce(first).mockResolvedValueOnce(updated);
+  expect((await Home()).props.publications).toEqual(first);
+  expect((await Home()).props.publications).toEqual(updated);
+});
+
+it("renders an empty public publication list rather than a sample fallback", async () => {
+  vi.mocked(listPublishedPublications).mockResolvedValue([]);
+  expect((await Home()).props.publications).toEqual([]);
+});
+
+it("propagates Publications database failures instead of displaying sample work", async () => {
+  vi.mocked(listPublishedPublications).mockRejectedValue(new Error("Publications read failed"));
+  await expect(Home()).rejects.toThrow("Publications read failed");
 });

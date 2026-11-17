@@ -5,7 +5,15 @@ import {
   type HTMLAttributes,
   type PropsWithChildren,
 } from "react";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import type {
   PrismHeroLayoutHandle,
@@ -19,11 +27,14 @@ vi.mock("./theme-accents", () => ({
 }));
 
 beforeAll(() => {
-  vi.stubGlobal("ResizeObserver", class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  });
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
 });
 
 afterAll(() => vi.unstubAllGlobals());
@@ -76,8 +87,22 @@ vi.mock("@/src/components/ui/Surface", () => ({
 
 import { initialAbout } from "@/src/cms/about";
 import type { PublishedProject } from "@/src/cms/projects";
+import type { PublishedPublication } from "@/src/cms/publications";
 import { PRISM_HERO_DEFAULT_CONTENT } from "@/src/components/prism-fiber/ui/hero/prism-hero-content";
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
+
+const publishedPublications: PublishedPublication[] = [
+  {
+    id: "designing-for-trust",
+    title: "Designing for trust",
+    summary: "A practical framework for legible decisions.",
+    bodyMarkdown: "Body",
+    coverSrc: "/media/cover-asset",
+    coverAlt: "Layered geometric forms",
+    tagsText: "Product strategy, Research",
+    publishedOn: "2026-09-18",
+  },
+];
 
 const publishedProjects: PublishedProject[] = [
   {
@@ -106,37 +131,80 @@ const publishedProjects: PublishedProject[] = [
 
 describe("PrismHeroLayoutLab", () => {
   it("renders the saved About heading and biography with the existing contact CTA", () => {
-    render(<PrismHeroLayoutLab content={PRISM_HERO_DEFAULT_CONTENT} about={{ heading: "Meet the maker", biography: "Saved server biography." }} projects={[]} />);
+    render(
+      <PrismHeroLayoutLab
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        about={{
+          heading: "Meet the maker",
+          biography: "Saved server biography.",
+        }}
+        projects={[]}
+        publications={[]}
+      />,
+    );
     const about = screen.getByRole("region", { name: "Meet the maker" });
     expect(within(about).getByText("Saved server biography.")).toBeTruthy();
-    expect(within(about).getByRole("link", { name: "Start a conversation" }).getAttribute("href")).toBe("/contact");
+    expect(
+      within(about)
+        .getByRole("link", { name: "Start a conversation" })
+        .getAttribute("href"),
+    ).toBe("/contact");
   });
   it("forwards server-loaded Hero copy into the interactive layout", () => {
-    render(<PrismHeroLayoutLab about={initialAbout} content={{ ...PRISM_HERO_DEFAULT_CONTENT, headline: "Server supplied headline" }} projects={[]} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Server supplied headline" })).toBeTruthy();
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={{
+          ...PRISM_HERO_DEFAULT_CONTENT,
+          headline: "Server supplied headline",
+        }}
+        projects={[]}
+        publications={[]}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Server supplied headline",
+      }),
+    ).toBeTruthy();
   });
   beforeEach(() => {
     document.documentElement.dataset.theme = "plum";
     document.documentElement.dataset.mode = "dark";
   });
   it("provides navigation and working display settings within the glass content", () => {
-    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} projects={[]} />);
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={[]}
+        publications={[]}
+      />,
+    );
 
     const panel = screen.getByTestId("prism-glass-panel");
     expect(within(panel).getByRole("button", { name: "Menu" })).toBeTruthy();
     fireEvent.click(within(panel).getByRole("button", { name: "Settings" }));
     fireEvent.click(within(panel).getByRole("switch", { name: "Dark mode" }));
-    const themeScope = panel.closest('[data-mode][data-theme]');
+    const themeScope = panel.closest("[data-mode][data-theme]");
     expect(themeScope?.getAttribute("data-mode")).toBe("light");
     expect(themeScope?.getAttribute("data-theme")).toBe("plum");
     expect(themeScope?.contains(screen.getByTestId("prism-hero"))).toBe(true);
     expect(
-      screen.getByTestId("prism-hero").closest('[data-mode][data-theme]'),
+      screen.getByTestId("prism-hero").closest("[data-mode][data-theme]"),
     ).toBe(themeScope);
   });
 
   it("renders the complete hero with page-owned camera zoom", () => {
-    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} projects={[]} />);
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={[]}
+        publications={[]}
+      />,
+    );
 
     const heroes = screen.getAllByTestId("prism-hero");
     expect(heroes).toHaveLength(1);
@@ -147,7 +215,14 @@ describe("PrismHeroLayoutLab", () => {
   });
 
   it("places an accessible project stack in the glass panel after the hero runway", () => {
-    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} projects={publishedProjects} />);
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={publishedProjects}
+        publications={[]}
+      />,
+    );
 
     const runway = screen.getByTestId("prism-scroll-runway");
     const panel = screen.getByTestId("prism-glass-panel");
@@ -180,9 +255,52 @@ describe("PrismHeroLayoutLab", () => {
   });
 
   it("shows no project when none are published", () => {
-    render(<PrismHeroLayoutLab about={initialAbout} content={PRISM_HERO_DEFAULT_CONTENT} projects={[]} />);
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={[]}
+        publications={[]}
+      />,
+    );
 
     expect(screen.queryByRole("article", { name: "Field Notes" })).toBeNull();
     expect(screen.queryByRole("article", { name: "Relay" })).toBeNull();
+  });
+
+  it("places an accessible publication stack linking to the real article route", () => {
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={[]}
+        publications={publishedPublications}
+      />,
+    );
+
+    const panel = screen.getByTestId("prism-glass-panel");
+    const publication = within(panel).getByRole("article", {
+      name: "Designing for trust",
+    });
+    expect(
+      within(publication)
+        .getByRole("link", { name: "Read Designing for trust" })
+        .getAttribute("href"),
+    ).toBe("/publications/designing-for-trust");
+  });
+
+  it("shows no publication when none are published", () => {
+    render(
+      <PrismHeroLayoutLab
+        about={initialAbout}
+        content={PRISM_HERO_DEFAULT_CONTENT}
+        projects={[]}
+        publications={[]}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("article", { name: "Designing for trust" }),
+    ).toBeNull();
   });
 });
