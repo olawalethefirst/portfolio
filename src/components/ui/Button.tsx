@@ -4,6 +4,7 @@ import { Button as HeroUIButton } from "@heroui/react/button";
 import type { ButtonProps as HeroUIButtonProps } from "@heroui/react/button";
 import { Spinner } from "@heroui/react/spinner";
 import { buttonVariants } from "@heroui/styles";
+import Link from "next/link";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { cn, type IconSlot } from "./utils";
 
@@ -70,20 +71,8 @@ export function Button(props: ButtonProps) {
       ...linkProps
     } = props;
     const isUnavailable = isDisabled || isLoading;
-
-    return (
-      <a
-        {...linkProps}
-        aria-busy={isLoading || undefined}
-        aria-disabled={isUnavailable || undefined}
-        className={cn(
-          buttonVariants({ fullWidth, size, variant }),
-          "rounded-none",
-          className,
-        )}
-        data-slot="button"
-        href={isUnavailable ? undefined : href}
-      >
+    const content = (
+      <>
         {isLoading ? (
           <Spinner
             aria-hidden="true"
@@ -96,7 +85,33 @@ export function Button(props: ButtonProps) {
         )}
         {children}
         {endContent}
-      </a>
+      </>
+    );
+    const sharedClassName = cn(
+      buttonVariants({ fullWidth, size, variant }),
+      "rounded-none",
+      className,
+    );
+
+    // A disabled/loading link has nowhere to navigate; render a plain,
+    // non-interactive anchor rather than asking next/link for a href it can't take.
+    if (isUnavailable)
+      return (
+        <a
+          {...linkProps}
+          aria-busy={isLoading || undefined}
+          aria-disabled
+          className={sharedClassName}
+          data-slot="button"
+        >
+          {content}
+        </a>
+      );
+
+    return (
+      <Link {...linkProps} className={sharedClassName} data-slot="button" href={href}>
+        {content}
+      </Link>
     );
   }
 

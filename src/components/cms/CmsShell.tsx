@@ -2,7 +2,7 @@
 
 import { Drawer } from "@heroui/react/drawer";
 import { BookOpen, FolderKanban, Menu, PanelTop, UserRound, MessagesSquare, Search } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { CmsAppearanceControls } from "./CmsAppearanceControls";
 import { Button } from "@/src/components/ui/Button";
@@ -22,8 +22,6 @@ export function CmsShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const section = navigationItems.find(({ path }) => pathname === path || pathname.startsWith(`${path}/`))?.id;
   const [preview, setPreview] = useState(false);
-  const router = useRouter();
-  const navigate = (path: string) => router.push(path);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigation = (
     <nav aria-label="Content navigation" className="mt-10">
@@ -36,7 +34,8 @@ export function CmsShell({ children }: { children: ReactNode }) {
             variant={section === id ? "secondary" : "ghost"}
             aria-current={section === id ? "page" : undefined}
             startContent={Icon ? <Icon aria-hidden="true" className="size-4" /> : undefined}
-            onPress={() => { setMenuOpen(false); navigate(path); }}>
+            href={path}
+            onClick={() => setMenuOpen(false)}>
             {label}
           </Button>
         ))}

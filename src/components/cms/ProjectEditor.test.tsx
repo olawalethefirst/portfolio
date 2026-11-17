@@ -147,9 +147,10 @@ it("locks fields during save, then permits edits without changing published cont
   expect(screen.getByLabelText("Published name").textContent).toBe(
     "Field Notes",
   );
-  fireEvent.click(screen.getByRole("button", { name: "Publications" }));
+  const publications = screen.getByRole("link", { name: "Publications" });
+  expect(publications.getAttribute("href")).toBe("/admin/publications");
+  fireEvent.click(publications);
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(push).toHaveBeenCalledExactlyOnceWith("/admin/publications");
 });
 
 it("validates publishing, allows incomplete drafts, recovers from a failed save, and redirects to the created Project", async () => {

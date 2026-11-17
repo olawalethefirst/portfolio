@@ -103,8 +103,9 @@ it.each(editors)(
     fireEvent.change(screen.getByRole("textbox", { name: field }), {
       target: { value: "Working draft" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "About" }));
-    expect(push).toHaveBeenCalledExactlyOnceWith("/admin/about");
+    const about = screen.getByRole("link", { name: "About" });
+    expect(about.getAttribute("href")).toBe("/admin/about");
+    fireEvent.click(about);
     expect(screen.queryByRole("dialog")).toBeNull();
     const unload = new Event("beforeunload", { cancelable: true });
     window.dispatchEvent(unload);
