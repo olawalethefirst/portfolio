@@ -14,6 +14,11 @@ export interface PublicationRecord {
   draft: PublicationDraft;
   published: PublicationDraft | null;
 }
+export const publicationRecordSchema = z.object({
+  id: z.uuid(),
+  draft: publicationDraftSchema,
+  published: publicationDraftSchema.nullable(),
+});
 
 export type PublicationAction = "save" | "publish" | "unpublish";
 export type PublicationErrors = Partial<Record<keyof PublicationDraft, string>>;
