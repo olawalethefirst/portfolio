@@ -1,6 +1,9 @@
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
+import { ApiRequestError } from "@/src/api/client";
 import { CmsProvider, useCms } from "@/src/cms/CmsProvider";
+import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
+import { publicationApi } from "@/src/cms/publication-api";
 import { initialPublications } from "@/src/cms/publication-fixtures";
 import {
   act,
@@ -13,8 +16,22 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PublicationEditor } from "./PublicationEditor";
 
-function render(ui: ReactNode) {
-  return renderPage(ui, { wrapper: CmsShell });
+/**
+ * The outer existence check reads usePublicationsQuery; every test here still
+ * exercises the inner form through CmsProvider's demo array, so the query mock
+ * only needs to agree on which IDs exist, not field-level content.
+ */
+async function render(ui: ReactNode) {
+  const result = renderPage(
+    <CmsQueryProvider accountId="owner">{ui}</CmsQueryProvider>,
+    { wrapper: CmsShell },
+  );
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("status", { name: "Loading publication" }),
+    ).toBeNull(),
+  );
+  return result;
 }
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
@@ -25,6 +42,7 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   push.mockReset();
+  vi.spyOn(publicationApi, "list").mockResolvedValue(initialPublications());
   vi.stubGlobal(
     "matchMedia",
     vi.fn(() => ({
@@ -66,7 +84,7 @@ function PublishedReader() {
 
 it.each(["", "Recovered article text"])(
   "restores a legacy external draft as an editable internal article: %s",
-  (bodyMarkdown) => {
+  async (bodyMarkdown) => {
     const record = initialPublications()[0];
     localStorage.setItem(
       "portfolio:cms-drafts:v1:publications:publication-1",
@@ -81,7 +99,7 @@ it.each(["", "Recovered article text"])(
         },
       }),
     );
-    render(
+    await render(
       <CmsProvider>
         <PublicationEditor id={record.id} />
       </CmsProvider>,
@@ -108,9 +126,47 @@ it.each(["", "Recovered article text"])(
   },
 );
 
+it("reports a Publication absent from the server as unavailable", async () => {
+  vi.spyOn(publicationApi, "list").mockResolvedValue([]);
+  renderPage(
+    <CmsQueryProvider accountId="owner">
+      <PublicationEditor id="missing" />
+    </CmsQueryProvider>,
+    { wrapper: CmsShell },
+  );
+  expect(
+    await screen.findByRole("heading", { name: "Publication unavailable" }),
+  ).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Back to publications" }));
+  expect(push).toHaveBeenCalledWith("/admin/publications");
+});
+
+it("shows loading, then offers a retry when the Publication list cannot be read", async () => {
+  const list = vi
+    .spyOn(publicationApi, "list")
+    .mockRejectedValueOnce(new ApiRequestError("network", null));
+  renderPage(
+    <CmsQueryProvider accountId="owner">
+      <CmsProvider>
+        <PublicationEditor id="publication-1" />
+      </CmsProvider>
+    </CmsQueryProvider>,
+    { wrapper: CmsShell },
+  );
+  expect(
+    await screen.findByRole("status", { name: "Loading publication" }),
+  ).toBeTruthy();
+  await screen.findByRole("heading", {
+    name: "Couldn’t load this publication",
+  });
+  list.mockResolvedValue(initialPublications());
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByRole("textbox", { name: "Title" })).toBeTruthy();
+});
+
 describe("publication CMS", () => {
   it("previews unsaved content with the public article and returns without publishing or losing edits", async () => {
-    render(
+    await render(
       <CmsProvider>
         <PublicationEditor id="publication-1" />
         <PublishedReader />
@@ -178,7 +234,7 @@ describe("publication CMS", () => {
           finish = resolve;
         }),
     );
-    render(
+    await render(
       <CmsProvider request={request}>
         <PublicationEditor id="publication-1" />
         <PublishedReader />
@@ -216,7 +272,7 @@ describe("publication CMS", () => {
       .fn()
       .mockRejectedValueOnce(new Error("Save failed. Try again."))
       .mockResolvedValue(undefined);
-    render(
+    await render(
       <CmsProvider request={request}>
         <PublicationEditor id="publication-1" />
       </CmsProvider>,
@@ -237,7 +293,7 @@ describe("publication CMS", () => {
 
   it("allows incomplete drafts but blocks publishing and focuses the missing title", async () => {
     const request = vi.fn(async () => {});
-    render(
+    await render(
       <CmsProvider request={request}>
         <PublicationEditor id="new" />
       </CmsProvider>,
@@ -262,7 +318,7 @@ describe("publication CMS", () => {
   });
 
   it("previews publication cards with internal article destinations", async () => {
-    render(
+    await render(
       <CmsProvider>
         <PublicationEditor id="publication-2" />
       </CmsProvider>,
@@ -282,7 +338,7 @@ describe("publication CMS", () => {
   });
 
   it("publishes the working copy and confirms withdrawal without deleting content", async () => {
-    render(
+    await render(
       <CmsProvider request={async () => {}}>
         <PublicationEditor id="publication-1" />
         <PublishedReader />
@@ -318,7 +374,7 @@ it("keeps a selected cover through full-screen card preview and return to editin
     value: () => Promise.resolve(),
   });
   try {
-    render(
+    await render(
       <CmsProvider>
         <PublicationEditor id="publication-1" />
       </CmsProvider>,
@@ -354,7 +410,7 @@ it("keeps a selected cover through full-screen card preview and return to editin
 });
 
 it("deduplicates removable tags and preserves article content when reopening the writer", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="publication-1" />
     </CmsProvider>,
@@ -405,7 +461,7 @@ it.each(["publication-1", "new"])(
   "discards to the last saved publication draft for %s without publishing",
   async (id) => {
     const request = vi.fn(async () => {});
-    render(
+    await render(
       <CmsProvider request={request}>
         <PublicationEditor id={id} />
         <PublishedReader />
@@ -457,7 +513,7 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
         }),
     );
   const record = initialPublications()[0];
-  render(
+  await render(
     <CmsProvider initialRecords={[record]} request={request}>
       <PublicationEditor id={record.id} />
       <PublishedReader />
@@ -506,7 +562,7 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
 });
 
 it("offers editor deletion only after a new publication draft is saved", async () => {
-  render(
+  await render(
     <CmsProvider request={async () => {}}>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -529,7 +585,7 @@ it("keeps the unpublish confirmation open while the request is pending", async (
         finish = resolve;
       }),
   );
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="publication-1" />
       <PublishedReader />
@@ -554,7 +610,7 @@ it("keeps the unpublish confirmation open while the request is pending", async (
 
 it("implicitly saves incomplete over-limit drafts without publishing", async () => {
   const request = vi.fn().mockResolvedValue(undefined);
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
       <PublishedReader />
@@ -575,7 +631,7 @@ it("implicitly saves incomplete over-limit drafts without publishing", async () 
 
 it("corrects title and parsed tag errors live without blocking draft saves", async () => {
   const request = vi.fn().mockResolvedValue(undefined);
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -604,7 +660,7 @@ it("corrects title and parsed tag errors live without blocking draft saves", asy
 });
 
 it("clears the required article error after writing content following an incomplete Publish", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -630,7 +686,7 @@ it("clears the required article error after writing content following an incompl
 });
 
 it("focuses tags before cover and requires an image description", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="publication-1" />
     </CmsProvider>,
@@ -655,8 +711,8 @@ it("focuses tags before cover and requires an image description", async () => {
   ).toBeNull();
 });
 
-it("discards failed cover feedback even when the saved content did not change", () => {
-  render(
+it("discards failed cover feedback even when the saved content did not change", async () => {
+  await render(
     <CmsProvider>
       <PublicationEditor id="publication-1" />
     </CmsProvider>,
@@ -681,7 +737,7 @@ it("unlocks fields after save failure and permits correction and retry", async (
         }),
     )
     .mockResolvedValue(undefined);
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -701,7 +757,7 @@ it("unlocks fields after save failure and permits correction and retry", async (
 
 it("writes before the first save and returns to the form with edits, focus and scroll intact", async () => {
   const request = vi.fn(async () => {});
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -747,7 +803,7 @@ it("writes before the first save and returns to the form with edits, focus and s
 });
 
 it("formats the remembered selection and restores it after article preview", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -782,7 +838,7 @@ it("formats the remembered selection and restores it after article preview", asy
 });
 
 it("inserts a validated link at the selection and cancels insertion without changing content", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -835,7 +891,7 @@ it("opens the file picker directly and selects the image description for inline 
     value: vi.fn(async () => {}),
   });
   try {
-    render(
+    await render(
       <CmsProvider request={request}>
         <PublicationEditor id="new" />
       </CmsProvider>,
@@ -876,7 +932,7 @@ it("opens the file picker directly and selects the image description for inline 
 
 it("inserts a code block with a language without requiring a publication save", async () => {
   const request = vi.fn(async () => {});
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -907,7 +963,7 @@ it("inserts a code block with a language without requiring a publication save", 
 });
 
 it("closes insertion dialogs before Escape can leave the writing workspace", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -930,7 +986,7 @@ it("closes insertion dialogs before Escape can leave the writing workspace", asy
 });
 
 it("offers all heading levels in a popover and separate inline list commands", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -972,7 +1028,7 @@ it("offers all heading levels in a popover and separate inline list commands", a
 });
 
 it("provides formatting tooltips on keyboard focus and semantic writing tabs", async () => {
-  render(
+  await render(
     <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
@@ -1012,7 +1068,7 @@ it("preserves edits typed while an article image is being decoded", async () => 
     value: decode,
   });
   try {
-    render(
+    await render(
       <CmsProvider>
         <PublicationEditor id="new" />
       </CmsProvider>,
@@ -1051,7 +1107,7 @@ it("locks the writing textarea and formatting controls during save and restores 
         fail = reject;
       }),
   );
-  render(
+  await render(
     <CmsProvider request={request}>
       <PublicationEditor id="new" />
     </CmsProvider>,

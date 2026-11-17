@@ -7,6 +7,8 @@ import { mockHeroApi } from "@/src/cms/test-support/mockHeroApi";
 import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
 import { initialProjects } from "@/src/cms/projects";
+import { initialPublications } from "@/src/cms/publication-fixtures";
+import { mockPublicationApi } from "@/src/cms/test-support/mockPublicationApi";
 import { SeoProvider } from "@/src/cms/SeoProvider";
 import { mockProjectApi } from "@/src/cms/test-support/mockProjectApi";
 import { mockSocialApi } from "@/src/cms/test-support/mockSocialApi";
@@ -34,6 +36,7 @@ beforeEach(() => {
   mockAboutApi();
   mockSocialApi();
   mockProjectApi(async () => {}, initialProjects());
+  mockPublicationApi(async () => {}, initialPublications());
   const state = initialSeo();
   const records = [
     {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
 import { useId, useRef, useState } from "react";
 import { useCms } from "@/src/cms/CmsProvider";
+import { usePublicationsQuery } from "@/src/cms/publication-queries";
 import {
   emptyPublication,
   publicationState,
@@ -17,7 +18,14 @@ import {
   type PublicationRecord,
 } from "@/src/cms/publications";
 import { Button } from "@/src/components/ui/Button";
-import { CmsFeedback, CmsPageHeader, CmsToolbar, CmsFooter } from "./CmsLayout";
+import { LoadingState } from "@/src/components/ui/LoadingState";
+import {
+  CmsEmptyState,
+  CmsFeedback,
+  CmsPageHeader,
+  CmsToolbar,
+  CmsFooter,
+} from "./CmsLayout";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
@@ -28,19 +36,32 @@ import { PublicationPreview } from "./PublicationPreview";
 import { PublicationWriting } from "./PublicationWriting";
 
 export function PublicationEditor({ id }: { id: string }) {
-  const { records } = useCms();
   const router = useRouter();
-  const record = records.find((item) => item.id === id);
-  if (id !== "new" && !record)
+  // "new" needs no existing record, so it never waits on the collection.
+  const { data, isPending, isError, refetch } = usePublicationsQuery();
+  if (id === "new") return <PublicationEditorForm />;
+  if (isPending) return <LoadingState label="Loading publication" />;
+  if (isError)
     return (
-      <>
-        <CmsPageHeader
-          onBack={() => router.push("/admin/publications")}
-          backLabel="Back to publications"
-          title="Publication unavailable"
-          description="Return to publications to start again."
-        />
-      </>
+      <CmsEmptyState
+        title="Couldn’t load this publication"
+        description="The publication could not be read. Check your connection and try again."
+        action={
+          <Button variant="ghost" onPress={() => void refetch()}>
+            Try again
+          </Button>
+        }
+      />
+    );
+  const record = data.find((item) => item.id === id);
+  if (!record)
+    return (
+      <CmsPageHeader
+        onBack={() => router.push("/admin/publications")}
+        backLabel="Back to publications"
+        title="Publication unavailable"
+        description="Return to publications to start again."
+      />
     );
   return <PublicationEditorForm initialRecord={record} />;
 }
