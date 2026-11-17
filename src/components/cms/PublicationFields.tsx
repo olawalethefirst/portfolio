@@ -7,7 +7,7 @@ import {
   type PublicationDraft,
   type PublicationErrors,
 } from "@/src/cms/publications";
-import { useCms } from "@/src/cms/CmsProvider";
+import { usePublicationsQuery } from "@/src/cms/publication-queries";
 import { Button } from "@/src/components/ui/Button";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
 import { CmsField } from "./CmsField";
@@ -32,7 +32,7 @@ export function PublicationFields({
   onWriteArticle: () => void;
   articleDirty: boolean;
 }) {
-  const { records } = useCms();
+  const { data: records = [] } = usePublicationsQuery();
   const selectedTags = publicationTags(value.tagsText).map((tag) =>
     tag.toLowerCase(),
   );

@@ -1,10 +1,12 @@
 import { CmsShell } from "./CmsShell";
 import type { ReactNode } from "react";
 import { ApiRequestError } from "@/src/api/client";
-import { CmsProvider, useCms } from "@/src/cms/CmsProvider";
+import { CmsProvider } from "@/src/cms/CmsProvider";
 import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { publicationApi } from "@/src/cms/publication-api";
+import { usePublicationsQuery } from "@/src/cms/publication-queries";
 import { initialPublications } from "@/src/cms/publication-fixtures";
+import { mockPublicationApi } from "@/src/cms/test-support/mockPublicationApi";
 import {
   act,
   fireEvent,
@@ -42,7 +44,7 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   push.mockReset();
-  vi.spyOn(publicationApi, "list").mockResolvedValue(initialPublications());
+  mockPublicationApi(async () => {}, initialPublications());
   vi.stubGlobal(
     "matchMedia",
     vi.fn(() => ({
@@ -73,11 +75,14 @@ afterEach(() => {
   Reflect.deleteProperty(Element.prototype, "getAnimations");
 });
 
-function PublishedReader() {
-  const { records } = useCms();
+const createdPublicationPattern = /^\/admin\/publications\/[0-9a-f-]{36}$/;
+
+function PublishedReader({ id }: { id: string }) {
+  const { data } = usePublicationsQuery();
+  const record = data?.find((item) => item.id === id);
   return (
     <output aria-label="Demo published title">
-      {records[0]?.published?.title ?? "Unpublished"}
+      {record?.published?.title ?? "Unpublished"}
     </output>
   );
 }
@@ -169,7 +174,7 @@ describe("publication CMS", () => {
     await render(
       <CmsProvider>
         <PublicationEditor id="publication-1" />
-        <PublishedReader />
+        <PublishedReader id="publication-1" />
       </CmsProvider>,
     );
     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
@@ -234,10 +239,11 @@ describe("publication CMS", () => {
           finish = resolve;
         }),
     );
+    mockPublicationApi(request, initialPublications());
     await render(
-      <CmsProvider request={request}>
+      <CmsProvider>
         <PublicationEditor id="publication-1" />
-        <PublishedReader />
+        <PublishedReader id="publication-1" />
       </CmsProvider>,
     );
     const title = screen.getByRole("textbox", { name: "Title" });
@@ -254,6 +260,7 @@ describe("publication CMS", () => {
         .matches(":disabled"),
     ).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await waitFor(() => expect(request).toHaveBeenCalled());
     await act(async () => finish());
     expect(title.matches(":disabled")).toBe(false);
     fireEvent.change(title, { target: { value: "Still typing" } });
@@ -272,8 +279,9 @@ describe("publication CMS", () => {
       .fn()
       .mockRejectedValueOnce(new Error("Save failed. Try again."))
       .mockResolvedValue(undefined);
+    mockPublicationApi(request, initialPublications());
     await render(
-      <CmsProvider request={request}>
+      <CmsProvider>
         <PublicationEditor id="publication-1" />
       </CmsProvider>,
     );
@@ -293,13 +301,18 @@ describe("publication CMS", () => {
 
   it("allows incomplete drafts but blocks publishing and focuses the missing title", async () => {
     const request = vi.fn(async () => {});
+    mockPublicationApi(request, initialPublications());
     await render(
-      <CmsProvider request={request}>
+      <CmsProvider>
         <PublicationEditor id="new" />
       </CmsProvider>,
     );
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    await screen.findByText("Saved.");
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(
+        expect.stringMatching(createdPublicationPattern),
+      ),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(
       await screen.findByText("Add a title before publishing."),
@@ -339,9 +352,9 @@ describe("publication CMS", () => {
 
   it("publishes the working copy and confirms withdrawal without deleting content", async () => {
     await render(
-      <CmsProvider request={async () => {}}>
+      <CmsProvider>
         <PublicationEditor id="publication-1" />
-        <PublishedReader />
+        <PublishedReader id="publication-1" />
       </CmsProvider>,
     );
     fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
@@ -457,49 +470,63 @@ it("deduplicates removable tags and preserves article content when reopening the
   ).toBe(originalAlt);
 });
 
-it.each(["publication-1", "new"])(
-  "discards to the last saved publication draft for %s without publishing",
-  async (id) => {
-    const request = vi.fn(async () => {});
-    await render(
-      <CmsProvider request={request}>
-        <PublicationEditor id={id} />
-        <PublishedReader />
-      </CmsProvider>,
-    );
-    const title = screen.getByRole("textbox", {
-      name: "Title",
-    }) as HTMLInputElement;
-    const original = title.value;
-    const published = screen.getByLabelText("Demo published title").textContent;
-    const discard = screen.getByRole("button", { name: "Discard changes" });
-    expect(discard.hasAttribute("disabled")).toBe(true);
-    fireEvent.change(title, { target: { value: "Temporary edit" } });
-    fireEvent.click(discard);
-    expect(title.value).toBe(original);
-    expect(request).not.toHaveBeenCalled();
-    fireEvent.change(title, { target: { value: "Saved draft only" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    expect(discard.hasAttribute("disabled")).toBe(true);
-    await screen.findByText("Saved.");
-    fireEvent.change(title, { target: { value: "" } });
-    fireEvent.click(
-      screen.getByRole("button", { name: /^(Publish|Update published)$/ }),
-    );
-    await screen.findByText("Add a title before publishing.");
-    fireEvent.click(discard);
-    expect(title.value).toBe("Saved draft only");
-    expect(screen.queryByText("Add a title before publishing.")).toBeNull();
-    expect(
-      screen.getByRole("status", { name: "Publication save status" })
-        .textContent,
-    ).toContain("No unsaved changes");
-    expect(screen.getByLabelText("Demo published title").textContent).toBe(
-      id === "new" ? "Unpublished" : published,
-    );
-    expect(request).toHaveBeenCalledTimes(1);
-  },
-);
+it("discards to the last saved publication draft for publication-1 without publishing", async () => {
+  const request = vi.fn(async () => {});
+  mockPublicationApi(request, initialPublications());
+  await render(
+    <CmsProvider>
+      <PublicationEditor id="publication-1" />
+      <PublishedReader id="publication-1" />
+    </CmsProvider>,
+  );
+  const title = screen.getByRole("textbox", {
+    name: "Title",
+  }) as HTMLInputElement;
+  const original = title.value;
+  const published = screen.getByLabelText("Demo published title").textContent;
+  const discard = screen.getByRole("button", { name: "Discard changes" });
+  expect(discard.hasAttribute("disabled")).toBe(true);
+  fireEvent.change(title, { target: { value: "Temporary edit" } });
+  fireEvent.click(discard);
+  expect(title.value).toBe(original);
+  expect(request).not.toHaveBeenCalled();
+  fireEvent.change(title, { target: { value: "Saved draft only" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+  expect(discard.hasAttribute("disabled")).toBe(true);
+  await screen.findByText("Saved.");
+  fireEvent.change(title, { target: { value: "" } });
+  fireEvent.click(screen.getByRole("button", { name: "Update published" }));
+  await screen.findByText("Add a title before publishing.");
+  fireEvent.click(discard);
+  expect(title.value).toBe("Saved draft only");
+  expect(screen.queryByText("Add a title before publishing.")).toBeNull();
+  expect(
+    screen.getByRole("status", { name: "Publication save status" }).textContent,
+  ).toContain("No unsaved changes");
+  expect(screen.getByLabelText("Demo published title").textContent).toBe(
+    published,
+  );
+  expect(request).toHaveBeenCalledTimes(1);
+});
+
+it("discards an unsaved new publication draft before any Save, without publishing", async () => {
+  const request = vi.fn(async () => {});
+  mockPublicationApi(request, initialPublications());
+  await render(
+    <CmsProvider>
+      <PublicationEditor id="new" />
+    </CmsProvider>,
+  );
+  const title = screen.getByRole("textbox", {
+    name: "Title",
+  }) as HTMLInputElement;
+  const discard = screen.getByRole("button", { name: "Discard changes" });
+  expect(discard.hasAttribute("disabled")).toBe(true);
+  fireEvent.change(title, { target: { value: "Temporary edit" } });
+  fireEvent.click(discard);
+  expect(title.value).toBe("");
+  expect(request).not.toHaveBeenCalled();
+});
 
 it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blocks duplicate pending requests", async () => {
   let finish!: () => void;
@@ -513,10 +540,11 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
         }),
     );
   const record = initialPublications()[0];
+  mockPublicationApi(request, [record]);
   await render(
-    <CmsProvider initialRecords={[record]} request={request}>
+    <CmsProvider>
       <PublicationEditor id={record.id} />
-      <PublishedReader />
+      <PublishedReader id={record.id} />
     </CmsProvider>,
   );
   fireEvent.change(screen.getByRole("textbox", { name: "Title" }), {
@@ -553,7 +581,7 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
   expect(
     screen.getByRole("dialog", { name: "Delete this publication?" }),
   ).toBeTruthy();
-  expect(request).toHaveBeenCalledTimes(2);
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
   await act(async () => finish());
   await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/publications"));
   expect(screen.getByLabelText("Demo published title").textContent).toBe(
@@ -561,9 +589,9 @@ it("confirms editor deletion, preserves unsaved edits on cancel/failure, and blo
   );
 });
 
-it("offers editor deletion only after a new publication draft is saved", async () => {
+it("offers no deletion before any save and redirects to the created Publication on first save", async () => {
   await render(
-    <CmsProvider request={async () => {}}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -571,10 +599,11 @@ it("offers editor deletion only after a new publication draft is saved", async (
     screen.queryByRole("button", { name: "Delete publication" }),
   ).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  await screen.findByText("Saved.");
-  fireEvent.click(screen.getByRole("button", { name: "Delete publication" }));
-  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/publications"));
+  await waitFor(() =>
+    expect(push).toHaveBeenCalledWith(
+      expect.stringMatching(createdPublicationPattern),
+    ),
+  );
 });
 
 it("keeps the unpublish confirmation open while the request is pending", async () => {
@@ -585,10 +614,11 @@ it("keeps the unpublish confirmation open while the request is pending", async (
         finish = resolve;
       }),
   );
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="publication-1" />
-      <PublishedReader />
+      <PublishedReader id="publication-1" />
     </CmsProvider>,
   );
   fireEvent.click(screen.getByRole("button", { name: "Unpublish" }));
@@ -600,7 +630,7 @@ it("keeps the unpublish confirmation open while the request is pending", async (
   expect(
     screen.getByRole("dialog", { name: "Unpublish this publication?" }),
   ).toBe(dialog);
-  expect(request).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
   await act(async () => finish());
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(screen.getByLabelText("Demo published title").textContent).toBe(
@@ -610,10 +640,10 @@ it("keeps the unpublish confirmation open while the request is pending", async (
 
 it("implicitly saves incomplete over-limit drafts without publishing", async () => {
   const request = vi.fn().mockResolvedValue(undefined);
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
-      <PublishedReader />
     </CmsProvider>,
   );
   const title = screen.getByRole("textbox", { name: "Title" });
@@ -622,17 +652,19 @@ it("implicitly saves incomplete over-limit drafts without publishing", async () 
   expect(form).toBeTruthy();
   expect(form!.noValidate).toBe(true);
   fireEvent.submit(form!);
-  await screen.findByText("Saved.");
-  expect(screen.getByLabelText("Demo published title").textContent).toBe(
-    "Unpublished",
+  await waitFor(() =>
+    expect(push).toHaveBeenCalledWith(
+      expect.stringMatching(createdPublicationPattern),
+    ),
   );
   expect(request).toHaveBeenCalledTimes(1);
 });
 
 it("corrects title and parsed tag errors live without blocking draft saves", async () => {
   const request = vi.fn().mockResolvedValue(undefined);
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -655,7 +687,11 @@ it("corrects title and parsed tag errors live without blocking draft saves", asy
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Publish" }));
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  await screen.findByText("Saved.");
+  await waitFor(() =>
+    expect(push).toHaveBeenCalledWith(
+      expect.stringMatching(createdPublicationPattern),
+    ),
+  );
   expect(request).toHaveBeenCalledTimes(1);
 });
 
@@ -737,8 +773,9 @@ it("unlocks fields after save failure and permits correction and retry", async (
         }),
     )
     .mockResolvedValue(undefined);
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -746,19 +783,25 @@ it("unlocks fields after save failure and permits correction and retry", async (
   fireEvent.change(title, { target: { value: "Submitted" } });
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   expect(title.matches(":disabled")).toBe(true);
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
   await act(async () => fail(new Error("Save failure")));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(title.matches(":disabled")).toBe(false);
   fireEvent.change(title, { target: { value: "Newer" } });
   expect(screen.queryByRole("alert")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-  await screen.findByText("Saved.");
+  await waitFor(() =>
+    expect(push).toHaveBeenCalledWith(
+      expect.stringMatching(createdPublicationPattern),
+    ),
+  );
 });
 
 it("writes before the first save and returns to the form with edits, focus and scroll intact", async () => {
   const request = vi.fn(async () => {});
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -792,10 +835,9 @@ it("writes before the first save and returns to the form with edits, focus and s
   fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
   await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
   await waitFor(() =>
-    expect(
-      screen.getByRole("status", { name: "Publication save status" })
-        .textContent,
-    ).toContain("Saved."),
+    expect(push).toHaveBeenCalledWith(
+      expect.stringMatching(createdPublicationPattern),
+    ),
   );
   expect(
     screen.getByRole("region", { name: "Article writing workspace" }),
@@ -890,9 +932,10 @@ it("opens the file picker directly and selects the image description for inline 
     configurable: true,
     value: vi.fn(async () => {}),
   });
+  mockPublicationApi(request, initialPublications());
   try {
     await render(
-      <CmsProvider request={request}>
+      <CmsProvider>
         <PublicationEditor id="new" />
       </CmsProvider>,
     );
@@ -932,8 +975,9 @@ it("opens the file picker directly and selects the image description for inline 
 
 it("inserts a code block with a language without requiring a publication save", async () => {
   const request = vi.fn(async () => {});
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -1107,8 +1151,9 @@ it("locks the writing textarea and formatting controls during save and restores 
         fail = reject;
       }),
   );
+  mockPublicationApi(request, initialPublications());
   await render(
-    <CmsProvider request={request}>
+    <CmsProvider>
       <PublicationEditor id="new" />
     </CmsProvider>,
   );
@@ -1124,6 +1169,7 @@ it("locks the writing textarea and formatting controls during save and restores 
   ).toBe(true);
   fireEvent.change(article, { target: { value: "Blocked edit" } });
   expect(article.value).toBe("Submitted article");
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
   await act(async () => fail(new Error("Save failure")));
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(article.matches(":disabled")).toBe(false);

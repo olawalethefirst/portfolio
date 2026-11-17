@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
 import { useId, useRef, useState } from "react";
 import { useCms } from "@/src/cms/CmsProvider";
-import { usePublicationsQuery } from "@/src/cms/publication-queries";
+import {
+  usePublicationMutations,
+  usePublicationsQuery,
+} from "@/src/cms/publication-queries";
 import {
   emptyPublication,
   publicationState,
@@ -72,14 +75,23 @@ function PublicationEditorForm({
   initialRecord?: PublicationRecord;
 }) {
   const router = useRouter();
-  const { records, commit, pending, working } = useCms();
-  const { id, value, setValue, reset, ready, persistenceStatus } =
+  const { working } = useCms();
+  const { data: records } = usePublicationsQuery();
+  const { commit } = usePublicationMutations();
+  // No record yet means "new": the real ID only exists once the first
+  // Save/Publish succeeds, at which point the editor redirects to it.
+  const recordId = initialRecord?.id ?? "new";
+  const { value, setValue, reset, ready, persistenceStatus } =
     useWorkingDraft(
       working,
-      initialRecord?.id ?? "new",
+      recordId,
       () => initialRecord?.draft ?? emptyPublication(),
       initialRecord?.id,
     );
+  // The mutation's own isPending can lag a tick behind this click; set
+  // synchronously so the fieldset locks in the same render as the submit.
+  const [saving, setSaving] = useState(false);
+  const pending = saving;
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(
     null,
   );
@@ -113,7 +125,7 @@ function PublicationEditorForm({
       setWriting(false);
     },
   );
-  const record = records.find((item) => item.id === id);
+  const record = records?.find((item) => item.id === recordId);
   const dirty = !samePublication(value, record?.draft ?? emptyPublication());
 
   function changeValue(next: PublicationDraft) {
@@ -165,8 +177,17 @@ function PublicationEditorForm({
         return false;
       }
     }
+    setSaving(true);
     try {
-      await commit(id, value, action);
+      const result = await commit(recordId, value, action);
+      if (recordId === "new") {
+        // "new" only ever saves or publishes, which always create and
+        // return the canonical record; move to it so the next Save updates
+        // this Publication instead of creating another one.
+        working.clear("new");
+        router.push(`/admin/publications/${(result as PublicationRecord).id}`);
+        return true;
+      }
       if (action === "delete") {
         router.push("/admin/publications");
       } else
@@ -187,6 +208,8 @@ function PublicationEditorForm({
       );
       if (action !== "delete") setDialog(null);
       return false;
+    } finally {
+      setSaving(false);
     }
   }
 
