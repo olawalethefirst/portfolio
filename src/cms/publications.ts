@@ -3,9 +3,13 @@ import { CONTENT_LIMITS } from "@/src/config/content-limits";
 
 const limits = CONTENT_LIMITS.publication;
 export const publicationDraftSchema = z.object({
-  title: z.string(), summary: z.string(),
-  bodyMarkdown: z.string(), coverSrc: z.string(),
-  coverAlt: z.string(), tagsText: z.string(), publishedOn: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  bodyMarkdown: z.string(),
+  coverSrc: z.string(),
+  coverAlt: z.string(),
+  tagsText: z.string(),
+  publishedOn: z.string(),
 });
 export type PublicationDraft = z.infer<typeof publicationDraftSchema>;
 
@@ -19,6 +23,9 @@ export const publicationRecordSchema = z.object({
   draft: publicationDraftSchema,
   published: publicationDraftSchema.nullable(),
 });
+export interface PublishedPublication extends PublicationDraft {
+  id: string;
+}
 
 export type PublicationAction = "save" | "publish" | "unpublish";
 export type PublicationErrors = Partial<Record<keyof PublicationDraft, string>>;
@@ -90,30 +97,65 @@ export function httpsUrl(value: string) {
 }
 
 export function createPublicationPublishSchema(today: string) {
-  return publicationDraftSchema.extend({
-    title: z.string().refine((value) => Boolean(value.trim()), "Add a title before publishing.")
-      .max(limits.title, `Use ${limits.title} characters or fewer.`),
-    summary: z.string().refine((value) => Boolean(value.trim()), "Add a summary before publishing.")
-      .max(limits.summary, `Use ${limits.summary} characters or fewer.`),
-  }).superRefine((value, context) => {
-    const issue = (field: keyof PublicationDraft, message: string) => context.addIssue({ code: "custom", path: [field], message });
-    if (!value.bodyMarkdown.trim()) issue("bodyMarkdown", "Write your article before publishing.");
-    const tags = publicationTags(value.tagsText);
-    if (tags.some((tag) => tag.length > limits.tagLength)) issue("tagsText", `Use ${limits.tagLength} characters or fewer per tag.`);
-    if (tags.length > limits.tagCount) issue("tagsText", `Use ${limits.tagCount} tags or fewer.`);
-    if (!value.coverSrc) issue("coverSrc", "Choose a cover image.");
-    if (!value.coverAlt.trim()) issue("coverAlt", "Describe the cover.");
-    if (!validDate(value.publishedOn)) issue("publishedOn", "Choose a valid publication date.");
-    else if (value.publishedOn > today) issue("publishedOn", "Scheduling is not supported. Choose today or an earlier date.");
-  });
+  return publicationDraftSchema
+    .extend({
+      title: z
+        .string()
+        .refine(
+          (value) => Boolean(value.trim()),
+          "Add a title before publishing.",
+        )
+        .max(limits.title, `Use ${limits.title} characters or fewer.`),
+      summary: z
+        .string()
+        .refine(
+          (value) => Boolean(value.trim()),
+          "Add a summary before publishing.",
+        )
+        .max(limits.summary, `Use ${limits.summary} characters or fewer.`),
+    })
+    .superRefine((value, context) => {
+      const issue = (field: keyof PublicationDraft, message: string) =>
+        context.addIssue({ code: "custom", path: [field], message });
+      if (!value.bodyMarkdown.trim())
+        issue("bodyMarkdown", "Write your article before publishing.");
+      const tags = publicationTags(value.tagsText);
+      if (tags.some((tag) => tag.length > limits.tagLength))
+        issue(
+          "tagsText",
+          `Use ${limits.tagLength} characters or fewer per tag.`,
+        );
+      if (tags.length > limits.tagCount)
+        issue("tagsText", `Use ${limits.tagCount} tags or fewer.`);
+      if (!value.coverSrc) issue("coverSrc", "Choose a cover image.");
+      if (!value.coverAlt.trim()) issue("coverAlt", "Describe the cover.");
+      if (!validDate(value.publishedOn))
+        issue("publishedOn", "Choose a valid publication date.");
+      else if (value.publishedOn > today)
+        issue(
+          "publishedOn",
+          "Scheduling is not supported. Choose today or an earlier date.",
+        );
+    });
 }
 
-export function validatePublication(value: PublicationDraft, today: string): PublicationErrors {
+export function validatePublication(
+  value: PublicationDraft,
+  today: string,
+): PublicationErrors {
   const result = createPublicationPublishSchema(today).safeParse(value);
   if (result.success) return {};
   const { fieldErrors } = z.flattenError(result.error);
   const errors: PublicationErrors = {};
-  for (const field of ["title", "summary", "bodyMarkdown", "tagsText", "coverSrc", "coverAlt", "publishedOn"] as const) {
+  for (const field of [
+    "title",
+    "summary",
+    "bodyMarkdown",
+    "tagsText",
+    "coverSrc",
+    "coverAlt",
+    "publishedOn",
+  ] as const) {
     const message = fieldErrors[field]?.[0];
     if (message) errors[field] = message;
   }

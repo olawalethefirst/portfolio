@@ -22,6 +22,7 @@ import {
   deletePublishedPublication,
   insertPublication,
   listPublications,
+  listPublishedPublications,
   readPublication,
   reorderPublications,
   saveAndPublishPublication,
@@ -69,6 +70,21 @@ it("lists saved and published snapshots independently in stable editorial order"
   expect(execute.mock.calls[0][0]).toContain(
     'order by "publications"."position" asc, "publications"."id" asc',
   );
+});
+
+it("lists only published publications, with id, in editorial order", async () => {
+  execute.mockResolvedValue({ rows: [[...live]] });
+  expect(await listPublishedPublications()).toEqual([
+    { id, ...content("Live version", `/media/${asset}`, "2026-01-01") },
+  ]);
+  expect(execute.mock.calls[0][0]).toBe(
+    'select "published_publications"."publication_id", "published_publications"."title", "published_publications"."summary", "published_publications"."body_markdown", "published_publications"."cover_asset_id", "published_publications"."cover_alt", "published_publications"."tags_text", "published_publications"."published_on" from "published_publications" inner join "publications" on "publications"."id" = "published_publications"."publication_id" order by "publications"."position" asc, "publications"."id" asc',
+  );
+});
+
+it("excludes a publication with no published snapshot", async () => {
+  execute.mockResolvedValue({ rows: [] });
+  expect(await listPublishedPublications()).toEqual([]);
 });
 
 it("preserves draft-only records and empty cover/date references", async () => {
@@ -221,11 +237,9 @@ it("throws when publish persistence returns no row after a successful save", asy
 });
 
 it("creates and publishes a new publication atomically", async () => {
-  execute
-    .mockResolvedValueOnce({ rows: [inserted] })
-    .mockResolvedValueOnce({
-      rows: [[id, ...snapshot("Draft", asset, "2026-01-01")]],
-    });
+  execute.mockResolvedValueOnce({ rows: [inserted] }).mockResolvedValueOnce({
+    rows: [[id, ...snapshot("Draft", asset, "2026-01-01")]],
+  });
   expect(await createAndPublishPublication(draftInput)).toEqual({
     id,
     draft: content("Draft", `/media/${asset}`),
@@ -261,7 +275,9 @@ it("deletes only the published snapshot and returns its stored content", async (
   );
   const [query, params] = execute.mock.calls[0];
   expect(query).toMatch(/^delete from "published_publications"/);
-  expect(query).toContain('where "published_publications"."publication_id" = $1');
+  expect(query).toContain(
+    'where "published_publications"."publication_id" = $1',
+  );
   expect(query).toContain("returning");
   expect(params).toEqual([id]);
 });
@@ -318,13 +334,17 @@ it.each([
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [[id], [asset]] });
   expect(await reorderPublications(ids)).toEqual({ status: "conflict" });
-  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
+  expect(
+    execute.mock.calls.some(([query]) => query.startsWith("update ")),
+  ).toBe(false);
 });
 
 it("accepts an empty ordering only when the collection is empty", async () => {
   execute.mockResolvedValue({ rows: [] });
   expect(await reorderPublications([])).toEqual({ status: "saved" });
-  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
+  expect(
+    execute.mock.calls.some(([query]) => query.startsWith("update ")),
+  ).toBe(false);
 });
 
 it("rejects an unknown ID in an empty collection", async () => {
@@ -338,13 +358,17 @@ it("compares UUID identity without case sensitivity", async () => {
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [[uuid]] })
     .mockResolvedValueOnce({ rows: [] });
-  expect(await reorderPublications([uuid.toUpperCase()])).toEqual({ status: "saved" });
+  expect(await reorderPublications([uuid.toUpperCase()])).toEqual({
+    status: "saved",
+  });
   expect(execute.mock.calls[2][1]).toEqual([uuid, 0]);
 });
 
 it("rejects duplicate UUID identities even with different casing", async () => {
   const uuid = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-  expect(await reorderPublications([uuid, uuid.toUpperCase()])).toEqual({ status: "conflict" });
+  expect(await reorderPublications([uuid, uuid.toUpperCase()])).toEqual({
+    status: "conflict",
+  });
   expect(execute).not.toHaveBeenCalled();
 });
 
@@ -354,20 +378,29 @@ it("repeating an order assigns the same positions", async () => {
   }));
   expect(await reorderPublications([asset, id])).toEqual({ status: "saved" });
   expect(await reorderPublications([asset, id])).toEqual({ status: "saved" });
-  const updates = execute.mock.calls.filter(([query]) => query.startsWith("update "));
+  const updates = execute.mock.calls.filter(([query]) =>
+    query.startsWith("update "),
+  );
   expect(updates.map(([, params]) => params)).toEqual([
     [asset, 0, id, 1],
     [asset, 0, id, 1],
   ]);
 });
 
-it.each(["lock", "membership"])("does not write when %s fails", async (stage) => {
-  const failure = new Error("Database unavailable");
-  if (stage === "membership") execute.mockResolvedValueOnce({ rows: [] });
-  execute.mockRejectedValueOnce(failure);
-  await expect(reorderPublications([id])).rejects.toMatchObject({ cause: failure });
-  expect(execute.mock.calls.some(([query]) => query.startsWith("update "))).toBe(false);
-});
+it.each(["lock", "membership"])(
+  "does not write when %s fails",
+  async (stage) => {
+    const failure = new Error("Database unavailable");
+    if (stage === "membership") execute.mockResolvedValueOnce({ rows: [] });
+    execute.mockRejectedValueOnce(failure);
+    await expect(reorderPublications([id])).rejects.toMatchObject({
+      cause: failure,
+    });
+    expect(
+      execute.mock.calls.some(([query]) => query.startsWith("update ")),
+    ).toBe(false);
+  },
+);
 
 it("propagates a failed ordering write instead of reporting success", async () => {
   const failure = new Error("Write failed");
@@ -375,5 +408,7 @@ it("propagates a failed ordering write instead of reporting success", async () =
     .mockResolvedValueOnce({ rows: [] })
     .mockResolvedValueOnce({ rows: [[id], [asset]] })
     .mockRejectedValueOnce(failure);
-  await expect(reorderPublications([asset, id])).rejects.toMatchObject({ cause: failure });
+  await expect(reorderPublications([asset, id])).rejects.toMatchObject({
+    cause: failure,
+  });
 });

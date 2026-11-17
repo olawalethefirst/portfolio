@@ -4,6 +4,7 @@ import { date, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import type {
   PublicationDraft,
   PublicationRecord,
+  PublishedPublication,
 } from "@/src/cms/publications";
 import { getDb } from "./client";
 
@@ -71,6 +72,24 @@ export async function listPublications(): Promise<PublicationRecord[]> {
   return rows.map(({ publication, published: publishedRow }) =>
     record(publication, publishedRow ?? undefined),
   );
+}
+
+export async function listPublishedPublications(): Promise<
+  PublishedPublication[]
+> {
+  const rows = await getDb()
+    .select({ published: publishedPublications })
+    .from(publishedPublications)
+    .innerJoin(
+      publications,
+      eq(publications.id, publishedPublications.publicationId),
+    )
+    .orderBy(asc(publications.position), asc(publications.id));
+
+  return rows.map(({ published: row }) => ({
+    id: row.publicationId,
+    ...draft(row),
+  }));
 }
 
 export async function readPublication(
