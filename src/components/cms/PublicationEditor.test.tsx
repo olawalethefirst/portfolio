@@ -36,14 +36,29 @@ async function render(ui: ReactNode) {
   return result;
 }
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+const { push, uploadImage } = vi.hoisted(() => ({
+  push: vi.fn(),
+  uploadImage: vi.fn(),
+}));
+vi.mock("@/src/media/upload-client", () => ({ uploadImage }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
   usePathname: () => "/admin/publications",
 }));
 
+const uploadedCover = {
+  source:
+    "https://example.supabase.co/storage/v1/object/public/media/cover.png",
+  descriptor: {
+    assetId: "12345678-1234-4234-8234-123456789abc",
+    bucket: "media",
+    path: "12345678-1234-4234-8234-123456789abc.png",
+  },
+};
+
 beforeEach(() => {
   push.mockReset();
+  uploadImage.mockReset().mockResolvedValue(uploadedCover);
   mockPublicationApi(async () => {}, initialPublications());
   vi.stubGlobal(
     "matchMedia",
@@ -381,45 +396,41 @@ describe("publication CMS", () => {
   });
 });
 
-it("keeps a selected cover through full-screen card preview and return to editing", async () => {
-  Object.defineProperty(HTMLImageElement.prototype, "decode", {
-    configurable: true,
-    value: () => Promise.resolve(),
+it("uploads a selected cover and keeps it through full-screen card preview and return to editing", async () => {
+  await render(
+    <CmsProvider>
+      <PublicationEditor id="publication-1" />
+    </CmsProvider>,
+  );
+  fireEvent.change(screen.getByLabelText("Replace image"), {
+    target: {
+      files: [new File(["image"], "selected.png", { type: "image/png" })],
+    },
   });
-  try {
-    await render(
-      <CmsProvider>
-        <PublicationEditor id="publication-1" />
-      </CmsProvider>,
-    );
-    fireEvent.change(screen.getByLabelText("Replace image"), {
-      target: {
-        files: [new File(["image"], "selected.png", { type: "image/png" })],
-      },
-    });
-    await screen.findByText("selected.png selected.");
-    const source = document
-      .querySelector('img[src^="data:"]')
-      ?.getAttribute("src");
-    expect(source).toMatch(/^data:image\/png/);
-    fireEvent.click(screen.getByRole("button", { name: "Preview card" }));
-    await waitFor(() =>
-      expect(
-        document.querySelector('img[src^="data:"]')?.getAttribute("src"),
-      ).toBe(source),
-    );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Exit publication preview" }),
-    );
-    await screen.findByLabelText("Replace image");
+  await waitFor(() =>
     expect(
-      document.querySelector('img[src^="data:"]')?.getAttribute("src"),
-    ).toBe(source);
-    fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
-    expect(await screen.findByText("No image selected")).toBeTruthy();
-  } finally {
-    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-  }
+      screen.getByRole("img", { name: initialPublications()[0].draft.coverAlt })
+        .getAttribute("src"),
+    ).toBe(uploadedCover.source),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Preview card" }));
+  await waitFor(() =>
+    expect(
+      screen
+        .getByRole("img", { name: initialPublications()[0].draft.coverAlt })
+        .getAttribute("src"),
+    ).toContain(encodeURIComponent(uploadedCover.source)),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Exit publication preview" }),
+  );
+  await screen.findByLabelText("Replace image");
+  expect(
+    screen.getByRole("img", { name: initialPublications()[0].draft.coverAlt })
+      .getAttribute("src"),
+  ).toBe(uploadedCover.source);
+  fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+  expect(await screen.findByText("No image selected")).toBeTruthy();
 });
 
 it("deduplicates removable tags and preserves article content when reopening the writer", async () => {
@@ -748,6 +759,9 @@ it("focuses tags before cover and requires an image description", async () => {
 });
 
 it("discards failed cover feedback even when the saved content did not change", async () => {
+  uploadImage.mockRejectedValueOnce(
+    new Error("Choose a JPEG, PNG or WebP image."),
+  );
   await render(
     <CmsProvider>
       <PublicationEditor id="publication-1" />
@@ -756,7 +770,9 @@ it("discards failed cover feedback even when the saved content did not change", 
   fireEvent.change(screen.getByLabelText("Replace image"), {
     target: { files: [new File(["bad"], "bad.txt", { type: "text/plain" })] },
   });
-  expect(screen.getByRole("alert").textContent).toContain("JPEG, PNG or WebP");
+  expect((await screen.findByRole("alert")).textContent).toContain(
+    "JPEG, PNG or WebP",
+  );
   fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByLabelText("Replace image")).toBeTruthy();
@@ -926,51 +942,45 @@ it("inserts a validated link at the selection and cancels insertion without chan
   expect(editor.value).toBe("Read [guide](<https://example.com>)");
 });
 
-it("opens the file picker directly and selects the image description for inline editing", async () => {
+it("opens the file picker directly and inserts the uploaded image description for inline editing", async () => {
   const request = vi.fn(async () => {});
-  Object.defineProperty(HTMLImageElement.prototype, "decode", {
-    configurable: true,
-    value: vi.fn(async () => {}),
-  });
   mockPublicationApi(request, initialPublications());
-  try {
-    await render(
-      <CmsProvider>
-        <PublicationEditor id="new" />
-      </CmsProvider>,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Write article" }));
-    const input = screen.getByLabelText("Article image");
-    const openPicker = vi.spyOn(input, "click");
-    fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
-    expect(openPicker).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.change(input, {
-      target: {
-        files: [new File(["pixels"], "chart.png", { type: "image/png" })],
-      },
-    });
-    await screen.findByText("chart.png selected.");
-    const editor = screen.getByRole("textbox", {
-      name: "Article",
-    }) as HTMLTextAreaElement;
+  await render(
+    <CmsProvider>
+      <PublicationEditor id="new" />
+    </CmsProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const input = screen.getByLabelText("Article image");
+  const openPicker = vi.spyOn(input, "click");
+  fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
+  expect(openPicker).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  fireEvent.change(input, {
+    target: {
+      files: [new File(["pixels"], "chart.png", { type: "image/png" })],
+    },
+  });
+  await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+  const editor = screen.getByRole("textbox", {
+    name: "Article",
+  }) as HTMLTextAreaElement;
+  await waitFor(() =>
     expect(editor.value).toContain(
-      "![Image description](<data:image/png;base64,",
-    );
-    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe(
-      "Image description",
-    );
-    fireEvent.change(editor, {
-      target: { value: editor.value.replace("Image description", "A chart") },
-    });
-    fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
-    expect(
-      screen.getByRole("img", { name: "A chart" }).getAttribute("src"),
-    ).toMatch(/^data:image\/png;base64,/);
-    expect(request).not.toHaveBeenCalled();
-  } finally {
-    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-  }
+      `![Image description](<${uploadedCover.source}>)`,
+    ),
+  );
+  expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe(
+    "Image description",
+  );
+  fireEvent.change(editor, {
+    target: { value: editor.value.replace("Image description", "A chart") },
+  });
+  fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+  expect(
+    screen.getByRole("img", { name: "A chart" }).getAttribute("src"),
+  ).toBe(uploadedCover.source);
+  expect(request).not.toHaveBeenCalled();
 });
 
 it("inserts a code block with a language without requiring a publication save", async () => {
@@ -1099,48 +1109,41 @@ it("provides formatting tooltips on keyboard focus and semantic writing tabs", a
   ).toBeNull();
 });
 
-it("preserves edits typed while an article image is being decoded", async () => {
-  let finish!: () => void;
-  const decode = vi.fn(
+it("preserves edits typed while an article image is uploading", async () => {
+  let finish!: (image: typeof uploadedCover) => void;
+  uploadImage.mockImplementation(
     () =>
-      new Promise<void>((resolve) => {
+      new Promise((resolve) => {
         finish = resolve;
       }),
   );
-  Object.defineProperty(HTMLImageElement.prototype, "decode", {
-    configurable: true,
-    value: decode,
+  await render(
+    <CmsProvider>
+      <PublicationEditor id="new" />
+    </CmsProvider>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Write article" }));
+  const editor = screen.getByRole("textbox", {
+    name: "Article",
+  }) as HTMLTextAreaElement;
+  fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
+  const input = screen.getByLabelText("Article image");
+  fireEvent.change(input, {
+    target: {
+      files: [new File(["pixels"], "chart.png", { type: "image/png" })],
+    },
   });
-  try {
-    await render(
-      <CmsProvider>
-        <PublicationEditor id="new" />
-      </CmsProvider>,
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Write article" }));
-    const editor = screen.getByRole("textbox", {
-      name: "Article",
-    }) as HTMLTextAreaElement;
-    fireEvent.click(screen.getByRole("button", { name: "Insert image" }));
-    const input = screen.getByLabelText("Article image");
-    fireEvent.change(input, {
-      target: {
-        files: [new File(["pixels"], "chart.png", { type: "image/png" })],
-      },
-    });
-    await waitFor(() => expect(decode).toHaveBeenCalledTimes(1));
-    fireEvent.change(editor, { target: { value: "Newer text" } });
-    editor.setSelectionRange(10, 10);
-    fireEvent.select(editor);
-    await act(async () => finish());
-    await screen.findByText("chart.png selected.");
-    expect(editor.value).toMatch(/^Newer text\n\n!\[Image description\]/);
-    expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe(
-      "Image description",
-    );
-  } finally {
-    Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-  }
+  await waitFor(() => expect(uploadImage).toHaveBeenCalledTimes(1));
+  fireEvent.change(editor, { target: { value: "Newer text" } });
+  editor.setSelectionRange(10, 10);
+  fireEvent.select(editor);
+  await act(async () => finish(uploadedCover));
+  await waitFor(() =>
+    expect(editor.value).toMatch(/^Newer text\n\n!\[Image description\]/),
+  );
+  expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe(
+    "Image description",
+  );
 });
 
 it("locks the writing textarea and formatting controls during save and restores them after failure", async () => {

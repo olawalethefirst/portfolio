@@ -6,5 +6,14 @@ export default async function PublicationEditorPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <PublicationEditor key={id} id={id} />;
+  return (
+    <PublicationEditor
+      key={id}
+      id={id}
+      uploadConfig={{
+        url: process.env.SUPABASE_URL?.trim() ?? "",
+        publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ?? "",
+      }}
+    />
+  );
 }

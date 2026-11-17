@@ -34,15 +34,24 @@ import { CmsLifecycleButton } from "./CmsLifecycleButton";
 import { CmsDialog } from "./CmsDialog";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useWorkingDraft } from "@/src/cms/working-drafts";
+import { useImageUpload } from "@/src/media/use-image-upload";
+import type { UploadConfig } from "@/src/media/upload-reference";
 import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
 import { PublicationWriting } from "./PublicationWriting";
 
-export function PublicationEditor({ id }: { id: string }) {
+export function PublicationEditor({
+  id,
+  uploadConfig = { url: "", publishableKey: "" },
+}: {
+  id: string;
+  uploadConfig?: UploadConfig;
+}) {
   const router = useRouter();
   // "new" needs no existing record, so it never waits on the collection.
   const { data, isPending, isError, refetch } = usePublicationsQuery();
-  if (id === "new") return <PublicationEditorForm />;
+  if (id === "new")
+    return <PublicationEditorForm uploadConfig={uploadConfig} />;
   if (isPending) return <LoadingState label="Loading publication" />;
   if (isError)
     return (
@@ -66,13 +75,17 @@ export function PublicationEditor({ id }: { id: string }) {
         description="Return to publications to start again."
       />
     );
-  return <PublicationEditorForm initialRecord={record} />;
+  return (
+    <PublicationEditorForm initialRecord={record} uploadConfig={uploadConfig} />
+  );
 }
 
 function PublicationEditorForm({
   initialRecord,
+  uploadConfig,
 }: {
   initialRecord?: PublicationRecord;
+  uploadConfig: UploadConfig;
 }) {
   const router = useRouter();
   const { working } = useCms();
@@ -81,17 +94,17 @@ function PublicationEditorForm({
   // No record yet means "new": the real ID only exists once the first
   // Save/Publish succeeds, at which point the editor redirects to it.
   const recordId = initialRecord?.id ?? "new";
-  const { value, setValue, reset, ready, persistenceStatus } =
-    useWorkingDraft(
-      working,
-      recordId,
-      () => initialRecord?.draft ?? emptyPublication(),
-      initialRecord?.id,
-    );
+  const { value, setValue, reset, ready, persistenceStatus } = useWorkingDraft(
+    working,
+    recordId,
+    () => initialRecord?.draft ?? emptyPublication(),
+    initialRecord?.id,
+  );
+  const imageUpload = useImageUpload(uploadConfig);
   // The mutation's own isPending can lag a tick behind this click; set
   // synchronously so the fieldset locks in the same render as the submit.
   const [saving, setSaving] = useState(false);
-  const pending = saving;
+  const pending = saving || imageUpload.isPending;
   const [previewMode, setPreviewMode] = useState<"card" | "detail" | null>(
     null,
   );
@@ -133,6 +146,15 @@ function PublicationEditorForm({
     setRequestError("");
     setMessage("");
     setValue(next);
+  }
+  function selectImage(file: File) {
+    setRequestError("");
+    setMessage("");
+    imageUpload.mutate(file, {
+      onSuccess: (image) => {
+        setValue((current) => ({ ...current, coverSrc: image.source }));
+      },
+    });
   }
   const expose = (field: keyof PublicationDraft) =>
     setExposed((current) => ({ ...current, [field]: true }));
@@ -231,6 +253,7 @@ function PublicationEditorForm({
         error={requestError}
         articleError={errors.bodyMarkdown}
         persistenceStatus={persistenceStatus}
+        uploadConfig={uploadConfig}
       />
     );
   if (previewMode)
@@ -354,6 +377,19 @@ function PublicationEditorForm({
             onBlur={expose}
             imageReset={imageReset}
             onImageSelect={() => setImageSelected(true)}
+            imagePickerProps={{
+              onFileSelect: selectImage,
+              isPending: imageUpload.isPending,
+              error: imageUpload.error?.message,
+              onRetry:
+                imageUpload.isError && imageUpload.variables
+                  ? () => selectImage(imageUpload.variables!)
+                  : undefined,
+              onChange: (coverSrc) => {
+                imageUpload.reset();
+                setValue((current) => ({ ...current, coverSrc }));
+              },
+            }}
           />
         </fieldset>
       </Form>
@@ -395,6 +431,7 @@ function PublicationEditorForm({
               !Object.keys(exposed).length)
           }
           onPress={() => {
+            imageUpload.reset();
             reset(record?.draft ?? emptyPublication());
             setExposed({});
             setPublishAttempted(false);

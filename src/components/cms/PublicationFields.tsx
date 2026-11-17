@@ -2,6 +2,7 @@
 
 import { ImagePicker } from "./ImagePicker";
 import { Tags } from "lucide-react";
+import type { ComponentProps } from "react";
 import {
   publicationTags,
   type PublicationDraft,
@@ -22,6 +23,7 @@ export function PublicationFields({
   onImageSelect,
   onWriteArticle,
   articleDirty,
+  imagePickerProps,
 }: {
   value: PublicationDraft;
   errors: PublicationErrors;
@@ -31,6 +33,10 @@ export function PublicationFields({
   onImageSelect?: () => void;
   onWriteArticle: () => void;
   articleDirty: boolean;
+  imagePickerProps?: Pick<
+    ComponentProps<typeof ImagePicker>,
+    "onFileSelect" | "isPending" | "onRetry" | "error" | "onChange"
+  >;
 }) {
   const { data: records = [] } = usePublicationsQuery();
   const selectedTags = publicationTags(value.tagsText).map((tag) =>
@@ -45,46 +51,53 @@ export function PublicationFields({
   ) {
     onChange({ ...value, [key]: next });
   }
-  const supporting = <>
-        <CmsFieldSection title="Cover">
-          <ImagePicker
-            key={imageReset}
-            onSelect={onImageSelect}
-            onBlur={() => onBlur?.("coverSrc")}
-            value={value.coverSrc}
-            alt={value.coverAlt}
-            onChange={(source) => field("coverSrc", source)}
-            error={errors.coverSrc}
-          />
-          <CmsField
-            name="coverAlt"
-            onBlur={() => onBlur?.("coverAlt")}
-            label="Image description"
-            value={value.coverAlt}
-            onChange={(next) => field("coverAlt", next)}
-            hint="Describe the image for readers who cannot see it."
-            error={errors.coverAlt}
-          />
-        </CmsFieldSection>
-        <CmsFieldSection title="Publishing" separated>
-          <CmsField
-            name="publishedOn"
-            onBlur={() => onBlur?.("publishedOn")}
-            label="Publication date"
-            value={value.publishedOn}
-            onChange={(next) => field("publishedOn", next)}
-            type="date"
-            hint="The date shown to readers. Dates use UTC."
-            error={errors.publishedOn}
-          />
-          <p className="text-xs leading-5 text-muted">
-            Save a draft whenever you like.
-          </p>
-        </CmsFieldSection>
-      </>;
+  const supporting = (
+    <>
+      <CmsFieldSection title="Cover">
+        <ImagePicker
+          key={imageReset}
+          name="coverSrc"
+          onSelect={onImageSelect}
+          onBlur={() => onBlur?.("coverSrc")}
+          value={value.coverSrc}
+          alt={value.coverAlt}
+          onChange={(source) => field("coverSrc", source)}
+          {...imagePickerProps}
+          error={imagePickerProps?.error ?? errors.coverSrc}
+        />
+        <CmsField
+          name="coverAlt"
+          onBlur={() => onBlur?.("coverAlt")}
+          label="Image description"
+          value={value.coverAlt}
+          onChange={(next) => field("coverAlt", next)}
+          hint="Describe the image for readers who cannot see it."
+          error={errors.coverAlt}
+        />
+      </CmsFieldSection>
+      <CmsFieldSection title="Publishing" separated>
+        <CmsField
+          name="publishedOn"
+          onBlur={() => onBlur?.("publishedOn")}
+          label="Publication date"
+          value={value.publishedOn}
+          onChange={(next) => field("publishedOn", next)}
+          type="date"
+          hint="The date shown to readers. Dates use UTC."
+          error={errors.publishedOn}
+        />
+        <p className="text-xs leading-5 text-muted">
+          Save a draft whenever you like.
+        </p>
+      </CmsFieldSection>
+    </>
+  );
   return (
     <CmsEditorContent supporting={supporting}>
-      <CmsFieldSection title="Content" description="Give your idea a title, then make it your own.">
+      <CmsFieldSection
+        title="Content"
+        description="Give your idea a title, then make it your own."
+      >
         <CmsField
           name="title"
           onBlur={() => onBlur?.("title")}
@@ -103,7 +116,12 @@ export function PublicationFields({
           hint="The introduction readers see on your publication card."
           error={errors.summary}
         />
-        <PublicationArticleTrigger value={value.bodyMarkdown} dirty={articleDirty} error={errors.bodyMarkdown} onOpen={onWriteArticle} />
+        <PublicationArticleTrigger
+          value={value.bodyMarkdown}
+          dirty={articleDirty}
+          error={errors.bodyMarkdown}
+          onOpen={onWriteArticle}
+        />
         <CmsField
           name="tagsText"
           error={errors.tagsText}
@@ -117,10 +135,24 @@ export function PublicationFields({
         {selectedTags.length ? (
           <div className="flex flex-wrap gap-2" aria-label="Selected topics">
             {publicationTags(value.tagsText).map((tag) => (
-              <Button type="button" key={tag.toLowerCase()} variant="ghost" size="sm"
+              <Button
+                type="button"
+                key={tag.toLowerCase()}
+                variant="ghost"
+                size="sm"
                 aria-label={`Remove tag ${tag}`}
-                onPress={() => field("tagsText", publicationTags(value.tagsText)
-                  .filter((selected) => selected.toLowerCase() !== tag.toLowerCase()).join(", "))}>
+                onPress={() =>
+                  field(
+                    "tagsText",
+                    publicationTags(value.tagsText)
+                      .filter(
+                        (selected) =>
+                          selected.toLowerCase() !== tag.toLowerCase(),
+                      )
+                      .join(", "),
+                  )
+                }
+              >
                 {tag} · Remove
               </Button>
             ))}
