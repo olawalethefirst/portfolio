@@ -361,7 +361,7 @@ describe("publication CMS", () => {
           name: "Read Designing with productive constraints",
         })
         .getAttribute("href"),
-    ).toBe("/publication-details-lab");
+    ).toBe("/publications/publication-2");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

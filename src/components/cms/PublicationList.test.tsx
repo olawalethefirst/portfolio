@@ -245,7 +245,7 @@ it("mounts the published section on demand and restores filtered list state", as
     screen
       .getByRole("link", { name: `Read ${titles()[0]}` })
       .getAttribute("href"),
-  ).toBe("/publication-details-lab");
+  ).toBe("/publications/publication-1");
   fireEvent.keyDown(window, { key: "Escape" });
   expect(
     (

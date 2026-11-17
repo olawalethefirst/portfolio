@@ -16,7 +16,6 @@ import {
 const navigationItems = [
   { href: "/", label: "Home" },
   { href: "/contact", label: "Contact" },
-  { href: "/publication-details-lab", label: "Publication details lab" },
 ] as const;
 
 function formatThemeLabel(theme: ThemeName) {
@@ -67,9 +66,7 @@ export function LabThemeShell({ children }: LabThemeShellProps) {
   );
 
   return (
-    <div
-      className="min-h-screen bg-background font-sans text-foreground"
-    >
+    <div className="min-h-screen bg-background font-sans text-foreground">
       {hasCustomNavigationPlacement ? (
         children(navigation)
       ) : (

@@ -268,7 +268,11 @@ function PublicationEditorForm({
         closeRef={closeRef}
         onExit={() => setPreviewMode(null)}
       >
-        <PublicationPreview value={value} mode={previewMode} />
+        <PublicationPreview
+          id={recordId === "new" ? undefined : recordId}
+          value={value}
+          mode={previewMode}
+        />
       </CmsPreviewFrame>
     );
 

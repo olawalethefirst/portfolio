@@ -68,6 +68,13 @@ export function applyPublicationAction(
   };
 }
 
+export function readingTimeMinutes(bodyMarkdown: string): number {
+  return Math.max(
+    1,
+    Math.ceil(bodyMarkdown.trim().split(/\s+/).filter(Boolean).length / 200),
+  );
+}
+
 export function publicationTags(text: string) {
   const seen = new Set<string>();
   return text

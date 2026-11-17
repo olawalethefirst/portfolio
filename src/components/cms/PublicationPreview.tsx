@@ -2,6 +2,7 @@
 
 import {
   publicationTags,
+  readingTimeMinutes,
   validDate,
   type PublicationDraft,
 } from "@/src/cms/publications";
@@ -9,9 +10,11 @@ import { PublicationCard } from "@/src/components/publication-card";
 import { PublicationDetails } from "@/src/components/publication-details";
 
 export function PublicationPreview({
+  id,
   value,
   mode,
 }: {
+  id?: string;
   value: PublicationDraft;
   mode: "card" | "detail";
 }) {
@@ -31,36 +34,30 @@ export function PublicationPreview({
 
   return (
     <>
-        {placeholders ? (
-          <p
-            role="status"
-            className="border-b border-border bg-surface-secondary px-5 py-3 text-sm text-muted"
-          >
-            Preview placeholders fill missing content, including the sample date
-            and cover. They are not saved.
-          </p>
-        ) : null}
-        {mode === "detail" ? (
-          <PublicationDetails
-            publication={{
-              title,
-              cover,
-              publishedAt: date,
-              tags,
-              bodyMarkdown:
-                value.bodyMarkdown.trim() || "Your article will appear here.",
-              readingTimeMinutes: Math.max(
-                1,
-                Math.ceil(
-                  value.bodyMarkdown.trim().split(/\s+/).filter(Boolean)
-                    .length / 200,
-                ),
-              ),
-            }}
-          />
-        ) : (
-          <div className="mx-auto max-w-3xl space-y-6 py-6">
-            <div className="px-5 py-8 sm:px-8">
+      {placeholders ? (
+        <p
+          role="status"
+          className="border-b border-border bg-surface-secondary px-5 py-3 text-sm text-muted"
+        >
+          Preview placeholders fill missing content, including the sample date
+          and cover. They are not saved.
+        </p>
+      ) : null}
+      {mode === "detail" ? (
+        <PublicationDetails
+          publication={{
+            title,
+            cover,
+            publishedAt: date,
+            tags,
+            bodyMarkdown:
+              value.bodyMarkdown.trim() || "Your article will appear here.",
+            readingTimeMinutes: readingTimeMinutes(value.bodyMarkdown),
+          }}
+        />
+      ) : (
+        <div className="mx-auto max-w-3xl space-y-6 py-6">
+          <div className="px-5 py-8 sm:px-8">
             <PublicationCard
               title={title}
               summary={
@@ -70,11 +67,11 @@ export function PublicationPreview({
               date={date}
               cover={cover}
               tags={tags}
-              href="/publication-details-lab"
+              href={id ? `/publications/${id}` : "/"}
             />
-            </div>
           </div>
-        )}
+        </div>
+      )}
     </>
   );
 }

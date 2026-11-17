@@ -12,7 +12,7 @@ export function PublicationCollectionPreview({ records }: { records: readonly Pu
     date: validDate(published.publishedOn) ? published.publishedOn : "2026-09-18",
     cover: { src: published.coverSrc || "/publication-cover.svg", alt: published.coverAlt },
     tags: publicationTags(published.tagsText),
-    href: "/publication-details-lab",
+    href: `/publications/${id}`,
   }] : []);
   return <PublicationsSection publications={publications} layout="standalone" emptyState={<CmsEmptyState title="No published publications" description="Publish a publication to preview it in this section." />} />;
 }

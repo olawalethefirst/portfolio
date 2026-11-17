@@ -3,10 +3,16 @@ import {
   applyPublicationAction,
   emptyPublication,
   publicationState,
+  readingTimeMinutes,
   validatePublication,
 } from "./publications";
 
 describe("publication editing contract", () => {
+  it("rounds reading time up to the nearest minute, with a one-minute floor", () => {
+    expect(readingTimeMinutes("")).toBe(1);
+    expect(readingTimeMinutes("word ".repeat(150))).toBe(1);
+    expect(readingTimeMinutes("word ".repeat(201))).toBe(2);
+  });
   it("keeps a published article intact when a revised draft is saved", () => {
     const original = { ...emptyPublication(), title: "Original" };
     const record = { id: "article", draft: original, published: original };
