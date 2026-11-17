@@ -26,7 +26,6 @@ const demoRequest: DemoRequest = async () => {
 
 interface CmsContextValue {
   records: PublicationRecord[];
-  move: (id: string, direction: -1 | 1) => void;
   pending: boolean;
   working: DraftStore<PublicationDraft>;
   commit: (
@@ -85,20 +84,8 @@ export function CmsProvider({
     }
   }
 
-  function move(id: string, direction: -1 | 1) {
-    if (busy.current) return;
-    setRecords((current) => {
-      const index = current.findIndex((item) => item.id === id);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= current.length) return current;
-      const next = [...current];
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-
   return (
-    <CmsContext value={{ working, records, move, pending, commit }}>
+    <CmsContext value={{ working, records, pending, commit }}>
       {children}
     </CmsContext>
   );
