@@ -15,7 +15,7 @@ const publications = pgTable("publications", {
   title: text("title").notNull(),
   summary: text("summary").notNull(),
   bodyMarkdown: text("body_markdown").notNull(),
-  coverAssetId: uuid("cover_asset_id"),
+  coverSrc: text("cover_src").notNull(),
   coverAlt: text("cover_alt").notNull(),
   tagsText: text("tags_text").notNull(),
   publishedOn: date("published_on"),
@@ -26,7 +26,7 @@ const publishedPublications = pgTable("published_publications", {
   title: text("title").notNull(),
   summary: text("summary").notNull(),
   bodyMarkdown: text("body_markdown").notNull(),
-  coverAssetId: uuid("cover_asset_id"),
+  coverSrc: text("cover_src").notNull(),
   coverAlt: text("cover_alt").notNull(),
   tagsText: text("tags_text").notNull(),
   publishedOn: date("published_on"),
@@ -41,7 +41,7 @@ function draft(
     title: row.title,
     summary: row.summary,
     bodyMarkdown: row.bodyMarkdown,
-    coverSrc: row.coverAssetId ? `/media/${row.coverAssetId}` : "",
+    coverSrc: row.coverSrc,
     coverAlt: row.coverAlt,
     tagsText: row.tagsText,
     publishedOn: row.publishedOn ?? "",
@@ -110,13 +110,11 @@ export async function readPublication(
 type PublicationInput = PublicationDraft;
 
 function publicationValues(value: PublicationInput) {
-  const coverAssetId =
-    value.coverSrc.match(/^\/media\/([0-9a-f-]{36})$/i)?.[1] ?? null;
   return {
     title: value.title,
     summary: value.summary,
     bodyMarkdown: value.bodyMarkdown,
-    coverAssetId,
+    coverSrc: value.coverSrc,
     coverAlt: value.coverAlt,
     tagsText: value.tagsText,
     publishedOn: value.publishedOn || null,

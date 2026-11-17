@@ -17,7 +17,7 @@ const projects = pgTable("projects", {
   what: text("what").notNull(),
   how: text("how").notNull(),
   platform: text("platform").notNull(),
-  screenshotAssetId: uuid("screenshot_asset_id"),
+  screenshot: text("screenshot").notNull(),
   screenshotAlt: text("screenshot_alt").notNull(),
   liveUrl: text("live_url").notNull(),
 });
@@ -29,7 +29,7 @@ const publishedProjects = pgTable("published_projects", {
   what: text("what").notNull(),
   how: text("how").notNull(),
   platform: text("platform").notNull(),
-  screenshotAssetId: uuid("screenshot_asset_id"),
+  screenshot: text("screenshot").notNull(),
   screenshotAlt: text("screenshot_alt").notNull(),
   liveUrl: text("live_url").notNull(),
 });
@@ -41,7 +41,7 @@ function draft(row: typeof projects.$inferSelect): ProjectDraft {
     what: row.what,
     how: row.how,
     platform: row.platform as ProjectDraft["platform"],
-    screenshot: row.screenshotAssetId ? `/media/${row.screenshotAssetId}` : "",
+    screenshot: row.screenshot,
     screenshotAlt: row.screenshotAlt,
     liveUrl: row.liveUrl,
   };
@@ -54,7 +54,7 @@ function published(row: typeof publishedProjects.$inferSelect): ProjectDraft {
     what: row.what,
     how: row.how,
     platform: row.platform as ProjectDraft["platform"],
-    screenshot: row.screenshotAssetId ? `/media/${row.screenshotAssetId}` : "",
+    screenshot: row.screenshot,
     screenshotAlt: row.screenshotAlt,
     liveUrl: row.liveUrl,
   };
@@ -110,15 +110,13 @@ export async function readProject(id: string): Promise<ProjectRecord | null> {
 type ProjectInput = ProjectDraft;
 
 function projectValues(value: ProjectInput) {
-  const screenshotAssetId =
-    value.screenshot.match(/^\/media\/([0-9a-f-]{36})$/i)?.[1] ?? null;
   return {
     name: value.name,
     summary: value.summary,
     what: value.what,
     how: value.how,
     platform: value.platform,
-    screenshotAssetId,
+    screenshot: value.screenshot,
     screenshotAlt: value.screenshotAlt,
     liveUrl: value.liveUrl,
   };

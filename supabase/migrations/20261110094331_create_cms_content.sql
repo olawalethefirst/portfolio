@@ -3,14 +3,6 @@
 -- Server validation remains authoritative for URL semantics, normalized SEO
 -- paths, Markdown, tag parsing and JavaScript UTF-16 editorial budgets.
 
-create table public.media_assets (
-  id uuid primary key default gen_random_uuid(),
-  bucket text not null check (btrim(bucket) <> ''),
-  object_key text not null check (btrim(object_key) <> ''),
-  created_at timestamptz not null default now(),
-  unique (bucket, object_key)
-);
-
 -- Fixed columns keep all three Hero stages together in one atomic save.
 create table public.hero_content (
   id smallint primary key default 1 check (id = 1),
@@ -50,7 +42,7 @@ create table public.projects (
   what text not null default '',
   how text not null default '',
   platform text not null default 'web' check (platform in ('web', 'mobile')),
-  screenshot_asset_id uuid references public.media_assets(id) on delete restrict,
+  screenshot text not null default '',
   screenshot_alt text not null default '',
   live_url text not null default '',
   created_at timestamptz not null default now(),
@@ -64,13 +56,13 @@ create table public.published_projects (
   what text not null default '',
   how text not null default '',
   platform text not null default 'web' check (platform in ('web', 'mobile')),
-  screenshot_asset_id uuid references public.media_assets(id) on delete restrict,
+  screenshot text not null default '',
   screenshot_alt text not null default '',
   live_url text not null default '',
   updated_at timestamptz not null default now(),
   constraint published_projects_complete check (
     btrim(name) <> '' and btrim(summary) <> '' and btrim(what) <> ''
-    and btrim(how) <> '' and screenshot_asset_id is not null
+    and btrim(how) <> '' and btrim(screenshot) <> ''
     and btrim(screenshot_alt) <> '' and btrim(live_url) <> ''
   )
 );
@@ -81,7 +73,7 @@ create table public.publications (
   title text not null default '',
   summary text not null default '',
   body_markdown text not null default '',
-  cover_asset_id uuid references public.media_assets(id) on delete restrict,
+  cover_src text not null default '',
   cover_alt text not null default '',
   -- Keep raw tag input; a draft date is either valid or absent.
   tags_text text not null default '',
@@ -95,13 +87,13 @@ create table public.published_publications (
   title text not null default '',
   summary text not null default '',
   body_markdown text not null default '',
-  cover_asset_id uuid references public.media_assets(id) on delete restrict,
+  cover_src text not null default '',
   cover_alt text not null default '',
   tags_text text not null default '',
   published_on date,
   updated_at timestamptz not null default now(),
   constraint published_publications_complete check (
-    btrim(title) <> '' and btrim(summary) <> '' and cover_asset_id is not null
+    btrim(title) <> '' and btrim(summary) <> '' and btrim(cover_src) <> ''
     and btrim(cover_alt) <> '' and published_on is not null
     and btrim(body_markdown) <> ''
   )
@@ -129,10 +121,6 @@ create table public.seo (
 
 create index projects_order_idx on public.projects (position, id);
 create index publications_order_idx on public.publications (position, id);
-create index projects_screenshot_idx on public.projects (screenshot_asset_id);
-create index published_projects_screenshot_idx on public.published_projects (screenshot_asset_id);
-create index publications_cover_idx on public.publications (cover_asset_id);
-create index published_publications_cover_idx on public.published_publications (cover_asset_id);
 
 create function public.cms_touch_updated_at()
 returns trigger language plpgsql set search_path = '' as $$
@@ -176,7 +164,7 @@ declare
   content_table text;
 begin
   foreach content_table in array array[
-    'media_assets', 'hero_content', 'about_content', 'social_content',
+    'hero_content', 'about_content', 'social_content',
     'projects', 'published_projects', 'publications', 'published_publications', 'seo'
   ] loop
     execute format('alter table public.%I enable row level security', content_table);

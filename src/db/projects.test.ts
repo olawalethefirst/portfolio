@@ -30,6 +30,7 @@ import {
 
 const id = "11111111-1111-4111-8111-111111111111";
 const asset = "22222222-2222-4222-8222-222222222222";
+const screenshotUrl = "https://cdn.example.com/screenshot.jpg";
 const content = (name: string, screenshot: string): ProjectDraft => ({
   name,
   summary: "Summary",
@@ -40,20 +41,20 @@ const content = (name: string, screenshot: string): ProjectDraft => ({
   screenshotAlt: "Interface",
   liveUrl: "https://example.com",
 });
-const snapshot = (name: string, image: string | null) => [
+const snapshot = (name: string, screenshot: string) => [
   name,
   "Summary",
   "What",
   "How",
   "web",
-  image,
+  screenshot,
   "Interface",
   "https://example.com",
 ];
-const saved = [id, 2, ...snapshot("Saved edits", asset)];
-const live = [id, ...snapshot("Live version", asset)];
-const draftInput: ProjectDraft = { ...content("Draft", `/media/${asset}`) };
-const inserted = [id, 0, ...snapshot("Draft", asset)];
+const saved = [id, 2, ...snapshot("Saved edits", screenshotUrl)];
+const live = [id, ...snapshot("Live version", screenshotUrl)];
+const draftInput: ProjectDraft = { ...content("Draft", screenshotUrl) };
+const inserted = [id, 0, ...snapshot("Draft", screenshotUrl)];
 
 beforeEach(() => {
   execute.mockReset();
@@ -64,8 +65,8 @@ it("lists saved and published snapshots independently in stable editorial order"
   expect(await listProjects()).toEqual([
     {
       id,
-      draft: content("Saved edits", `/media/${asset}`),
-      published: content("Live version", `/media/${asset}`),
+      draft: content("Saved edits", screenshotUrl),
+      published: content("Live version", screenshotUrl),
     },
   ]);
   expect(execute.mock.calls[0][0]).toContain(
@@ -76,10 +77,10 @@ it("lists saved and published snapshots independently in stable editorial order"
 it("lists only published projects, with id, in editorial order", async () => {
   execute.mockResolvedValue({ rows: [[...live]] });
   expect(await listPublishedProjects()).toEqual([
-    { id, ...content("Live version", `/media/${asset}`) },
+    { id, ...content("Live version", screenshotUrl) },
   ]);
   expect(execute.mock.calls[0][0]).toBe(
-    'select "published_projects"."project_id", "published_projects"."name", "published_projects"."summary", "published_projects"."what", "published_projects"."how", "published_projects"."platform", "published_projects"."screenshot_asset_id", "published_projects"."screenshot_alt", "published_projects"."live_url" from "published_projects" inner join "projects" on "projects"."id" = "published_projects"."project_id" order by "projects"."position" asc, "projects"."id" asc',
+    'select "published_projects"."project_id", "published_projects"."name", "published_projects"."summary", "published_projects"."what", "published_projects"."how", "published_projects"."platform", "published_projects"."screenshot", "published_projects"."screenshot_alt", "published_projects"."live_url" from "published_projects" inner join "projects" on "projects"."id" = "published_projects"."project_id" order by "projects"."position" asc, "projects"."id" asc',
   );
 });
 
@@ -90,7 +91,7 @@ it("excludes a project with no published snapshot", async () => {
 
 it("preserves draft-only records and empty screenshot references", async () => {
   execute.mockResolvedValue({
-    rows: [[id, 0, ...snapshot("", null), ...Array(9).fill(null)]],
+    rows: [[id, 0, ...snapshot("", ""), ...Array(9).fill(null)]],
   });
   expect(await readProject(id)).toEqual({
     id,
@@ -118,11 +119,11 @@ it("returns null for a missing project", async () => {
   expect(await readProject(id)).toBeNull();
 });
 
-it("inserts an unfinished draft using database-generated identity and maps its asset reference", async () => {
+it("inserts an unfinished draft using database-generated identity and stores its screenshot URL", async () => {
   execute.mockResolvedValue({ rows: [inserted] });
   expect(await insertProject(draftInput)).toEqual({
     id,
-    draft: content("Draft", `/media/${asset}`),
+    draft: content("Draft", screenshotUrl),
     published: null,
   });
   const [query, params] = execute.mock.calls[0];
@@ -134,23 +135,23 @@ it("inserts an unfinished draft using database-generated identity and maps its a
     "What",
     "How",
     "web",
-    asset,
+    screenshotUrl,
     "Interface",
     "https://example.com",
   ]);
 });
 
-it("stores an empty screenshot as a null asset reference", async () => {
-  execute.mockResolvedValue({ rows: [[id, 0, ...snapshot("Draft", null)]] });
+it("stores an empty screenshot as an empty string, not null", async () => {
+  execute.mockResolvedValue({ rows: [[id, 0, ...snapshot("Draft", "")]] });
   await insertProject({ ...draftInput, screenshot: "" });
-  expect(execute.mock.calls[0][1][5]).toBeNull();
+  expect(execute.mock.calls[0][1][5]).toBe("");
 });
 
 it("updates only the requested saved draft and returns the stored record", async () => {
   execute.mockResolvedValue({ rows: [inserted] });
   expect(await updateProject(id, draftInput)).toEqual({
     id,
-    draft: content("Draft", `/media/${asset}`),
+    draft: content("Draft", screenshotUrl),
     published: null,
   });
   const [query, params] = execute.mock.calls[0];
@@ -163,7 +164,7 @@ it("updates only the requested saved draft and returns the stored record", async
     "What",
     "How",
     "web",
-    asset,
+    screenshotUrl,
     "Interface",
     "https://example.com",
     id,
@@ -187,9 +188,9 @@ it("inserts or replaces the published snapshot for the project identity", async 
   expect(
     await upsertPublishedProject(
       id,
-      content("Live version", `/media/${asset}`),
+      content("Live version", screenshotUrl),
     ),
-  ).toEqual(content("Live version", `/media/${asset}`));
+  ).toEqual(content("Live version", screenshotUrl));
   const [query, params] = execute.mock.calls[0];
   expect(query).toMatch(/^insert into "published_projects"/);
   expect(query).toContain('on conflict ("project_id") do update');
@@ -201,7 +202,7 @@ it("inserts or replaces the published snapshot for the project identity", async 
     "What",
     "How",
     "web",
-    asset,
+    screenshotUrl,
     "Interface",
     "https://example.com",
     "Live version",
@@ -209,7 +210,7 @@ it("inserts or replaces the published snapshot for the project identity", async 
     "What",
     "How",
     "web",
-    asset,
+    screenshotUrl,
     "Interface",
     "https://example.com",
   ]);
@@ -225,7 +226,7 @@ it("returns null when published persistence returns no row", async () => {
 it("deletes only the published snapshot and returns its stored content", async () => {
   execute.mockResolvedValue({ rows: [live] });
   expect(await deletePublishedProject(id)).toEqual(
-    content("Live version", `/media/${asset}`),
+    content("Live version", screenshotUrl),
   );
   const [query, params] = execute.mock.calls[0];
   expect(query).toMatch(/^delete from "published_projects"/);

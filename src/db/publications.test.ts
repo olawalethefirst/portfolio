@@ -31,28 +31,29 @@ import {
 
 const id = "11111111-1111-4111-8111-111111111111";
 const asset = "22222222-2222-4222-8222-222222222222";
+const cover = "https://cdn.example.com/cover.jpg";
 const content = (
   title: string,
-  cover: string,
+  coverSrc: string,
   publishedOn = "2026-01-01",
 ): PublicationDraft => ({
   title,
   summary: "Summary",
   bodyMarkdown: "Body",
-  coverSrc: cover,
+  coverSrc,
   coverAlt: "Cover",
   tagsText: "alpha, beta",
   publishedOn,
 });
 const snapshot = (
   title: string,
-  image: string | null,
+  coverSrc: string,
   publishedOn: string | null,
-) => [title, "Summary", "Body", image, "Cover", "alpha, beta", publishedOn];
-const saved = [id, 2, ...snapshot("Saved edits", asset, "2026-01-02")];
-const live = [id, ...snapshot("Live version", asset, "2026-01-01")];
-const draftInput: PublicationDraft = { ...content("Draft", `/media/${asset}`) };
-const inserted = [id, 0, ...snapshot("Draft", asset, "2026-01-01")];
+) => [title, "Summary", "Body", coverSrc, "Cover", "alpha, beta", publishedOn];
+const saved = [id, 2, ...snapshot("Saved edits", cover, "2026-01-02")];
+const live = [id, ...snapshot("Live version", cover, "2026-01-01")];
+const draftInput: PublicationDraft = { ...content("Draft", cover) };
+const inserted = [id, 0, ...snapshot("Draft", cover, "2026-01-01")];
 
 beforeEach(() => {
   execute.mockReset();
@@ -63,8 +64,8 @@ it("lists saved and published snapshots independently in stable editorial order"
   expect(await listPublications()).toEqual([
     {
       id,
-      draft: content("Saved edits", `/media/${asset}`, "2026-01-02"),
-      published: content("Live version", `/media/${asset}`, "2026-01-01"),
+      draft: content("Saved edits", cover, "2026-01-02"),
+      published: content("Live version", cover, "2026-01-01"),
     },
   ]);
   expect(execute.mock.calls[0][0]).toContain(
@@ -75,10 +76,10 @@ it("lists saved and published snapshots independently in stable editorial order"
 it("lists only published publications, with id, in editorial order", async () => {
   execute.mockResolvedValue({ rows: [[...live]] });
   expect(await listPublishedPublications()).toEqual([
-    { id, ...content("Live version", `/media/${asset}`, "2026-01-01") },
+    { id, ...content("Live version", cover, "2026-01-01") },
   ]);
   expect(execute.mock.calls[0][0]).toBe(
-    'select "published_publications"."publication_id", "published_publications"."title", "published_publications"."summary", "published_publications"."body_markdown", "published_publications"."cover_asset_id", "published_publications"."cover_alt", "published_publications"."tags_text", "published_publications"."published_on" from "published_publications" inner join "publications" on "publications"."id" = "published_publications"."publication_id" order by "publications"."position" asc, "publications"."id" asc',
+    'select "published_publications"."publication_id", "published_publications"."title", "published_publications"."summary", "published_publications"."body_markdown", "published_publications"."cover_src", "published_publications"."cover_alt", "published_publications"."tags_text", "published_publications"."published_on" from "published_publications" inner join "publications" on "publications"."id" = "published_publications"."publication_id" order by "publications"."position" asc, "publications"."id" asc',
   );
 });
 
@@ -89,7 +90,7 @@ it("excludes a publication with no published snapshot", async () => {
 
 it("preserves draft-only records and empty cover/date references", async () => {
   execute.mockResolvedValue({
-    rows: [[id, 0, ...snapshot("", null, null), ...Array(8).fill(null)]],
+    rows: [[id, 0, ...snapshot("", "", null), ...Array(8).fill(null)]],
   });
   expect(await readPublication(id)).toEqual({
     id,
@@ -128,11 +129,11 @@ it.each(["list", "read"])(
   },
 );
 
-it("inserts an unfinished draft using database-generated identity and maps its cover reference", async () => {
+it("inserts an unfinished draft using database-generated identity and stores its cover URL", async () => {
   execute.mockResolvedValue({ rows: [inserted] });
   expect(await insertPublication(draftInput)).toEqual({
     id,
-    draft: content("Draft", `/media/${asset}`),
+    draft: content("Draft", cover),
     published: null,
   });
   const [query, params] = execute.mock.calls[0];
@@ -142,24 +143,24 @@ it("inserts an unfinished draft using database-generated identity and maps its c
     "Draft",
     "Summary",
     "Body",
-    asset,
+    cover,
     "Cover",
     "alpha, beta",
     "2026-01-01",
   ]);
 });
 
-it("stores an empty cover as a null asset reference", async () => {
+it("stores an empty cover as an empty string, not null", async () => {
   execute.mockResolvedValue({
-    rows: [[id, 0, ...snapshot("Draft", null, "2026-01-01")]],
+    rows: [[id, 0, ...snapshot("Draft", "", "2026-01-01")]],
   });
   await insertPublication({ ...draftInput, coverSrc: "" });
-  expect(execute.mock.calls[0][1][3]).toBeNull();
+  expect(execute.mock.calls[0][1][3]).toBe("");
 });
 
 it("stores an empty publication date as a null published_on", async () => {
   execute.mockResolvedValue({
-    rows: [[id, 0, ...snapshot("Draft", asset, null)]],
+    rows: [[id, 0, ...snapshot("Draft", cover, null)]],
   });
   await insertPublication({ ...draftInput, publishedOn: "" });
   expect(execute.mock.calls[0][1][6]).toBeNull();
@@ -169,7 +170,7 @@ it("updates only the requested saved draft and returns the stored record", async
   execute.mockResolvedValue({ rows: [inserted] });
   expect(await updatePublication(id, draftInput)).toEqual({
     id,
-    draft: content("Draft", `/media/${asset}`),
+    draft: content("Draft", cover),
     published: null,
   });
   const [query, params] = execute.mock.calls[0];
@@ -180,7 +181,7 @@ it("updates only the requested saved draft and returns the stored record", async
     "Draft",
     "Summary",
     "Body",
-    asset,
+    cover,
     "Cover",
     "alpha, beta",
     "2026-01-01",
@@ -207,12 +208,12 @@ it("saves and publishes an existing publication atomically", async () => {
   expect(
     await saveAndPublishPublication(
       id,
-      content("Live version", `/media/${asset}`, "2026-01-01"),
+      content("Live version", cover, "2026-01-01"),
     ),
   ).toEqual({
     id,
-    draft: content("Saved edits", `/media/${asset}`, "2026-01-02"),
-    published: content("Live version", `/media/${asset}`, "2026-01-01"),
+    draft: content("Saved edits", cover, "2026-01-02"),
+    published: content("Live version", cover, "2026-01-01"),
   });
   const [updateQuery] = execute.mock.calls[0];
   expect(updateQuery).toMatch(/^update "publications"/);
@@ -238,12 +239,12 @@ it("throws when publish persistence returns no row after a successful save", asy
 
 it("creates and publishes a new publication atomically", async () => {
   execute.mockResolvedValueOnce({ rows: [inserted] }).mockResolvedValueOnce({
-    rows: [[id, ...snapshot("Draft", asset, "2026-01-01")]],
+    rows: [[id, ...snapshot("Draft", cover, "2026-01-01")]],
   });
   expect(await createAndPublishPublication(draftInput)).toEqual({
     id,
-    draft: content("Draft", `/media/${asset}`),
-    published: content("Draft", `/media/${asset}`),
+    draft: content("Draft", cover),
+    published: content("Draft", cover),
   });
   const [insertPubQuery] = execute.mock.calls[0];
   expect(insertPubQuery).toMatch(/^insert into "publications"/);
@@ -271,7 +272,7 @@ it("throws when first-publish persistence returns no live row", async () => {
 it("deletes only the published snapshot and returns its stored content", async () => {
   execute.mockResolvedValue({ rows: [live] });
   expect(await deletePublishedPublication(id)).toEqual(
-    content("Live version", `/media/${asset}`, "2026-01-01"),
+    content("Live version", cover, "2026-01-01"),
   );
   const [query, params] = execute.mock.calls[0];
   expect(query).toMatch(/^delete from "published_publications"/);
