@@ -639,7 +639,9 @@ Publication previews are fullscreen only. Full-screen preview stays in the curre
 editing session, shows only the section or publication view being edited, hides
 CMS chrome, and restores the editor on exit without losing values or staged
 images. Keep the public component's responsive rendition. Use the shared sticky
-HeaderActionBar with an icon-only back action and readable preview label.
+HeaderActionBar as a fixed overlay with only an icon-only back action, like the
+public article's, so it adds no page height: no visible preview label and no
+divider line (the section keeps its accessible name).
 Publications have separate card and internal article detail previews. Use the actual viewport and a
 document scroll context compatible with public components. Verify sticky
 positioning, table of contents, reading progress, portals, focus and scroll

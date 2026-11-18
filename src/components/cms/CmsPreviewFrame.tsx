@@ -44,10 +44,11 @@ export function CmsPreviewFrame({ label, exitLabel, closeRef, onExit, children }
     return () => setPreview?.(false);
   }, [setPreview]);
   return <section aria-label={label} className="min-h-dvh bg-surface text-foreground">
-    <HeaderActionBar onBack={onExit} backLabel={exitLabel} backButtonRef={closeRef}
-      className="sticky top-0 z-[120] border-b border-border bg-surface px-5 py-3 sm:px-8">
-      <p className="text-sm font-medium">{label}</p>
-    </HeaderActionBar>
+    {/* Fixed overlay, like the public article's back button: adds no page height. */}
+    <div className="pointer-events-none fixed inset-x-0 top-8 z-[120] mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
+      <HeaderActionBar onBack={onExit} backLabel={exitLabel} backButtonRef={closeRef}
+        buttonClassName="pointer-events-auto" />
+    </div>
     {children}
   </section>;
 }
