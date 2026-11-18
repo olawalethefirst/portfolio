@@ -131,3 +131,6 @@ is retained with the vendored paths in `src/components/contact-conversation/soci
 Google sign-in artwork in `public/brand/google-signin.png` comes from Google's
 [official sign-in asset bundle](https://developers.google.com/static/identity/images/signin-assets.zip).
 Its use is subject to [Google's identity branding guidelines](https://developers.google.com/identity/branding-guidelines).
+
+- [`context/error-pages.md`](context/error-pages.md): shared error and not-found
+  page, per-page messages, and why `global-error` follows the device.
