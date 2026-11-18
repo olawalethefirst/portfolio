@@ -10,6 +10,7 @@ import {
 } from "vitest";
 
 import { LabThemeShell } from "./LabThemeShell";
+import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
 
 vi.mock("./theme-accents", () => ({
   themes: ["chartreuse", "copper", "plum", "forest"],
@@ -38,10 +39,7 @@ afterAll(() => {
 });
 
 describe("LabThemeShell", () => {
-  beforeEach(() => {
-    document.documentElement.dataset.theme = "forest";
-    document.documentElement.dataset.mode = "dark";
-  });
+  beforeEach(() => seedAppearance({ theme: "forest", mode: "dark" }));
   it("provides shared navigation using the existing global theme", () => {
     render(
       <LabThemeShell>

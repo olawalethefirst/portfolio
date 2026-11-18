@@ -2,7 +2,13 @@ import { act, render, renderHook, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import type { ReactNode } from "react";
 import { beforeEach, expect, it } from "vitest";
-import { AppearanceProvider, useAppearance } from "./AppearanceProvider";
+import {
+  AppearanceProvider,
+  defaultAppearanceStore,
+  useActiveTheme,
+  useAppearance,
+} from "./AppearanceProvider";
+import { seedAppearance } from "./test-support/seedAppearance";
 import { createAppearanceStore } from "./appearance-store";
 
 function clearCookies() {
@@ -60,6 +66,36 @@ it("renders the server-provided choices in server markup", () => {
   expect(renderToString(<AppearanceProvider><Reader /></AppearanceProvider>)).toContain("none");
 });
 
-it("requires a provider", () => {
-  expect(() => renderHook(() => useAppearance((state) => state.theme))).toThrow("AppearanceProvider");
+it("works without a provider, using the shared default store", () => {
+  seedAppearance();
+  const { result } = renderHook(() => useActiveTheme());
+  expect(result.current).toEqual({ theme: "chartreuse", mode: "light" });
+  act(() => defaultAppearanceStore.getState().setMode("dark"));
+  expect(result.current).toEqual({ theme: "chartreuse", mode: "dark" });
+  seedAppearance();
+});
+
+it("resolves the applied theme from the choice, else the defaults", () => {
+  const { result } = renderHook(() => useActiveTheme(), { wrapper: wrap({ theme: "forest" }) });
+  expect(result.current).toEqual({ theme: "forest", mode: "light" });
+});
+
+it("applies each choice to <html> as well as the cookie", () => {
+  const { result } = renderHook(() => useAppearance((state) => state), { wrapper: wrap() });
+  act(() => {
+    result.current.setTheme("plum");
+    result.current.setMode("dark");
+  });
+  expect(document.documentElement.dataset.theme).toBe("plum");
+  expect(document.documentElement.dataset.mode).toBe("dark");
+  seedAppearance();
+});
+
+it("renders the documented server default when nothing was chosen", () => {
+  function Reader() {
+    const { theme, mode } = useActiveTheme();
+    return <span>{`${theme}/${mode}`}</span>;
+  }
+  expect(renderToString(<Reader />)).toContain("chartreuse/light");
+  expect(renderToString(<AppearanceProvider initial={{ theme: "copper", mode: "dark" }}><Reader /></AppearanceProvider>)).toContain("copper/dark");
 });

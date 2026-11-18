@@ -7,24 +7,27 @@ export interface AppearanceState extends AppearanceChoice {
   setMode: (mode: ThemeMode) => void;
 }
 
-function remember(name: string, value: string) {
-  document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax`;
+/** Persist the choice and apply it to <html>, where the CSS and scene read it. */
+function apply(attribute: "theme" | "mode", cookie: string, value: string) {
+  document.cookie = `${cookie}=${value}; path=/; max-age=31536000; samesite=lax`;
+  document.documentElement.dataset[attribute] = value;
 }
 
 /**
  * One store per request/page, seeded with the choices the server read from the
  * cookies. The cookie is both the storage and what the server reads, so setters
- * write it directly rather than going through a persistence layer.
+ * write it (and the <html> attribute) directly rather than going through a
+ * persistence layer.
  */
 export function createAppearanceStore(initial: AppearanceChoice = {}) {
   return createStore<AppearanceState>()((set) => ({
     ...initial,
     setTheme: (theme) => {
-      remember(THEME_COOKIE, theme);
+      apply("theme", THEME_COOKIE, theme);
       set({ theme });
     },
     setMode: (mode) => {
-      remember(MODE_COOKIE, mode);
+      apply("mode", MODE_COOKIE, mode);
       set({ mode });
     },
   }));

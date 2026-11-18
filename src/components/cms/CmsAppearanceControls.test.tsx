@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CmsAppearanceControls } from "./CmsAppearanceControls";
+import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
 
 // jsdom has no Canvas color conversion; exercise the real picker with resolved accents.
 vi.mock("@/src/theme/theme-accents", async (importOriginal) => ({
@@ -9,8 +10,7 @@ vi.mock("@/src/theme/theme-accents", async (importOriginal) => ({
 }));
 
 beforeEach(() => {
-  document.documentElement.dataset.theme = "chartreuse";
-  document.documentElement.dataset.mode = "light";
+  seedAppearance();
   vi.stubGlobal("ResizeObserver", vi.fn(function () {
     return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
   }));
@@ -18,12 +18,11 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  document.documentElement.dataset.theme = "chartreuse";
-  document.documentElement.dataset.mode = "light";
+  seedAppearance();
 });
 
 it("toggles mode without changing the selected tone", () => {
-  document.documentElement.dataset.theme = "forest";
+  seedAppearance({ theme: "forest" });
   render(<CmsAppearanceControls />);
   fireEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
   expect(document.documentElement.dataset.mode).toBe("dark");
@@ -33,7 +32,7 @@ it("toggles mode without changing the selected tone", () => {
 });
 
 it("shows the current tone and applies a selection without changing mode", async () => {
-  document.documentElement.dataset.mode = "dark";
+  seedAppearance({ mode: "dark" });
   render(<CmsAppearanceControls />);
   const trigger = screen.getByRole("button", { name: "Choose tone, current: Chartreuse" });
   fireEvent.click(trigger);

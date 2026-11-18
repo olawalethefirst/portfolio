@@ -1,7 +1,7 @@
 import { StrictMode, Suspense } from "react";
 import { Group, MeshBasicMaterial, Texture } from "three";
 import { act, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const scene = await vi.hoisted(async () => {
   const { Group } = await import("three");
@@ -66,9 +66,12 @@ vi.mock("./monitor-accent", async importOriginal => {
 import { loadMonitorAccent } from "./monitor-accent";
 import { buildPrismStructure } from "./PrismStructure";
 import { PrismScene } from "./PrismScene";
-import { setGlobalTheme, setGlobalMode } from "@/src/theme/active-theme";
+import { defaultAppearanceStore } from "@/src/theme/AppearanceProvider";
+
+const appearance = () => defaultAppearanceStore.getState();
 
 describe("PrismScene", () => {
+  beforeEach(() => defaultAppearanceStore.setState({ theme: undefined, mode: undefined }));
   it("does not build GPU resources for a render that cannot commit", () => {
     const pending = new Promise<void>(() => {});
     function PendingSibling(): never { throw pending; }
@@ -97,11 +100,11 @@ describe("PrismScene", () => {
   it("updates accents without rebuilding or replaying motion, and ignores mode-only changes", async () => {
     const { rerender } = render(<PrismScene state="idea" />);
     rerender(<PrismScene state="solution" />);
-    await act(async () => { setGlobalTheme("copper"); });
+    await act(async () => { appearance().setTheme("copper"); });
     expect(scene.built.applyNotePalette).toHaveBeenCalled();
     expect(scene.built.applyMonitorTexture).toHaveBeenCalled();
     const loads = vi.mocked(loadMonitorAccent).mock.calls.length;
-    act(() => setGlobalMode("dark"));
+    act(() => appearance().setMode("dark"));
     expect(loadMonitorAccent).toHaveBeenCalledTimes(loads);
     expect(buildPrismStructure).toHaveBeenCalledTimes(1);
     expect(scene.controller.snap).toHaveBeenCalledTimes(1);
@@ -112,10 +115,10 @@ describe("PrismScene", () => {
   });
 
   it("adapts modes without rebuilding or restarting the active semantic transition", () => {
-    document.documentElement.dataset.mode = "dark";
+    defaultAppearanceStore.setState({ mode: "dark" });
     const { rerender } = render(<PrismScene state="idea" />);
     rerender(<PrismScene state="solution" />);
-    act(() => setGlobalMode("light"));
+    act(() => appearance().setMode("light"));
     expect(scene.built.applyAppearance).toHaveBeenLastCalledWith({
       backingColor: 0x000000, backingOpacity: 0.1, figureLightIntensity: 2,
       board: { faceColor: 0xf8f6ef, frameColor: 0x626a71, backColor: 0x454b50 },
@@ -124,7 +127,7 @@ describe("PrismScene", () => {
     expect(scene.controller.snap).toHaveBeenCalledTimes(1);
     expect(scene.controller.transitionTo).toHaveBeenCalledTimes(1);
     expect(scene.built.dispose).not.toHaveBeenCalled();
-    act(() => setGlobalMode("dark"));
+    act(() => appearance().setMode("dark"));
     expect(scene.built.applyAppearance).toHaveBeenLastCalledWith({
       backingColor: 0xffffff, backingOpacity: 0.1, figureLightIntensity: 1,
       board: { faceColor: 0xf2f0e9, frameColor: 0x555b61, backColor: 0x42474c },

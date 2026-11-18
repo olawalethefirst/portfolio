@@ -90,6 +90,7 @@ import type { PublishedProject } from "@/src/cms/projects";
 import type { PublishedPublication } from "@/src/cms/publications";
 import { PRISM_HERO_DEFAULT_CONTENT } from "@/src/components/prism-fiber/ui/hero/prism-hero-content";
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
+import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
 
 const publishedPublications: PublishedPublication[] = [
   {
@@ -169,10 +170,7 @@ describe("PrismHeroLayoutLab", () => {
       }),
     ).toBeTruthy();
   });
-  beforeEach(() => {
-    document.documentElement.dataset.theme = "plum";
-    document.documentElement.dataset.mode = "dark";
-  });
+  beforeEach(() => seedAppearance({ theme: "plum", mode: "dark" }));
   it("provides navigation and working display settings within the glass content", () => {
     render(
       <PrismHeroLayoutLab

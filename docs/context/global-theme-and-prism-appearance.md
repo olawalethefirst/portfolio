@@ -1,18 +1,23 @@
 # Global theme and Prism appearance
 
-`html[data-theme][data-mode]` owns the applied theme for every route. The root
-layout emits the `DEFAULT_THEME` from `src/theme/theme.ts` during server render.
-Shells and pages must not add local theme attributes or reset selection when
-mounted. A selection survives client navigation; a reload returns to the global
-default. Persistence and system-mode selection are not currently implemented.
+The visitor's explicit theme and mode choices live in a Zustand store
+(`src/theme/appearance-store.ts`), and `html[data-theme][data-mode]` is where the
+applied theme is expressed for every route: the CSS, the Tailwind `dark` variant
+and the Prism scene read the attributes. The root layout emits the
+`DEFAULT_THEME` from `src/theme/theme.ts` during server render. Shells and pages
+must not add local theme attributes or reset selection when mounted. A selection
+survives client navigation; until the cookie is read on the server, a reload
+returns to the global default. System-mode selection is not yet implemented.
 
-`setGlobalTheme()` and `setGlobalMode()` in `src/theme/active-theme.ts` validate
-inputs, update the requested HTML attribute, and notify subscribers immediately.
-`useActiveTheme()` also observes direct attribute mutations with one shared
-MutationObserver. Its cached snapshots support React's `useSyncExternalStore`,
-including a stable server default, late subscribers, and cleanup when the final
-subscriber leaves. Missing or invalid attributes fall back per dimension to the
-default without changing the DOM during rendering.
+The store's `setTheme` and `setMode` write the `portfolio-theme` and
+`portfolio-mode` cookies, apply the matching `<html>` attribute and notify
+subscribers. State holds only explicit choices (`undefined` means none).
+`useActiveTheme()` in `src/theme/AppearanceProvider.tsx` resolves the applied
+values: the choice, else the default per dimension. `AppearanceProvider` seeds a
+per-request store from the choices the server read; without a provider a shared
+default store is used, which only browser events write, so server renders always
+see the defaults. Direct edits to the attributes are no longer observed: change
+appearance through the store's actions.
 
 Palette values remain in `src/styles/design-tokens.css`. Selectors are scoped to
 HTML, and the Tailwind `dark` variant uses `html[data-mode="dark"]` explicitly
@@ -98,7 +103,7 @@ visible labels. Panel padding is 4 px.
 `useThemeAccents` resolves the existing CSS palette into the hex values required
 by the picker, and `themeForAccent` maps selections back to theme names.
 Palette reading mounts only while the popover is open. Choosing a swatch calls
-`setGlobalTheme`, applies immediately, and closes the popover. HeroUI handles
+the store's `setTheme`, applies immediately, and closes the popover. HeroUI handles
 Escape/outside dismissal and focus restoration.
 Changing mode preserves the selected tone, and changing tone preserves mode.
 The controls retain the global navigation/reload behavior above and are hidden

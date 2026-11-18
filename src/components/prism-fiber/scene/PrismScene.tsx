@@ -7,7 +7,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { createPrismTransitionController } from "../motion/prism-transition";
 import type { PrismState } from "../state/prism-state";
 import { buildPrismStructure } from "./PrismStructure";
-import { useActiveTheme } from "@/src/theme/active-theme";
+import { useActiveTheme } from "@/src/theme/AppearanceProvider";
 import { Group } from "three";
 import { createPrismAccents } from "./prism-accents";
 import { resolvePrismAppearance } from "./prism-appearance";
@@ -45,10 +45,17 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
   useLayoutEffect(() => {
     const built = buildPrismStructure(
       { board, figure, notes, office, keyboard, projector },
-      { figure: figureTexture, monitor: monitorTexture, wireframe: wireframeTexture },
+      {
+        figure: figureTexture,
+        monitor: monitorTexture,
+        wireframe: wireframeTexture,
+      },
     );
     try {
-      const transition = createPrismTransitionController(built.channels, TRANSITION_DURATION_MS);
+      const transition = createPrismTransitionController(
+        built.channels,
+        TRANSITION_DURATION_MS,
+      );
       const accents = createPrismAccents(built);
       live.current = { built, transition, accents };
       host.add(built.root);
@@ -62,7 +69,18 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
       built.dispose();
       throw error;
     }
-  }, [host, board, figure, notes, office, keyboard, projector, figureTexture, monitorTexture, wireframeTexture]);
+  }, [
+    host,
+    board,
+    figure,
+    notes,
+    office,
+    keyboard,
+    projector,
+    figureTexture,
+    monitorTexture,
+    wireframeTexture,
+  ]);
 
   // Runs after graph setup on every commit; equality checks preserve active motion.
   useLayoutEffect(() => {
@@ -70,7 +88,10 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
     if (!scene) throw new Error("Prism scene was not initialized");
     const target = { state, viewAzimuthYRad };
     if (!scene.target) scene.transition.snap(target);
-    else if (scene.target.state !== state || scene.target.viewAzimuthYRad !== viewAzimuthYRad) {
+    else if (
+      scene.target.state !== state ||
+      scene.target.viewAzimuthYRad !== viewAzimuthYRad
+    ) {
       scene.transition.transitionTo(target);
     }
     scene.target = target;
