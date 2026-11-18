@@ -24,10 +24,11 @@ ledgers, upload-reference signing schemes or numeric limits.
 | GET, PUT, DELETE | /api/admin/publications/:id | Read/save draft/delete |
 | PUT, DELETE | /api/admin/publications/:id/published | Publish/unpublish |
 | PUT | /api/admin/publications/order | Persist ordering |
+| GET, POST | /api/publications/:id/comments | Public comment read/post for published publications (anonymous; POST same-origin) |
 | POST | /api/admin/media/uploads | Authorize direct Supabase SDK upload |
 | GET | /media/:assetId | Open persisted canonical image reference |
 
-18 route patterns / 32 method-route operations. No session-discovery, logout,
+19 route patterns / 34 method-route operations. No session-discovery, logout,
 upload completion/status/renewal, standalone media-resolution, separate default
 SEO or duplicate public-only JSON routes are included. Every additional route needs a named
 app consumer and an explicit scope decision. Public server pages call server
