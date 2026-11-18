@@ -30,7 +30,7 @@ const CollectionPreview = dynamic(
     ),
   {
     ssr: false,
-    loading: () => <p role="status">Loading publication section preview…</p>,
+    loading: () => <LoadingState label="Loading publication section preview" />,
   },
 );
 

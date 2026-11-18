@@ -3,7 +3,7 @@
 import { Link, Maximize2, Save } from "lucide-react";
 import dynamic from "next/dynamic";
 import { SOCIAL_PROFILES } from "@/src/components/contact-conversation/social-profiles";
-import { Form, Spinner } from "@heroui/react";
+import { Form } from "@heroui/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useSocialQuery, useSaveSocial } from "@/src/cms/social-queries";
 import {
@@ -21,6 +21,7 @@ import {
   type DraftStore,
 } from "@/src/cms/working-drafts";
 import { Button } from "@/src/components/ui/Button";
+import { LoadingState } from "@/src/components/ui/LoadingState";
 import { CmsField } from "./CmsField";
 import {
   CmsEditorContent,
@@ -38,7 +39,7 @@ const ContactPreview = dynamic(
   () => import("./ContactPreview").then((module) => module.ContactPreview),
   {
     ssr: false,
-    loading: () => <p role="status">Loading social profiles preview…</p>,
+    loading: () => <LoadingState label="Loading social profiles preview" />,
   },
 );
 
@@ -60,10 +61,7 @@ export function ContactEditor() {
             {null}
           </CmsFeedback>
         ) : (
-          <p role="status" className="flex items-center gap-2">
-            <Spinner size="sm" aria-hidden="true" />
-            Loading saved social profiles…
-          </p>
+          <LoadingState label="Loading saved social profiles" />
         )}
       </>
     );

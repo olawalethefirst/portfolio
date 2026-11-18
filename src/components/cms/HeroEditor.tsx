@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 import { Maximize2, Save } from "lucide-react";
-import { Form, Spinner } from "@heroui/react";
+import { Form } from "@heroui/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useHeroQuery, useSaveHero } from "@/src/cms/hero-queries";
 import {
@@ -13,6 +13,7 @@ import {
   type HeroField,
 } from "@/src/cms/hero";
 import { Button } from "@/src/components/ui/Button";
+import { LoadingState } from "@/src/components/ui/LoadingState";
 import { CmsDraftFeedback } from "./CmsDraftFeedback";
 import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import {
@@ -34,7 +35,7 @@ import {
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
 const HeroPreview = dynamic(
   () => import("./HeroPreview").then((m) => m.HeroPreview),
-  { ssr: false, loading: () => <p role="status">Loading hero preview…</p> },
+  { ssr: false, loading: () => <LoadingState label="Loading hero preview" /> },
 );
 const stages = [
   ["idea", "Idea"],
@@ -57,7 +58,7 @@ export function HeroEditor() {
         {loadError ? (
           <CmsFeedback error="Couldn’t load Hero content.">{null}</CmsFeedback>
         ) : (
-          <p role="status" className="flex items-center gap-2"><Spinner size="sm" aria-hidden="true" />Loading saved Hero…</p>
+          <LoadingState label="Loading saved Hero" />
         )}
       </>
     );

@@ -42,7 +42,7 @@ const ProjectPreview = dynamic(
   () => import("./ProjectPreview").then((module) => module.ProjectPreview),
   {
     ssr: false,
-    loading: () => <p role="status">Loading project preview…</p>,
+    loading: () => <LoadingState label="Loading project preview" />,
   },
 );
 

@@ -2,7 +2,7 @@
 
 import { Maximize2, Save } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Form, Spinner } from "@heroui/react";
+import { Form } from "@heroui/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useAboutQuery, useSaveAbout } from "@/src/cms/about-queries";
 import {
@@ -20,6 +20,7 @@ import {
   type DraftStore,
 } from "@/src/cms/working-drafts";
 import { Button } from "@/src/components/ui/Button";
+import { LoadingState } from "@/src/components/ui/LoadingState";
 import { CmsField } from "./CmsField";
 import {
   CmsEditorContent,
@@ -37,7 +38,7 @@ const AboutPreview = dynamic(
   () => import("./AboutPreview").then((module) => module.AboutPreview),
   {
     ssr: false,
-    loading: () => <p role="status">Loading About preview…</p>,
+    loading: () => <LoadingState label="Loading About preview" />,
   },
 );
 
@@ -57,10 +58,7 @@ export function AboutEditor() {
         {loadError ? (
           <CmsFeedback error="Couldn’t load About content.">{null}</CmsFeedback>
         ) : (
-          <p role="status" className="flex items-center gap-2">
-            <Spinner size="sm" aria-hidden="true" />
-            Loading saved About…
-          </p>
+          <LoadingState label="Loading saved About" />
         )}
       </>
     );
