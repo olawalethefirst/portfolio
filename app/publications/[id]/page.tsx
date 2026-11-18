@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { AboutCtaSection } from "@/src/components/about-cta/AboutCtaSection";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { PublicationDetails } from "@/src/components/publication-details";
 import {
   publicationTags,
@@ -48,9 +49,9 @@ export default async function PublicationPage({
   return (
     <LabThemeShell>
       <main className="relative min-h-screen bg-surface">
-        <div className="pointer-events-none fixed inset-x-0 top-8 z-10 mx-auto w-full max-w-6xl px-5  sm:px-8 lg:px-12">
+        <SectionContainer className="pointer-events-none fixed inset-x-0 top-8 z-10">
           <PublicationActionBar className="pointer-events-auto" />
-        </div>
+        </SectionContainer>
         <PublicationDetails
           publication={{
             title: published.title,

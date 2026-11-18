@@ -8,6 +8,8 @@ import {
   usePublicationCommentsQuery,
 } from "@/src/cms/publication-comment-queries";
 
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
+
 import { CommentForm, type CommentSubmitResult } from "./CommentForm";
 import {
   CommentThread,
@@ -77,11 +79,8 @@ export function PublicationComments({
   }
 
   return (
-    <section
-      aria-labelledby="comments-heading"
-      className="mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8 lg:px-16"
-    >
-      <div className="pt-12">
+    <section aria-labelledby="comments-heading" className="w-full">
+      <SectionContainer className="pt-12 pb-16">
         <div className="mb-7 flex items-baseline gap-3">
           <h2
             id="comments-heading"
@@ -145,7 +144,7 @@ export function PublicationComments({
             Start the conversation with your perspective.
           </p>
         )}
-      </div>
+      </SectionContainer>
     </section>
   );
 }
