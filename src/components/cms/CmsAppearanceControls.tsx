@@ -5,7 +5,7 @@ import { ColorSwatchPicker } from "@/src/components/ui/ColorSwatchPicker";
 import { useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/src/components/ui/Button";
-import { useActiveTheme, useAppearance } from "@/src/theme/AppearanceProvider";
+import { useAppearance } from "@/src/theme/AppearanceProvider";
 import { themes, type ThemeName } from "@/src/theme/theme";
 import { themeForAccent, useThemeAccents } from "@/src/theme/theme-accents";
 
@@ -39,9 +39,7 @@ function TonePicker({
 }
 
 export function CmsAppearanceControls() {
-  const { theme, mode } = useActiveTheme();
-  const setMode = useAppearance((state) => state.setMode);
-  const setTheme = useAppearance((state) => state.setTheme);
+  const { theme, mode, setMode, setTheme } = useAppearance();
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-center gap-1">

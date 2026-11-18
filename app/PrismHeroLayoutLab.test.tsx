@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render as baseRender, screen, within } from "@testing-library/react";
+import type { ReactElement } from "react";
 import {
   forwardRef,
   useImperativeHandle,
@@ -90,7 +91,7 @@ import type { PublishedProject } from "@/src/cms/projects";
 import type { PublishedPublication } from "@/src/cms/publications";
 import { PRISM_HERO_DEFAULT_CONTENT } from "@/src/components/prism-fiber/ui/hero/prism-hero-content";
 import { PrismHeroLayoutLab } from "./PrismHeroLayoutLab";
-import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
+import { appearanceHarness } from "@/src/theme/test-support/appearanceHarness";
 
 const publishedPublications: PublishedPublication[] = [
   {
@@ -131,6 +132,8 @@ const publishedProjects: PublishedProject[] = [
 ];
 
 describe("PrismHeroLayoutLab", () => {
+  let wrapper: ReturnType<typeof appearanceHarness>["Wrapper"];
+  const render = (ui: ReactElement) => baseRender(ui, { wrapper });
   it("renders the saved About heading and biography with the existing contact CTA", () => {
     render(
       <PrismHeroLayoutLab
@@ -170,7 +173,9 @@ describe("PrismHeroLayoutLab", () => {
       }),
     ).toBeTruthy();
   });
-  beforeEach(() => seedAppearance({ theme: "plum", mode: "dark" }));
+  beforeEach(() => {
+    wrapper = appearanceHarness({ theme: "plum", mode: "dark" }).Wrapper;
+  });
   it("provides navigation and working display settings within the glass content", () => {
     render(
       <PrismHeroLayoutLab

@@ -33,8 +33,7 @@
     "server-only": "^0.0.1",
     "three": "0.159.0",
     "unified": "^11.0.5",
-    "zod": "4.5.4",
-    "zustand": "^5.1.0"
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

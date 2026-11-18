@@ -7,7 +7,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { createPrismTransitionController } from "../motion/prism-transition";
 import type { PrismState } from "../state/prism-state";
 import { buildPrismStructure } from "./PrismStructure";
-import { useActiveTheme } from "@/src/theme/AppearanceProvider";
+import { useAppearance } from "@/src/theme/AppearanceProvider";
 import { Group } from "three";
 import { createPrismAccents } from "./prism-accents";
 import { resolvePrismAppearance } from "./prism-appearance";
@@ -21,7 +21,7 @@ export interface PrismSceneProps {
 }
 
 export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
-  const { mode, theme } = useActiveTheme();
+  const { mode, theme } = useAppearance();
   const board = useGLTF(`${ASSET_ROOT}/board.glb`).scene;
   const figure = useGLTF(`${ASSET_ROOT}/figure.glb`).scene;
   const notes = useGLTF(`${ASSET_ROOT}/notes.glb`).scene;

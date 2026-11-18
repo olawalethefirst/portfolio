@@ -7,7 +7,7 @@ import { NavigationPanel } from "@/src/components/ui/navigation-panel";
 
 import { themeForAccent, themes, useThemeAccents } from "./theme-accents";
 import type { ThemeName } from "@/src/theme/theme";
-import { useActiveTheme, useAppearance } from "@/src/theme/AppearanceProvider";
+import { useAppearance } from "@/src/theme/AppearanceProvider";
 
 const navigationItems = [
   { href: "/", label: "Home" },
@@ -23,9 +23,12 @@ export interface LabThemeShellProps {
 }
 
 export function LabThemeShell({ children }: LabThemeShellProps) {
-  const { theme: selectedTheme, mode: selectedMode } = useActiveTheme();
-  const setMode = useAppearance((state) => state.setMode);
-  const setTheme = useAppearance((state) => state.setTheme);
+  const {
+    theme: selectedTheme,
+    mode: selectedMode,
+    setMode,
+    setTheme,
+  } = useAppearance();
   const [fontScale, setFontScale] = useState(1);
   const accents = useThemeAccents();
 

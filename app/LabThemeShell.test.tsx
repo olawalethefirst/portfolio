@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render as baseRender, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import {
   afterAll,
   beforeAll,
@@ -10,7 +11,7 @@ import {
 } from "vitest";
 
 import { LabThemeShell } from "./LabThemeShell";
-import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
+import { appearanceHarness } from "@/src/theme/test-support/appearanceHarness";
 
 vi.mock("./theme-accents", () => ({
   themes: ["chartreuse", "copper", "plum", "forest"],
@@ -39,7 +40,11 @@ afterAll(() => {
 });
 
 describe("LabThemeShell", () => {
-  beforeEach(() => seedAppearance({ theme: "forest", mode: "dark" }));
+  let wrapper: ReturnType<typeof appearanceHarness>["Wrapper"];
+  const render = (ui: ReactElement) => baseRender(ui, { wrapper });
+  beforeEach(() => {
+    wrapper = appearanceHarness({ theme: "forest", mode: "dark" }).Wrapper;
+  });
   it("provides shared navigation using the existing global theme", () => {
     render(
       <LabThemeShell>

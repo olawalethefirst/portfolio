@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render as baseRender, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { CmsAppearanceControls } from "./CmsAppearanceControls";
-import { seedAppearance } from "@/src/theme/test-support/seedAppearance";
+import { appearanceHarness } from "@/src/theme/test-support/appearanceHarness";
+import type { AppearanceChoice } from "@/src/theme/appearance";
 
 // jsdom has no Canvas color conversion; exercise the real picker with resolved accents.
 vi.mock("@/src/theme/theme-accents", async (importOriginal) => ({
@@ -9,8 +10,12 @@ vi.mock("@/src/theme/theme-accents", async (importOriginal) => ({
   useThemeAccents: () => ({ chartreuse: "#b8cf00", copper: "#b56a3c", plum: "#83507a", forest: "#367052" }),
 }));
 
+function renderControls(initial?: AppearanceChoice) {
+  return baseRender(<CmsAppearanceControls />, { wrapper: appearanceHarness(initial).Wrapper });
+}
+
 beforeEach(() => {
-  seedAppearance();
+  appearanceHarness();
   vi.stubGlobal("ResizeObserver", vi.fn(function () {
     return { observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() };
   }));
@@ -18,12 +23,11 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-  seedAppearance();
+  appearanceHarness();
 });
 
 it("toggles mode without changing the selected tone", () => {
-  seedAppearance({ theme: "forest" });
-  render(<CmsAppearanceControls />);
+  renderControls({ theme: "forest" });
   fireEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
   expect(document.documentElement.dataset.mode).toBe("dark");
   expect(screen.getByRole("button", { name: "Choose tone, current: Forest" })).toBeTruthy();
@@ -32,8 +36,7 @@ it("toggles mode without changing the selected tone", () => {
 });
 
 it("shows the current tone and applies a selection without changing mode", async () => {
-  seedAppearance({ mode: "dark" });
-  render(<CmsAppearanceControls />);
+  renderControls({ mode: "dark" });
   const trigger = screen.getByRole("button", { name: "Choose tone, current: Chartreuse" });
   fireEvent.click(trigger);
   const current = await screen.findByRole("option", { name: "Chartreuse" });
@@ -47,7 +50,7 @@ it("shows the current tone and applies a selection without changing mode", async
 });
 
 it("dismisses with Escape and restores focus without changing the tone", async () => {
-  render(<CmsAppearanceControls />);
+  renderControls();
   const trigger = screen.getByRole("button", { name: "Choose tone, current: Chartreuse" });
   act(() => trigger.focus());
   fireEvent.click(trigger);
@@ -59,7 +62,7 @@ it("dismisses with Escape and restores focus without changing the tone", async (
 });
 
 it("lets keyboard users open, navigate, and select a tone", async () => {
-  render(<CmsAppearanceControls />);
+  renderControls();
   const trigger = screen.getByRole("button", { name: "Choose tone, current: Chartreuse" });
   act(() => trigger.focus());
   fireEvent.keyDown(trigger, { key: "Enter" });

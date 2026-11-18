@@ -1,6 +1,6 @@
-import { StrictMode, Suspense } from "react";
+import { StrictMode, Suspense, type ReactElement } from "react";
 import { Group, MeshBasicMaterial, Texture } from "three";
-import { act, render } from "@testing-library/react";
+import { act, render as baseRender } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const scene = await vi.hoisted(async () => {
@@ -66,12 +66,14 @@ vi.mock("./monitor-accent", async importOriginal => {
 import { loadMonitorAccent } from "./monitor-accent";
 import { buildPrismStructure } from "./PrismStructure";
 import { PrismScene } from "./PrismScene";
-import { defaultAppearanceStore } from "@/src/theme/AppearanceProvider";
+import { appearanceHarness } from "@/src/theme/test-support/appearanceHarness";
 
-const appearance = () => defaultAppearanceStore.getState();
+let harness = appearanceHarness();
+const appearance = () => harness.current;
+const render = (ui: ReactElement) => baseRender(ui, { wrapper: harness.Wrapper });
 
 describe("PrismScene", () => {
-  beforeEach(() => defaultAppearanceStore.setState({ theme: undefined, mode: undefined }));
+  beforeEach(() => { harness = appearanceHarness(); });
   it("does not build GPU resources for a render that cannot commit", () => {
     const pending = new Promise<void>(() => {});
     function PendingSibling(): never { throw pending; }
@@ -88,7 +90,8 @@ describe("PrismScene", () => {
       graphs.push(graph);
       return { ...scene.built, root: graph.root, dispose: () => material.dispose() };
     });
-    const { unmount } = render(<StrictMode><PrismScene state="idea" /></StrictMode>);
+    // Strict Mode replay needs the outermost root, and this test needs no appearance setters.
+    const { unmount } = baseRender(<StrictMode><PrismScene state="idea" /></StrictMode>);
     const attached = graphs.filter(graph => graph.root.parent !== null);
     expect(attached).toHaveLength(1);
     expect(attached[0].disposed).toBe(false);
@@ -115,7 +118,7 @@ describe("PrismScene", () => {
   });
 
   it("adapts modes without rebuilding or restarting the active semantic transition", () => {
-    defaultAppearanceStore.setState({ mode: "dark" });
+    harness = appearanceHarness({ mode: "dark" });
     const { rerender } = render(<PrismScene state="idea" />);
     rerender(<PrismScene state="solution" />);
     act(() => appearance().setMode("light"));
