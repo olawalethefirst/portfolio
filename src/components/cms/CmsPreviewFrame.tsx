@@ -1,6 +1,7 @@
 "use client";
 
 import { HeaderActionBar } from "@/src/components/ui/header-action-bar";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { useContext, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 
 import { CmsPreviewVisibility } from "./CmsShell";
@@ -45,10 +46,10 @@ export function CmsPreviewFrame({ label, exitLabel, closeRef, onExit, children }
   }, [setPreview]);
   return <section aria-label={label} className="min-h-dvh bg-surface text-foreground">
     {/* Fixed overlay, like the public article's back button: adds no page height. */}
-    <div className="pointer-events-none fixed inset-x-0 top-8 z-[120] mx-auto w-full max-w-6xl px-5 sm:px-8 lg:px-12">
+    <SectionContainer className="pointer-events-none fixed inset-x-0 top-8 z-[120]">
       <HeaderActionBar onBack={onExit} backLabel={exitLabel} backButtonRef={closeRef}
         buttonClassName="pointer-events-auto" />
-    </div>
+    </SectionContainer>
     {children}
   </section>;
 }

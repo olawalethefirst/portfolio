@@ -13,6 +13,7 @@ import {
 } from "react";
 import { Button } from "@/src/components/ui/Button";
 import { HeaderActionBar } from "@/src/components/ui/header-action-bar";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 import { TextArea } from "@/src/components/ui/TextArea";
 import { PublicationMarkdown } from "@/src/components/publication-details/PublicationMarkdown";
 import {
@@ -205,7 +206,7 @@ export function PublicationWriting({
             className="sticky top-0 z-30 w-full border-b-0! bg-surface!"
             render={(containerProps) => (
               <div {...containerProps}>
-                <div className="mx-auto max-w-5xl space-y-4 px-4 py-4 sm:px-8">
+                <SectionContainer className="space-y-4 py-4">
                   <HeaderActionBar
                     onBack={onBack}
                     backLabel="Back to publication"
@@ -267,7 +268,7 @@ export function PublicationWriting({
                       {error}
                     </p>
                   ) : null}
-                </div>
+                </SectionContainer>
                 {containerProps.children}
                 {!preview ? (
                   <ArticleToolbar

@@ -6,6 +6,11 @@ import { usePathname } from "next/navigation";
 import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { CmsAppearanceControls } from "./CmsAppearanceControls";
 import { Button } from "@/src/components/ui/Button";
+import {
+  SectionContainer,
+  sectionContainerClassName,
+} from "@/src/components/ui/SectionContainer";
+import { cn } from "@/src/components/ui/utils";
 
 const navigationItems = [
   { id: "hero", label: "Hero", path: "/admin/hero", Icon: PanelTop },
@@ -59,38 +64,40 @@ export function CmsShell({ children }: { children: ReactNode }) {
         {navigation}
       </aside>}
       <div className="min-w-0">
-        {!preview && <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background px-5 py-3 sm:px-8">
-          <div className="flex items-center gap-3">
-            <div className="lg:hidden">
-              <Drawer isOpen={menuOpen} onOpenChange={setMenuOpen}>
-                <Button
-                  aria-label="Open content navigation"
-                  variant="ghost"
-                  isIconOnly
-                >
-                  <Menu aria-hidden="true" className="size-5" />
-                </Button>
-                <Drawer.Backdrop>
-                  <Drawer.Content placement="left">
-                    <Drawer.Dialog aria-label="Content navigation">
-                      <Drawer.Header>
-                        <Drawer.Heading>Content studio</Drawer.Heading>
-                        <Drawer.CloseTrigger aria-label="Close navigation" />
-                      </Drawer.Header>
-                      <Drawer.Body>{navigation}</Drawer.Body>
-                    </Drawer.Dialog>
-                  </Drawer.Content>
-                </Drawer.Backdrop>
-              </Drawer>
+        {!preview && <header className="sticky top-0 z-20 border-b border-border bg-background">
+          <SectionContainer className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <div className="flex items-center gap-3">
+              <div className="lg:hidden">
+                <Drawer isOpen={menuOpen} onOpenChange={setMenuOpen}>
+                  <Button
+                    aria-label="Open content navigation"
+                    variant="ghost"
+                    isIconOnly
+                  >
+                    <Menu aria-hidden="true" className="size-5" />
+                  </Button>
+                  <Drawer.Backdrop>
+                    <Drawer.Content placement="left">
+                      <Drawer.Dialog aria-label="Content navigation">
+                        <Drawer.Header>
+                          <Drawer.Heading>Content studio</Drawer.Heading>
+                          <Drawer.CloseTrigger aria-label="Close navigation" />
+                        </Drawer.Header>
+                        <Drawer.Body>{navigation}</Drawer.Body>
+                      </Drawer.Dialog>
+                    </Drawer.Content>
+                  </Drawer.Backdrop>
+                </Drawer>
+              </div>
             </div>
-          </div>
-          <CmsAppearanceControls />
+            <CmsAppearanceControls />
+          </SectionContainer>
         </header>}
-        <main
-          id="cms-main"
-          className={preview ? "min-h-dvh" : "mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12"}
-        >
-          {children}
+        <main id="cms-main" className={preview ? "min-h-dvh" : undefined}>
+          {/* One stable element: toggling preview must not remount the screen. */}
+          <div className={preview ? undefined : cn(sectionContainerClassName, "py-8 sm:py-12")}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

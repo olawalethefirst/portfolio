@@ -8,6 +8,7 @@ import {
 } from "@/src/cms/publications";
 import { PublicationCard } from "@/src/components/publication-card";
 import { PublicationDetails } from "@/src/components/publication-details";
+import { SectionContainer } from "@/src/components/ui/SectionContainer";
 
 export function PublicationPreview({
   id,
@@ -35,13 +36,14 @@ export function PublicationPreview({
   return (
     <>
       {placeholders ? (
-        <p
-          role="status"
-          className="border-b border-border bg-surface-secondary px-5 py-3 text-sm text-muted"
-        >
-          Preview placeholders fill missing content, including the sample date
-          and cover. They are not saved.
-        </p>
+        <div className="border-b border-border bg-surface-secondary">
+          <SectionContainer>
+            <p role="status" className="py-3 text-sm text-muted">
+              Preview placeholders fill missing content, including the sample
+              date and cover. They are not saved.
+            </p>
+          </SectionContainer>
+        </div>
       ) : null}
       {mode === "detail" ? (
         <PublicationDetails
@@ -56,8 +58,8 @@ export function PublicationPreview({
           }}
         />
       ) : (
-        <div className="mx-auto max-w-3xl space-y-6 py-6">
-          <div className="px-5 py-8 sm:px-8">
+        <SectionContainer className="py-14">
+          <div className="mx-auto max-w-3xl">
             <PublicationCard
               title={title}
               summary={
@@ -70,7 +72,7 @@ export function PublicationPreview({
               href={id ? `/publications/${id}` : "/"}
             />
           </div>
-        </div>
+        </SectionContainer>
       )}
     </>
   );
