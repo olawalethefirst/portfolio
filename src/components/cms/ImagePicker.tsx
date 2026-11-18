@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { RotateCw } from "lucide-react";
+import { Copy, RotateCw } from "lucide-react";
 import { Spinner } from "@heroui/react/spinner";
 import {
   useEffect,
@@ -115,6 +115,17 @@ export function ImagePicker({
     next.readAsDataURL(file);
   }
 
+  async function copyUrl() {
+    setFileError("");
+    try {
+      await navigator.clipboard.writeText(value);
+      setFeedback("URL copied.");
+    } catch {
+      setFeedback("");
+      setFileError("The URL could not be copied.");
+    }
+  }
+
   const insertion = presentation === "insertion";
   return (
     <div className={insertion ? "text-sm" : "space-y-3"}>
@@ -177,6 +188,17 @@ export function ImagePicker({
         {fileError || error}
       </p>
       {onRetry && !isPending ? <Button variant="outline" size="sm" startContent={<RotateCw aria-hidden="true" className="size-4" />} onPress={onRetry}>Retry upload</Button> : null}
+      {!insertion && value ? (
+        <Button
+          isDisabled={isPending}
+          variant="outline"
+          size="sm"
+          startContent={<Copy aria-hidden="true" className="size-4" />}
+          onPress={copyUrl}
+        >
+          Copy URL
+        </Button>
+      ) : null}
       {!insertion && value ? (
         <Button
           isDisabled={isPending}
