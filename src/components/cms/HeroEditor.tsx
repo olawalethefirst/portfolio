@@ -22,6 +22,7 @@ import {
   type DraftStore,
 } from "@/src/cms/working-drafts";
 import { heroIssueFeedback } from "@/src/cms/hero-api";
+import { saveErrorMessage } from "@/src/cms/issue-feedback";
 import { ApiRequestError } from "@/src/api/client";
 import { CmsField } from "./CmsField";
 import {
@@ -112,10 +113,7 @@ function HeroEditorForm({
   );
   const currentErrors = validateHero(value);
   const feedback = heroIssueFeedback(saveError instanceof ApiRequestError ? saveError.error?.issues : []);
-  const saveMessage = saveError instanceof ApiRequestError && saveError.kind !== "server"
-    ? "Couldn’t confirm the save."
-    : saveError?.message;
-  const error = saveError ? [saveMessage, ...feedback.general].join(" ")
+  const error = saveError ? saveErrorMessage(saveError, feedback.general)
     : loadError ? "Couldn’t load Hero content." : undefined;
   const errors: HeroErrors = { ...feedback.fields };
   for (const field of Object.keys(currentErrors) as HeroField[]) {

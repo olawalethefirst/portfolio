@@ -13,6 +13,7 @@ import {
   type AboutErrors,
 } from "@/src/cms/about";
 import { aboutIssueFeedback } from "@/src/cms/about-api";
+import { saveErrorMessage } from "@/src/cms/issue-feedback";
 import { ApiRequestError } from "@/src/api/client";
 import {
   useDraftStore,
@@ -112,12 +113,8 @@ function AboutEditorForm({
     if (exposed[field] && currentErrors[field])
       errors[field] = currentErrors[field];
   }
-  const saveMessage =
-    saveError instanceof ApiRequestError && saveError.kind !== "server"
-      ? "Couldn’t confirm the save."
-      : saveError?.message;
   const error = saveError
-    ? [saveMessage, ...feedback.general].join(" ")
+    ? saveErrorMessage(saveError, feedback.general)
     : loadError
       ? "Couldn’t load About content."
       : undefined;

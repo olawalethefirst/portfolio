@@ -45,6 +45,7 @@ import {
 } from "@/src/cms/seo-queries";
 import { LoadingState } from "@/src/components/ui/LoadingState";
 import { useWorkingDraft, type DraftStore } from "@/src/cms/working-drafts";
+import { saveErrorMessage } from "@/src/cms/issue-feedback";
 import { seoIssueFeedback } from "@/src/cms/seo-api";
 import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import { SeoFields } from "./SeoFields";
@@ -343,11 +344,7 @@ export function SeoEditorForm({
           const feedback = seoIssueFeedback(failure.error?.issues);
           setServerErrors(feedback.fields);
           focusFirstError(feedback.fields);
-          setError(
-            failure.kind !== "server"
-              ? "Couldn’t confirm the save."
-              : [failure.message, ...feedback.general].join(" "),
-          );
+          setError(saveErrorMessage(failure, feedback.general));
         } else
           setError(
             failure instanceof Error

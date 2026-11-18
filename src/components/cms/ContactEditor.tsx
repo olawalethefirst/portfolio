@@ -13,6 +13,7 @@ import {
   type SocialDraft,
   type SocialErrors,
 } from "@/src/cms/social";
+import { saveErrorMessage } from "@/src/cms/issue-feedback";
 import { socialIssueFeedback } from "@/src/cms/social-api";
 import { ApiRequestError } from "@/src/api/client";
 import {
@@ -113,12 +114,8 @@ function ContactEditorForm({
     if (exposed[field] && currentErrors[field])
       errors[field] = currentErrors[field];
   }
-  const saveMessage =
-    saveError instanceof ApiRequestError && saveError.kind !== "server"
-      ? "Couldn’t confirm the save."
-      : saveError?.message;
   const error = saveError
-    ? [saveMessage, ...feedback.general].join(" ")
+    ? saveErrorMessage(saveError, feedback.general)
     : loadError
       ? "Couldn’t load social profiles."
       : undefined;
