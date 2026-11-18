@@ -1,23 +1,23 @@
 # Global theme and Prism appearance
 
-The visitor's explicit theme and mode choices live in a Zustand store
-(`src/theme/appearance-store.ts`), and `html[data-theme][data-mode]` is where the
-applied theme is expressed for every route: the CSS, the Tailwind `dark` variant
-and the Prism scene read the attributes. The root layout emits the
-`DEFAULT_THEME` from `src/theme/theme.ts` during server render. Shells and pages
-must not add local theme attributes or reset selection when mounted. A selection
-survives client navigation; until the cookie is read on the server, a reload
-returns to the global default. System-mode selection is not yet implemented.
+The visitor's explicit theme and mode choices live in `AppearanceProvider`
+(`src/theme/AppearanceProvider.tsx`), and `html[data-theme][data-mode]` is where
+the applied theme is expressed for every route: the CSS, the Tailwind `dark`
+variant and the Prism scene read the attributes. The root layout reads the
+`portfolio-theme` and `portfolio-mode` cookies (`parseAppearance` in
+`src/theme/appearance.ts`), renders the attributes from them (else
+`DEFAULT_THEME` from `src/theme/theme.ts`) and seeds the provider with the same
+choices, so server and client agree on first paint. Shells and pages must not add
+local theme attributes or reset selection when mounted. System-mode selection is
+not yet implemented.
 
-The store's `setTheme` and `setMode` write the `portfolio-theme` and
-`portfolio-mode` cookies, apply the matching `<html>` attribute and notify
-subscribers. State holds only explicit choices (`undefined` means none).
-`useActiveTheme()` in `src/theme/AppearanceProvider.tsx` resolves the applied
-values: the choice, else the default per dimension. `AppearanceProvider` seeds a
-per-request store from the choices the server read; without a provider a shared
-default store is used, which only browser events write, so server renders always
-see the defaults. Direct edits to the attributes are no longer observed: change
-appearance through the store's actions.
+`useAppearance()` returns the applied `theme` and `mode` (the choice, else the
+default per dimension) with `setTheme` and `setMode`. The setters write the
+cookie, set the matching `<html>` attribute and update provider state. Outside a
+provider (isolated renders) the hook returns the defaults with no-op setters.
+Direct edits to the attributes are not observed: change appearance through the
+setters. The 3D `<Canvas>` receives the context through `@react-three/fiber`'s
+context bridge.
 
 Palette values remain in `src/styles/design-tokens.css`. Selectors are scoped to
 HTML, and the Tailwind `dark` variant uses `html[data-mode="dark"]` explicitly
@@ -103,7 +103,7 @@ visible labels. Panel padding is 4 px.
 `useThemeAccents` resolves the existing CSS palette into the hex values required
 by the picker, and `themeForAccent` maps selections back to theme names.
 Palette reading mounts only while the popover is open. Choosing a swatch calls
-the store's `setTheme`, applies immediately, and closes the popover. HeroUI handles
+`setTheme`, applies immediately, and closes the popover. HeroUI handles
 Escape/outside dismissal and focus restoration.
 Changing mode preserves the selected tone, and changing tone preserves mode.
 The controls retain the global navigation/reload behavior above and are hidden

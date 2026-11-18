@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { cookies } from "next/headers";
+import { AppearanceProvider } from "@/src/theme/AppearanceProvider";
+import { parseAppearance } from "@/src/theme/appearance";
 import { DEFAULT_THEME } from "@/src/theme/theme";
 import { ToastProvider } from "@/src/components/ui/ToastProvider";
 
@@ -19,17 +22,23 @@ export const metadata: Metadata = {
   description: "Interactive portfolio and publication previews.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The visitor's explicit choices; the same values seed the client store and
+  // render the <html> attributes, so server and client agree on first paint.
+  const cookieStore = await cookies();
+  const choice = parseAppearance((name) => cookieStore.get(name)?.value);
   return (
     <html
       lang="en"
-      data-theme={DEFAULT_THEME.theme}
-      data-mode={DEFAULT_THEME.mode}
+      data-theme={choice.theme ?? DEFAULT_THEME.theme}
+      data-mode={choice.mode ?? DEFAULT_THEME.mode}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ToastProvider />
-        {children}
+        <AppearanceProvider initial={choice}>
+          <ToastProvider />
+          {children}
+        </AppearanceProvider>
       </body>
     </html>
   );
