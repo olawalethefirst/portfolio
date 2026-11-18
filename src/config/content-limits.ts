@@ -17,4 +17,8 @@ export const CONTENT_LIMITS = {
     tagLength: 16,
     tagCount: 3,
   },
+  comment: {
+    name: 80,
+    body: 5000,
+  },
 } as const;
