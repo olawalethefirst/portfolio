@@ -147,14 +147,20 @@ it(
   },
 );
 
-it("shows load failure without editing demo content or adding recovery controls", async () => {
+it("shows a load failure under the page header without demo content and retries on request", async () => {
+  let offline = true;
   read = async () => {
-    throw new TypeError("offline");
+    if (offline) throw new TypeError("offline");
+    return Response.json(saved);
   };
   render(<Page />);
-  await screen.findByRole("alert");
+  expect((await screen.findByRole("alert")).textContent).toContain("Couldn’t load Hero");
+  expect(screen.getByRole("heading", { level: 1, name: "Hero" })).toBeTruthy();
   expect(screen.queryByRole("textbox", { name: "Headline" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Retry loading" })).toBeNull();
+  offline = false;
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  await loaded();
+  expect(headline().value).toBe("Server headline");
 });
 
 const draftKey = "portfolio:cms-drafts:v1:hero:hero";

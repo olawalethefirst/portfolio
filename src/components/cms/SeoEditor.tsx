@@ -3,7 +3,13 @@
 import { Route, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import { useSeo } from "@/src/cms/SeoProvider";
 import {
   emptySeoOverride,
@@ -24,6 +30,7 @@ import {
   CmsEditorContent,
   CmsFeedback,
   CmsFieldSection,
+  CmsLoadError,
   CmsFooter,
   CmsPageHeader,
 } from "./CmsLayout";
@@ -42,6 +49,34 @@ import { seoIssueFeedback } from "@/src/cms/seo-api";
 import { useFirstFieldErrorFocus } from "./useFirstFieldErrorFocus";
 import { SeoFields } from "./SeoFields";
 
+type SeoHeaderProps = Partial<ComponentProps<typeof CmsPageHeader>>;
+
+function SeoEditorHeader({
+  mode,
+  ...rest
+}: { mode: "new" | "defaults" | "override" } & SeoHeaderProps) {
+  const router = useRouter();
+  return (
+    <CmsPageHeader
+      onBack={() => router.push("/admin/seo")}
+      backLabel="Back to SEO"
+      title={
+        mode === "defaults"
+          ? "SEO defaults"
+          : mode === "override"
+            ? "Edit SEO override"
+            : "New SEO override"
+      }
+      description={
+        mode === "defaults"
+          ? "Used by paths without a title or description override."
+          : "Override an exact site path. Adding an override does not create a public page."
+      }
+      {...rest}
+    />
+  );
+}
+
 export function SeoEditor({ id }: { id: string }) {
   const { working } = useSeo();
   if (id === "new") return <NewSeoEditor working={working} />;
@@ -53,16 +88,34 @@ function NewSeoEditor({ working }: { working: DraftStore<SeoRecord> }) {
   const collection = useSeoQuery();
   const mutation = useCreateSeoRecord();
   const defaults = collection.data?.find((record) => record.path === "/");
+  const header = <SeoEditorHeader mode="new" />;
   if (!collection.data && collection.error)
     return (
-      <CmsFeedback error="Couldn’t load saved SEO content.">{null}</CmsFeedback>
+      <>
+        {header}
+        <CmsLoadError
+          title="Couldn’t load SEO content"
+          description="The saved SEO content could not be read. Check your connection and try again."
+          onRetry={() => void collection.refetch()}
+        />
+      </>
     );
-  if (!collection.data) return <LoadingState label="Loading SEO content" />;
+  if (!collection.data)
+    return (
+      <>
+        {header}
+        <LoadingState label="Loading SEO content" />
+      </>
+    );
   if (!defaults)
     return (
-      <CmsFeedback error="The saved SEO defaults are unavailable.">
-        {null}
-      </CmsFeedback>
+      <>
+        {header}
+        <CmsLoadError
+          title="SEO defaults unavailable"
+          description="The saved SEO defaults could not be found."
+        />
+      </>
     );
   return (
     <SeoEditorForm
@@ -85,7 +138,6 @@ function ExistingSeoEditor({
   id: string;
   working: DraftStore<SeoRecord>;
 }) {
-  const router = useRouter();
   const collection = useSeoQuery();
   const defaults = collection.data?.find((record) => record.path === "/");
   const item = useSeoRecordQuery(id === "defaults" ? defaults?.id : id);
@@ -93,36 +145,51 @@ function ExistingSeoEditor({
   const deletion = useDeleteSeoRecord(
     item.data?.path !== "/" ? item.data?.id : undefined,
   );
+  const mode = id === "defaults" ? "defaults" : "override";
+  const header = <SeoEditorHeader mode={mode} />;
   const error =
     (!collection.data && collection.error) || (!item.data && item.error);
   if (error)
     return (
       <>
-        <CmsPageHeader
-          onBack={() => router.push("/admin/seo")}
-          backLabel="Back to SEO"
-          title="SEO override unavailable"
-          description="Return to SEO to start again."
-        />
-        <CmsFeedback
-          error={
+        {header}
+        <CmsLoadError
+          title={
             error instanceof ApiRequestError && error.status === 404
-              ? "The saved SEO record is unavailable."
-              : "Couldn’t load saved SEO content."
+              ? "SEO record unavailable"
+              : "Couldn’t load SEO content"
           }
-        >
-          {null}
-        </CmsFeedback>
+          description={
+            error instanceof ApiRequestError && error.status === 404
+              ? "The saved SEO record could not be found."
+              : "The saved SEO content could not be read. Check your connection and try again."
+          }
+          onRetry={
+            error instanceof ApiRequestError && error.status === 404
+              ? undefined
+              : () =>
+                  void (collection.data ? item.refetch() : collection.refetch())
+          }
+        />
       </>
     );
   if (collection.data && !defaults)
     return (
-      <CmsFeedback error="The saved SEO defaults are unavailable.">
-        {null}
-      </CmsFeedback>
+      <>
+        {header}
+        <CmsLoadError
+          title="SEO defaults unavailable"
+          description="The saved SEO defaults could not be found."
+        />
+      </>
     );
   if (!collection.data || !defaults || !item.data)
-    return <LoadingState label="Loading SEO record" />;
+    return (
+      <>
+        {header}
+        <LoadingState label="Loading SEO record" />
+      </>
+    );
   const record = item.data;
   const defaultValues = record.path === "/" ? record : defaults;
   const records = collection.data.filter(
@@ -310,25 +377,19 @@ export function SeoEditorForm({
       );
     }
   }
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  const mode = defaultsMode ? "defaults" : record ? "override" : "new";
+  if (!ready)
+    return (
+      <>
+        <SeoEditorHeader mode={mode} />
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   return (
     <>
-      <CmsPageHeader
-        onBack={() => router.push("/admin/seo")}
-        backLabel="Back to SEO"
+      <SeoEditorHeader
+        mode={mode}
         backDisabled={pending}
-        title={
-          defaultsMode
-            ? "SEO defaults"
-            : record
-              ? "Edit SEO override"
-              : "New SEO override"
-        }
-        description={
-          defaultsMode
-            ? "Used by paths without a title or description override."
-            : "Override an exact site path. Adding an override does not create a public page."
-        }
         action={
           <Button
             type="submit"

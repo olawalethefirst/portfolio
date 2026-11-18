@@ -26,6 +26,7 @@ import { CmsField } from "./CmsField";
 import {
   CmsEditorContent,
   CmsFeedback,
+  CmsLoadError,
   CmsFieldSection,
   CmsFooter,
   CmsPageHeader,
@@ -43,8 +44,15 @@ const ContactPreview = dynamic(
   },
 );
 
+const contactHeader = (
+  <CmsPageHeader
+    title="Contact"
+    description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed."
+  />
+);
+
 export function ContactEditor() {
-  const { data: saved, error: loadError } = useSocialQuery();
+  const { data: saved, error: loadError, refetch } = useSocialQuery();
   const working = useDraftStore({
     namespace: "social",
     schema: socialDraftSchema,
@@ -52,14 +60,13 @@ export function ContactEditor() {
   if (!saved)
     return (
       <>
-        <CmsPageHeader
-          title="Contact"
-          description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed."
-        />
+        {contactHeader}
         {loadError ? (
-          <CmsFeedback error="Couldn’t load social profiles.">
-            {null}
-          </CmsFeedback>
+          <CmsLoadError
+            title="Couldn’t load social profiles"
+            description="The saved social profiles could not be read. Check your connection and try again."
+            onRetry={() => void refetch()}
+          />
         ) : (
           <LoadingState label="Loading saved social profiles" />
         )}
@@ -147,7 +154,13 @@ function ContactEditorForm({
     }
   }
 
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (!ready)
+    return (
+      <>
+        {contactHeader}
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   if (preview)
     return (
       <CmsPreviewFrame
@@ -161,10 +174,7 @@ function ContactEditorForm({
     );
   return (
     <>
-      <CmsPageHeader
-        title="Contact"
-        description="Edit your GitHub, LinkedIn and X destinations. Profile labels and icons stay fixed."
-      />
+      {contactHeader}
       <CmsToolbar
         actions={
           <Button

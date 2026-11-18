@@ -28,6 +28,7 @@ import {
   CmsEditorContent,
   CmsFieldSection,
   CmsFeedback,
+  CmsLoadError,
   CmsPageHeader,
   CmsToolbar,
   CmsFooter,
@@ -42,8 +43,15 @@ const stages = [
   ["iterate", "Iterate"],
   ["solution", "Solution"],
 ] as const;
+const heroHeader = (
+  <CmsPageHeader
+    title="Hero"
+    description="Edit the introduction and the copy shown for each fixed stage."
+  />
+);
+
 export function HeroEditor() {
-  const { data: saved, error: loadError } = useHeroQuery();
+  const { data: saved, error: loadError, refetch } = useHeroQuery();
   const working = useDraftStore<HeroDraft>({
     namespace: "hero",
     schema: heroDraftSchema,
@@ -51,12 +59,13 @@ export function HeroEditor() {
   if (!saved)
     return (
       <>
-        <CmsPageHeader
-          title="Hero"
-          description="Edit the introduction and the copy shown for each fixed stage."
-        />
+        {heroHeader}
         {loadError ? (
-          <CmsFeedback error="Couldn’t load Hero content.">{null}</CmsFeedback>
+          <CmsLoadError
+            title="Couldn’t load Hero"
+            description="The saved Hero content could not be read. Check your connection and try again."
+            onRetry={() => void refetch()}
+          />
         ) : (
           <LoadingState label="Loading saved Hero" />
         )}
@@ -151,7 +160,13 @@ function HeroEditorForm({
       return false;
     }
   }
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (!ready)
+    return (
+      <>
+        {heroHeader}
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   if (preview)
     return (
       <CmsPreviewFrame
@@ -165,10 +180,7 @@ function HeroEditorForm({
     );
   return (
     <>
-      <CmsPageHeader
-        title="Hero"
-        description="Edit the introduction and the copy shown for each fixed stage."
-      />
+      {heroHeader}
       <CmsToolbar
         actions={
           <Button

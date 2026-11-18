@@ -140,3 +140,18 @@ it.each([false, true])("cleans up a late save without removing later work: %s", 
   if (laterEdit) expect(JSON.parse(localStorage.getItem(key)!).value.github).toBe("https://example.com/later");
   else expect(localStorage.getItem(key)).toBeNull();
 });
+
+it("shows a load failure under the page header and retries on request", async () => {
+  let offline = true;
+  read = async () => {
+    if (offline) throw new TypeError("offline");
+    return Response.json(saved);
+  };
+  render(<Page />);
+  expect((await screen.findByRole("alert")).textContent).toContain("Couldn’t load social profiles");
+  expect(screen.getByRole("heading", { level: 1, name: "Contact" })).toBeTruthy();
+  offline = false;
+  click("Try again");
+  await loaded();
+  expect(github().value).toBe("https://example.com/server");
+});

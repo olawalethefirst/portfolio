@@ -165,3 +165,12 @@ it("rejects a malformed collection response without showing an empty success sta
   expect(await screen.findByRole("alert")).toBeTruthy();
   expect(screen.queryByText("No SEO overrides yet")).toBeNull();
 });
+
+it("shows a load failure under the page header and retries on request", async () => {
+  fetch.mockRejectedValueOnce(new TypeError("offline"));
+  renderPage(<SeoList />, { wrapper: Wrapper });
+  expect((await screen.findByRole("alert")).textContent).toContain("Couldn’t load SEO content");
+  expect(screen.getByRole("heading", { level: 1, name: "SEO" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByRole("searchbox", { name: "Search SEO paths" })).toBeTruthy();
+});

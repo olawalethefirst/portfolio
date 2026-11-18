@@ -3,7 +3,7 @@ import { Maximize2, Save, Send } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ComponentProps } from "react";
 import { useProjects } from "@/src/cms/ProjectProvider";
 import {
   useProjectMutations,
@@ -23,7 +23,7 @@ import {
 import { Button } from "@/src/components/ui/Button";
 import { LoadingState } from "@/src/components/ui/LoadingState";
 import {
-  CmsEmptyState,
+  CmsLoadError,
   CmsFeedback,
   CmsPageHeader,
   CmsToolbar,
@@ -46,6 +46,22 @@ const ProjectPreview = dynamic(
   },
 );
 
+function ProjectEditorHeader({
+  isNew = false,
+  ...rest
+}: { isNew?: boolean } & Partial<ComponentProps<typeof CmsPageHeader>>) {
+  const router = useRouter();
+  return (
+    <CmsPageHeader
+      onBack={() => router.push("/admin/projects")}
+      backLabel="Back to projects"
+      title={isNew ? "New project" : "Edit project"}
+      description="Shape your project, then preview it as visitors will see it."
+      {...rest}
+    />
+  );
+}
+
 export function ProjectEditor({
   id,
   uploadConfig = { url: "", publishableKey: "" },
@@ -57,18 +73,23 @@ export function ProjectEditor({
   // "new" needs no existing record, so it never waits on the collection.
   const { data, isPending, isError, refetch } = useProjectsQuery();
   if (id === "new") return <ProjectEditorForm uploadConfig={uploadConfig} />;
-  if (isPending) return <LoadingState label="Loading project" />;
+  if (isPending)
+    return (
+      <>
+        <ProjectEditorHeader />
+        <LoadingState label="Loading project" />
+      </>
+    );
   if (isError)
     return (
-      <CmsEmptyState
-        title="Couldn’t load this project"
-        description="The project could not be read. Check your connection and try again."
-        action={
-          <Button variant="ghost" onPress={() => void refetch()}>
-            Try again
-          </Button>
-        }
-      />
+      <>
+        <ProjectEditorHeader />
+        <CmsLoadError
+          title="Couldn’t load this project"
+          description="The project could not be read. Check your connection and try again."
+          onRetry={() => void refetch()}
+        />
+      </>
     );
   const record = data.find((item) => item.id === id);
   if (!record)
@@ -214,7 +235,13 @@ function ProjectEditorForm({
       setSaving(false);
     }
   }
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (!ready)
+    return (
+      <>
+        <ProjectEditorHeader isNew={!initialRecord} />
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   if (preview)
     return (
       <CmsPreviewFrame
@@ -228,12 +255,9 @@ function ProjectEditorForm({
     );
   return (
     <>
-      <CmsPageHeader
-        onBack={() => router.push("/admin/projects")}
-        backLabel="Back to projects"
+      <ProjectEditorHeader
+        isNew={!initialRecord}
         backDisabled={pending}
-        title={initialRecord ? "Edit project" : "New project"}
-        description="Shape your project, then preview it as visitors will see it."
         status={
           record ? projectStatus({ ...record, draft: value }) : "New draft"
         }

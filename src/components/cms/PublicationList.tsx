@@ -16,6 +16,7 @@ import { LoadingState } from "@/src/components/ui/LoadingState";
 import { CmsCollectionToolbar } from "./CmsCollectionToolbar";
 import {
   CmsEmptyState,
+  CmsLoadError,
   CmsPageHeader,
   CmsFeedback,
   CmsRecordRow,
@@ -75,18 +76,44 @@ export function PublicationList() {
     });
   }
 
-  if (isPending) return <LoadingState label="Loading publications" />;
+  const header = (
+    <CmsPageHeader
+      title="Publications"
+      description="Ideas, observations, and work worth sharing. Start a draft or return to a story."
+      action={
+        <CmsCollectionActions
+          collection="publication"
+          pending={pending || !data}
+          onNew={() => {
+            working.clear("new");
+            router.push("/admin/publications/new");
+          }}
+          onPreview={() => {
+            capture("publication-section-trigger");
+            setPreview(true);
+          }}
+        />
+      }
+    />
+  );
+
+  if (isPending)
+    return (
+      <>
+        {header}
+        <LoadingState label="Loading publications" />
+      </>
+    );
   if (isError)
     return (
-      <CmsEmptyState
-        title="Couldn’t load publications"
-        description="The list could not be read. Check your connection and try again."
-        action={
-          <Button variant="ghost" onPress={() => void refetch()}>
-            Try again
-          </Button>
-        }
-      />
+      <>
+        {header}
+        <CmsLoadError
+          title="Couldn’t load publications"
+          description="The list could not be read. Check your connection and try again."
+          onRetry={() => void refetch()}
+        />
+      </>
     );
   if (preview)
     return (
@@ -101,24 +128,7 @@ export function PublicationList() {
     );
   return (
     <>
-      <CmsPageHeader
-        title="Publications"
-        description="Ideas, observations, and work worth sharing. Start a draft or return to a story."
-        action={
-          <CmsCollectionActions
-            collection="publication"
-            pending={pending}
-            onNew={() => {
-              working.clear("new");
-              router.push("/admin/publications/new");
-            }}
-            onPreview={() => {
-              capture("publication-section-trigger");
-              setPreview(true);
-            }}
-          />
-        }
-      />
+      {header}
       <CmsCollectionToolbar
         collection="publications"
         search={search}

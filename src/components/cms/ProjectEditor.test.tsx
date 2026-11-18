@@ -567,6 +567,8 @@ it("shows loading, then offers a retry when the Project list cannot be read", as
     await screen.findByRole("status", { name: "Loading project" }),
   ).toBeTruthy();
   await screen.findByRole("heading", { name: "Couldn’t load this project" });
+  expect(screen.getByRole("heading", { level: 1, name: "Edit project" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Back to projects" })).toBeTruthy();
   list.mockResolvedValue(initialProjects());
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByRole("textbox", { name: "Name" })).toBeTruthy();

@@ -15,6 +15,7 @@ import { Button } from "@/src/components/ui/Button";
 import { LoadingState } from "@/src/components/ui/LoadingState";
 import {
   CmsEmptyState,
+  CmsLoadError,
   CmsPageHeader,
   CmsFeedback,
   CmsRecordRow,
@@ -73,18 +74,44 @@ export function ProjectList() {
     });
   }
 
-  if (isPending) return <LoadingState label="Loading projects" />;
+  const header = (
+    <CmsPageHeader
+      title="Projects"
+      description="The work you want to share."
+      action={
+        <CmsCollectionActions
+          collection="project"
+          pending={pending || !data}
+          onNew={() => {
+            working.clear("new");
+            router.push("/admin/projects/new");
+          }}
+          onPreview={() => {
+            capture("project-section-trigger");
+            setPreview(true);
+          }}
+        />
+      }
+    />
+  );
+
+  if (isPending)
+    return (
+      <>
+        {header}
+        <LoadingState label="Loading projects" />
+      </>
+    );
   if (isError)
     return (
-      <CmsEmptyState
-        title="Couldn’t load projects"
-        description="The list could not be read. Check your connection and try again."
-        action={
-          <Button variant="ghost" onPress={() => void refetch()}>
-            Try again
-          </Button>
-        }
-      />
+      <>
+        {header}
+        <CmsLoadError
+          title="Couldn’t load projects"
+          description="The list could not be read. Check your connection and try again."
+          onRetry={() => void refetch()}
+        />
+      </>
     );
   if (preview)
     return (
@@ -99,24 +126,7 @@ export function ProjectList() {
     );
   return (
     <>
-      <CmsPageHeader
-        title="Projects"
-        description="The work you want to share."
-        action={
-          <CmsCollectionActions
-            collection="project"
-            pending={pending}
-            onNew={() => {
-              working.clear("new");
-              router.push("/admin/projects/new");
-            }}
-            onPreview={() => {
-              capture("project-section-trigger");
-              setPreview(true);
-            }}
-          />
-        }
-      />
+      {header}
       <CmsCollectionToolbar
         collection="projects"
         search={search}

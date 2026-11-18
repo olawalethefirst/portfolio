@@ -117,6 +117,10 @@ it("shows the shared spinner with no visible loading text while the record loads
   expect(
     screen.getByRole("status", { name: "Loading SEO record" }).textContent,
   ).toBe("");
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Edit SEO override" }),
+  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Back to SEO" })).toBeTruthy();
   expect(screen.queryByRole("textbox")).toBeNull();
   await waitFor(() => expect(finish).toBeTypeOf("function"));
   await act(async () => finish());
@@ -141,10 +145,17 @@ it.each([401, 403, 404, 500])(
     );
     render(<Page />);
     await screen.findByRole("alert");
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Edit SEO override" }),
+    ).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(
       fetch.mock.calls.filter(([url]) => url.endsWith(overrideId)),
     ).toHaveLength(1);
+    // A missing record cannot be fixed by retrying; any other failure can.
+    expect(Boolean(screen.queryByRole("button", { name: "Try again" }))).toBe(
+      status !== 404,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Back to SEO" }));
     expect(push).toHaveBeenCalledWith("/admin/seo");
   },

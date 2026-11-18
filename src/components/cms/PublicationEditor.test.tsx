@@ -179,6 +179,8 @@ it("shows loading, then offers a retry when the Publication list cannot be read"
   await screen.findByRole("heading", {
     name: "Couldn’t load this publication",
   });
+  expect(screen.getByRole("heading", { level: 1, name: "Edit publication" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Back to publications" })).toBeTruthy();
   list.mockResolvedValue(initialPublications());
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(await screen.findByRole("textbox", { name: "Title" })).toBeTruthy();

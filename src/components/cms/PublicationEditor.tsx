@@ -3,7 +3,7 @@
 import { Maximize2, Save, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Form } from "@heroui/react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ComponentProps } from "react";
 import { useCms } from "@/src/cms/CmsProvider";
 import {
   usePublicationMutations,
@@ -23,7 +23,7 @@ import {
 import { Button } from "@/src/components/ui/Button";
 import { LoadingState } from "@/src/components/ui/LoadingState";
 import {
-  CmsEmptyState,
+  CmsLoadError,
   CmsFeedback,
   CmsPageHeader,
   CmsToolbar,
@@ -40,6 +40,22 @@ import { PublicationFields } from "./PublicationFields";
 import { PublicationPreview } from "./PublicationPreview";
 import { PublicationWriting } from "./PublicationWriting";
 
+function PublicationEditorHeader({
+  isNew = false,
+  ...rest
+}: { isNew?: boolean } & Partial<ComponentProps<typeof CmsPageHeader>>) {
+  const router = useRouter();
+  return (
+    <CmsPageHeader
+      onBack={() => router.push("/admin/publications")}
+      backLabel="Back to publications"
+      title={isNew ? "New publication" : "Edit publication"}
+      description="Shape your story, then see it through your readers’ eyes."
+      {...rest}
+    />
+  );
+}
+
 export function PublicationEditor({
   id,
   uploadConfig = { url: "", publishableKey: "" },
@@ -52,18 +68,23 @@ export function PublicationEditor({
   const { data, isPending, isError, refetch } = usePublicationsQuery();
   if (id === "new")
     return <PublicationEditorForm uploadConfig={uploadConfig} />;
-  if (isPending) return <LoadingState label="Loading publication" />;
+  if (isPending)
+    return (
+      <>
+        <PublicationEditorHeader />
+        <LoadingState label="Loading publication" />
+      </>
+    );
   if (isError)
     return (
-      <CmsEmptyState
-        title="Couldn’t load this publication"
-        description="The publication could not be read. Check your connection and try again."
-        action={
-          <Button variant="ghost" onPress={() => void refetch()}>
-            Try again
-          </Button>
-        }
-      />
+      <>
+        <PublicationEditorHeader />
+        <CmsLoadError
+          title="Couldn’t load this publication"
+          description="The publication could not be read. Check your connection and try again."
+          onRetry={() => void refetch()}
+        />
+      </>
     );
   const record = data.find((item) => item.id === id);
   if (!record)
@@ -235,7 +256,13 @@ function PublicationEditorForm({
     }
   }
 
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (!ready)
+    return (
+      <>
+        <PublicationEditorHeader isNew={!initialRecord} />
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   if (writing)
     return (
       <PublicationWriting
@@ -278,12 +305,9 @@ function PublicationEditorForm({
 
   return (
     <>
-      <CmsPageHeader
-        onBack={() => router.push("/admin/publications")}
-        backLabel="Back to publications"
+      <PublicationEditorHeader
+        isNew={!initialRecord}
         backDisabled={pending}
-        title={initialRecord ? "Edit publication" : "New publication"}
-        description="Shape your story, then see it through your readers’ eyes."
         status={
           record ? publicationState({ ...record, draft: value }) : "New draft"
         }

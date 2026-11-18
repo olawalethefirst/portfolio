@@ -120,6 +120,10 @@ it("reports loading before the collection arrives", async () => {
   expect(
     await screen.findByRole("status", { name: "Loading projects" }),
   ).toBeTruthy();
+  expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeTruthy();
+  expect(
+    (screen.getByRole("button", { name: "Preview projects" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
 });
 
 it("offers a retry when the collection cannot be read", async () => {
@@ -128,6 +132,7 @@ it("offers a retry when the collection cannot be read", async () => {
     .mockRejectedValueOnce(new ApiRequestError("network", null));
   render(<ProjectList />);
   await screen.findByRole("heading", { name: "Couldn’t load projects" });
+  expect(screen.getByRole("heading", { level: 1, name: "Projects" })).toBeTruthy();
   list.mockResolvedValue(initialProjects());
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(

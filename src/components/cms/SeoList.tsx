@@ -10,6 +10,7 @@ import { LoadingState } from "@/src/components/ui/LoadingState";
 import { CmsCollectionToolbar } from "./CmsCollectionToolbar";
 import {
   CmsEmptyState,
+  CmsLoadError,
   CmsFeedback,
   CmsPageHeader,
   CmsRecordLink,
@@ -18,7 +19,7 @@ import {
 
 export function SeoList() {
   const router = useRouter();
-  const { data, error } = useSeoQuery();
+  const { data, error, refetch } = useSeoQuery();
   const defaults = data?.find((record) => record.path === "/");
   const records = data?.filter((record) => record.path !== "/") ?? [];
   const unavailable = !defaults || Boolean(error);
@@ -58,9 +59,11 @@ export function SeoList() {
       <>
         {header}
         {error ? (
-          <CmsFeedback error="Couldn’t load saved SEO content.">
-            {null}
-          </CmsFeedback>
+          <CmsLoadError
+            title="Couldn’t load SEO content"
+            description="The saved SEO content could not be read. Check your connection and try again."
+            onRetry={() => void refetch()}
+          />
         ) : (
           <LoadingState label="Loading SEO" />
         )}
@@ -70,15 +73,17 @@ export function SeoList() {
     return (
       <>
         {header}
-        <CmsFeedback
-          error={
-            error
-              ? "Couldn’t load saved SEO content."
-              : "The saved SEO defaults are unavailable."
+        <CmsLoadError
+          title={
+            error ? "Couldn’t load SEO content" : "SEO defaults unavailable"
           }
-        >
-          {null}
-        </CmsFeedback>
+          description={
+            error
+              ? "The saved SEO content could not be read. Check your connection and try again."
+              : "The saved SEO defaults could not be found."
+          }
+          onRetry={error ? () => void refetch() : undefined}
+        />
       </>
     );
   return (

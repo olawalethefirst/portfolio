@@ -62,8 +62,9 @@ API error codes are defined in `src/api/errors.ts`, shared with the client respo
 schema. The server's status map is exhaustively typed against the same codes.
 
 The editor waits for real saved content instead of using sample content as a
-remote baseline. Load failures use existing CMS feedback. Authentication recovery belongs to the global
-application policy; Hero adds no sign-in navigation or recovery controls.
+remote baseline. A load failure shows the shared CMS load-error state under the
+page header, with a Try again that refetches. Authentication recovery belongs to
+the global application policy; Hero adds no sign-in navigation.
 Save feedback and field errors are derived from mutation state, reset on edit or
 discard, with fields and actions disabled while Save is pending.
 Server field issues use an explicit

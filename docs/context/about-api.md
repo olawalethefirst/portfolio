@@ -39,8 +39,9 @@ outstanding About reads and captures input once through `aboutSchema.parse`.
 An unconfirmed network/malformed response invalidates the saved query but retains
 local input, because a missing response does not prove the write failed.
 
-Initial rendering waits for saved content. Read failures display existing CMS
-feedback without demo fallback or new sign-in/recovery controls. Server validation
+Initial rendering waits for saved content. A read failure shows the shared CMS
+load-error state under the page header (Try again refetches) without demo
+fallback or new sign-in navigation. Server validation
 issues use an explicit heading/biography pointer allowlist; unknown issues remain
 form feedback. Focus follows visual order and is guarded against unmounting.
 Mutation state owns Save errors, which reset on typing, field source selection,

@@ -129,6 +129,7 @@ it("offers a retry when the collection cannot be read", async () => {
     .mockRejectedValueOnce(new ApiRequestError("network", null));
   render(<PublicationList />);
   await screen.findByRole("heading", { name: "Couldn’t load publications" });
+  expect(screen.getByRole("heading", { level: 1, name: "Publications" })).toBeTruthy();
   list.mockResolvedValue(initialPublications());
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(

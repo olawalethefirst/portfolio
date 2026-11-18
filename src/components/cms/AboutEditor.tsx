@@ -25,6 +25,7 @@ import { CmsField } from "./CmsField";
 import {
   CmsEditorContent,
   CmsFeedback,
+  CmsLoadError,
   CmsFieldSection,
   CmsFooter,
   CmsPageHeader,
@@ -42,8 +43,15 @@ const AboutPreview = dynamic(
   },
 );
 
+const aboutHeader = (
+  <CmsPageHeader
+    title="About"
+    description="Edit your introduction and biography. The conversation CTA stays fixed."
+  />
+);
+
 export function AboutEditor() {
-  const { data: saved, error: loadError } = useAboutQuery();
+  const { data: saved, error: loadError, refetch } = useAboutQuery();
   const working = useDraftStore({
     namespace: "about",
     schema: aboutDraftSchema,
@@ -51,12 +59,13 @@ export function AboutEditor() {
   if (!saved)
     return (
       <>
-        <CmsPageHeader
-          title="About"
-          description="Edit your introduction and biography. The conversation CTA stays fixed."
-        />
+        {aboutHeader}
         {loadError ? (
-          <CmsFeedback error="Couldn’t load About content.">{null}</CmsFeedback>
+          <CmsLoadError
+            title="Couldn’t load About"
+            description="The saved About content could not be read. Check your connection and try again."
+            onRetry={() => void refetch()}
+          />
         ) : (
           <LoadingState label="Loading saved About" />
         )}
@@ -144,7 +153,13 @@ function AboutEditorForm({
     }
   }
 
-  if (!ready) return <p role="status">Restoring local draft…</p>;
+  if (!ready)
+    return (
+      <>
+        {aboutHeader}
+        <LoadingState label="Restoring local draft" />
+      </>
+    );
   if (preview)
     return (
       <CmsPreviewFrame
@@ -158,10 +173,7 @@ function AboutEditorForm({
     );
   return (
     <>
-      <CmsPageHeader
-        title="About"
-        description="Edit your introduction and biography. The conversation CTA stays fixed."
-      />
+      {aboutHeader}
       <CmsToolbar
         actions={
           <Button
