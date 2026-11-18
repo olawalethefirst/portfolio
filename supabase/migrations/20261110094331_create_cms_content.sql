@@ -99,6 +99,19 @@ create table public.published_publications (
   )
 );
 
+-- Visitor-authored, anonymous (no account/session), immutable once posted:
+-- no edit column, no app role beyond the owner's own cascading delete.
+-- One level of nesting only: a reply's parent must itself be a top-level
+-- comment, matching CommentThreadData's shape (thread + flat replies).
+create table public.publication_comments (
+  id uuid primary key default gen_random_uuid(),
+  publication_id uuid not null references public.publications(id) on delete cascade,
+  parent_id uuid references public.publication_comments(id) on delete cascade,
+  name text not null check (btrim(name) <> ''),
+  body_markdown text not null check (btrim(body_markdown) <> ''),
+  created_at timestamptz not null default now()
+);
+
 create table public.seo (
   id uuid primary key default gen_random_uuid(),
   path text not null unique,
@@ -121,6 +134,8 @@ create table public.seo (
 
 create index projects_order_idx on public.projects (position, id);
 create index publications_order_idx on public.publications (position, id);
+create index publication_comments_publication_idx
+  on public.publication_comments (publication_id, created_at);
 
 create function public.cms_touch_updated_at()
 returns trigger language plpgsql set search_path = '' as $$
@@ -165,7 +180,8 @@ declare
 begin
   foreach content_table in array array[
     'hero_content', 'about_content', 'social_content',
-    'projects', 'published_projects', 'publications', 'published_publications', 'seo'
+    'projects', 'published_projects', 'publications', 'published_publications',
+    'publication_comments', 'seo'
   ] loop
     execute format('alter table public.%I enable row level security', content_table);
   end loop;
