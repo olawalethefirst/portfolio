@@ -12,11 +12,18 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 vi.mock("@/src/db/publications", () => ({ readPublication: vi.fn() }));
+vi.mock("@/src/db/publication-comments", () => ({
+  listPublicationComments: vi.fn(async () => []),
+}));
+vi.mock("@/src/cms/publication-comment-api", () => ({
+  publicationCommentApi: { post: vi.fn(), list: vi.fn() },
+}));
 vi.mock("../../LabThemeShell", () => ({
   LabThemeShell: ({ children }: { children: ReactNode }) => children,
 }));
 
 import { readPublication } from "@/src/db/publications";
+import { listPublicationComments } from "@/src/db/publication-comments";
 import PublicationPage, { generateMetadata } from "./page";
 
 const published: PublicationDraft = {
@@ -57,6 +64,41 @@ it("renders the published article with tags and reading time", async () => {
   );
   expect(screen.getByText("1 min read")).toBeTruthy();
   expect(screen.getByAltText("Layered geometric forms")).toBeTruthy();
+});
+
+it("server-renders existing comments as threads with replies", async () => {
+  vi.mocked(readPublication).mockResolvedValue({
+    id: "publication-1",
+    draft: published,
+    published,
+  });
+  const row = (id: string, parentId: string | null, name: string, text: string) => ({
+    id,
+    publicationId: "publication-1",
+    parentId,
+    name,
+    bodyMarkdown: text,
+    createdAt: "2026-10-01 10:00:00+00",
+  });
+  vi.mocked(listPublicationComments).mockResolvedValue([
+    row("c1", null, "Ada", "First comment."),
+    row("c2", "c1", "Sam", "A reply."),
+  ]);
+  render(await PublicationPage({ params }));
+  expect(listPublicationComments).toHaveBeenCalledWith("publication-1");
+  expect(screen.getByText("First comment.")).toBeTruthy();
+  expect(screen.getByText("A reply.")).toBeTruthy();
+});
+
+it("does not read comments for an unpublished publication", async () => {
+  vi.mocked(listPublicationComments).mockClear();
+  vi.mocked(readPublication).mockResolvedValue({
+    id: "publication-1",
+    draft: published,
+    published: null,
+  });
+  await expect(PublicationPage({ params })).rejects.toThrow("NOT_FOUND");
+  expect(listPublicationComments).not.toHaveBeenCalled();
 });
 
 it("denies access when the publication has no published snapshot", async () => {

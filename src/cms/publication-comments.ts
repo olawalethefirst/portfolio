@@ -67,3 +67,13 @@ export const publicationCommentSchema = z.object({
       `Use ${CONTENT_LIMITS.comment.body} characters or fewer.`,
     ),
 });
+
+const commentViewSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  date: z.string(),
+  text: z.string(),
+});
+export const commentThreadsResponseSchema = z.object({
+  threads: z.array(commentViewSchema.extend({ replies: z.array(commentViewSchema) })),
+});

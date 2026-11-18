@@ -8,6 +8,10 @@ import {
   publicationTags,
   readingTimeMinutes,
 } from "@/src/cms/publications";
+import { toCommentThreads } from "@/src/cms/publication-comments";
+import { QueryProvider } from "@/src/api/QueryProvider";
+import { PublicationComments } from "@/src/components/publication-comments/PublicationComments";
+import { listPublicationComments } from "@/src/db/publication-comments";
 import { readPublication } from "@/src/db/publications";
 
 import { LabThemeShell } from "../../LabThemeShell";
@@ -38,6 +42,8 @@ export default async function PublicationPage({
   const { id } = await params;
   const published = await loadPublished(id);
   if (!published) notFound();
+  // Initial comments are server-rendered; posting and refresh use the public API.
+  const threads = toCommentThreads(await listPublicationComments(id));
 
   return (
     <LabThemeShell>
@@ -55,6 +61,9 @@ export default async function PublicationPage({
             tags: publicationTags(published.tagsText),
           }}
         />
+        <QueryProvider>
+          <PublicationComments publicationId={id} initialThreads={threads} />
+        </QueryProvider>
       </main>
       <footer>
         <AboutCtaSection />

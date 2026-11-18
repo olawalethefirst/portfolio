@@ -1,16 +1,11 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { QueryProvider } from "@/src/api/QueryProvider";
 
 const AccountContext = createContext<string | null>(null);
 
+/** A new account remounts the boundary, discarding the previous account's cache. */
 export function CmsQueryProvider({
   accountId,
   children,
@@ -19,38 +14,9 @@ export function CmsQueryProvider({
   children: ReactNode;
 }) {
   return (
-    <AccountQueries key={accountId} accountId={accountId}>
-      {children}
-    </AccountQueries>
-  );
-}
-
-function AccountQueries({
-  accountId,
-  children,
-}: {
-  accountId: string;
-  children: ReactNode;
-}) {
-  const [client] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: { retry: false, networkMode: "always" },
-          mutations: { retry: false, networkMode: "always" },
-        },
-      }),
-  );
-  useEffect(
-    () => () => {
-      client.clear();
-    },
-    [client],
-  );
-  return (
-    <AccountContext value={accountId}>
-      <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    </AccountContext>
+    <QueryProvider key={accountId}>
+      <AccountContext value={accountId}>{children}</AccountContext>
+    </QueryProvider>
   );
 }
 
