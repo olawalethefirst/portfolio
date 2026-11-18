@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 it("toggles mode without changing the selected tone", () => {
-  renderControls({ theme: "forest" });
+  renderControls({ theme: "forest", mode: "light" });
   fireEvent.click(screen.getByRole("button", { name: "Switch to dark mode" }));
   expect(document.documentElement.dataset.mode).toBe("dark");
   expect(screen.getByRole("button", { name: "Choose tone, current: Forest" })).toBeTruthy();

@@ -16,6 +16,7 @@ vi.mock("next/font/google", () => ({
 }));
 vi.mock("@/src/components/ui/ToastProvider", () => ({ ToastProvider: () => null }));
 
+import { MODE_INIT_SCRIPT } from "@/src/theme/appearance";
 import RootLayout from "./layout";
 
 const render = async () =>
@@ -25,8 +26,14 @@ beforeEach(() => {
   for (const key of Object.keys(cookieValues)) delete cookieValues[key];
 });
 
-it("renders the default theme when the visitor has not chosen", async () => {
-  expect(await render()).toContain('data-theme="chartreuse" data-mode="light"');
+it("renders the dark default when the visitor has not chosen", async () => {
+  expect(await render()).toContain('data-theme="chartreuse" data-mode="dark"');
+});
+
+it("puts the device-scheme script in the head, before the body", async () => {
+  const html = await render();
+  expect(html.indexOf(MODE_INIT_SCRIPT)).toBeGreaterThan(html.indexOf("<head>"));
+  expect(html.indexOf(MODE_INIT_SCRIPT)).toBeLessThan(html.indexOf("<body"));
 });
 
 it("renders the visitor's saved choices on the server", async () => {
@@ -38,7 +45,7 @@ it("renders the visitor's saved choices on the server", async () => {
 it("resolves each dimension independently and ignores unknown values", async () => {
   cookieValues["portfolio-theme"] = "plum";
   cookieValues["portfolio-mode"] = "sepia";
-  expect(await render()).toContain('data-theme="plum" data-mode="light"');
+  expect(await render()).toContain('data-theme="plum" data-mode="dark"');
 });
 
 it("still renders the page content", async () => {

@@ -6,18 +6,30 @@ the applied theme is expressed for every route: the CSS, the Tailwind `dark`
 variant and the Prism scene read the attributes. The root layout reads the
 `portfolio-theme` and `portfolio-mode` cookies (`parseAppearance` in
 `src/theme/appearance.ts`), renders the attributes from them (else
-`DEFAULT_THEME` from `src/theme/theme.ts`) and seeds the provider with the same
-choices, so server and client agree on first paint. Shells and pages must not add
-local theme attributes or reset selection when mounted. System-mode selection is
-not yet implemented.
+`DEFAULT_THEME` from `src/theme/theme.ts`: chartreuse, dark) and seeds the
+provider with the same choices, so server and client agree on first paint.
+Shells and pages must not add local theme attributes or reset selection when
+mounted.
 
-`useAppearance()` returns the applied `theme` and `mode` (the choice, else the
-default per dimension) with `setTheme` and `setMode`. The setters write the
-cookie, set the matching `<html>` attribute and update provider state. Outside a
-provider (isolated renders) the hook returns the defaults with no-op setters.
-Direct edits to the attributes are not observed: change appearance through the
-setters. The 3D `<Canvas>` receives the context through `@react-three/fiber`'s
-context bridge.
+Mode follows the device until the visitor chooses one. The server cannot know the
+device scheme, so it renders the dark default and a blocking inline script in
+`<head>` (`MODE_INIT_SCRIPT`) switches `data-mode` to light before first paint
+when there is no valid saved mode and the device prefers a light scheme.
+`<html>` carries `suppressHydrationWarning` for that one attribute. With no
+explicit mode the provider keeps following the device (a
+`prefers-color-scheme: light` listener); an explicit choice from the toggle
+writes the cookie and stops following. The detected device value is never
+stored, so a device change still applies to visitors who never chose. A saved
+choice is rendered by the server and the script does nothing.
+
+`useAppearance()` returns the applied `theme` and `mode` with `setTheme` and
+`setMode`. The setters write the cookie and update provider state; a layout
+effect applies the applied values to `<html>` on every change and remount, which
+also repairs the attributes after React Strict Mode's development remount clears
+them. Outside a provider (isolated renders) the hook returns the defaults with
+no-op setters. Direct edits to the attributes are not observed: change
+appearance through the setters. The 3D `<Canvas>` receives the context through
+`@react-three/fiber`'s context bridge.
 
 Palette values remain in `src/styles/design-tokens.css`. Selectors are scoped to
 HTML, and the Tailwind `dark` variant uses `html[data-mode="dark"]` explicitly

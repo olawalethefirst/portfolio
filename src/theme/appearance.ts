@@ -1,4 +1,9 @@
-import { isThemeMode, isThemeName, type ThemeMode, type ThemeName } from "./theme";
+import {
+  isThemeMode,
+  isThemeName,
+  type ThemeMode,
+  type ThemeName,
+} from "./theme";
 
 /** Cookies holding the visitor's explicit choices; absent means "no choice". */
 export const THEME_COOKIE = "portfolio-theme";
@@ -23,3 +28,18 @@ export function parseAppearance(
     mode: isThemeMode(mode) ? mode : undefined,
   };
 }
+
+/**
+ * Runs in <head> before first paint. With no valid saved mode it follows the
+ * device: the server renders the dark default, so only a light-scheme device
+ * needs correcting. Saved choices are rendered by the server, not this script.
+ */
+export const MODE_INIT_SCRIPT = `(
+  function() {
+    try {
+      var m = document.cookie.match(/(?:^|; )${MODE_COOKIE}=(light|dark)(?:;|$)/);
+      if (!m && matchMedia("(prefers-color-scheme: light)").matches)
+        document.documentElement.dataset.mode = "light";
+    } catch (e) {}
+  }
+)()`;

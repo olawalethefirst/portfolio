@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { cookies } from "next/headers";
 import { AppearanceProvider } from "@/src/theme/AppearanceProvider";
-import { parseAppearance } from "@/src/theme/appearance";
+import { MODE_INIT_SCRIPT, parseAppearance } from "@/src/theme/appearance";
 import { DEFAULT_THEME } from "@/src/theme/theme";
 import { ToastProvider } from "@/src/components/ui/ToastProvider";
 
@@ -33,7 +33,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       data-theme={choice.theme ?? DEFAULT_THEME.theme}
       data-mode={choice.mode ?? DEFAULT_THEME.mode}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The head script may switch data-mode to the device's scheme before hydration.
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: MODE_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <AppearanceProvider initial={choice}>
           <ToastProvider />

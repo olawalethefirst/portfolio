@@ -9,7 +9,7 @@ export interface ActiveTheme {
 
 export const DEFAULT_THEME: ActiveTheme = Object.freeze({
   theme: "chartreuse",
-  mode: "light",
+  mode: "dark",
 });
 
 export function isThemeName(value: unknown): value is ThemeName {
