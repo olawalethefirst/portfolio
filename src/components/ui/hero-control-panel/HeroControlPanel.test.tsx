@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { motionValue } from "motion/react";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -89,5 +89,39 @@ describe("HeroControlPanel", () => {
     expect(
       screen.getByRole("button", { name: "Play autoplay" }).hasAttribute("disabled"),
     ).toBe(true);
+  });
+
+  describe("autoplay progress", () => {
+    const panel = (progress: ReturnType<typeof motionValue<number>>, running: boolean) => (
+      <HeroControlPanel
+        activeSegment="idea"
+        autoplayProgress={progress}
+        canAutoplay
+        isAutoplayRunning={running}
+        onAutoplayToggle={vi.fn()}
+        onRecentre={vi.fn()}
+        onSegmentSelect={vi.fn()}
+      />
+    );
+    const value = () =>
+      screen.getByRole("progressbar", { name: "Autoplay progress" }).getAttribute("aria-valuenow");
+
+    it("shows the motion value while autoplay runs and follows its changes", () => {
+      const progress = motionValue(42);
+      render(panel(progress, true));
+      expect(value()).toBe("42");
+      act(() => progress.set(77));
+      expect(value()).toBe("77");
+    });
+
+    it("shows no progress while autoplay is stopped, then resumes from the live value", () => {
+      const progress = motionValue(42);
+      const { rerender } = render(panel(progress, false));
+      expect(value()).toBe("0");
+      act(() => progress.set(60));
+      expect(value()).toBe("0");
+      rerender(panel(progress, true));
+      expect(value()).toBe("60");
+    });
   });
 });

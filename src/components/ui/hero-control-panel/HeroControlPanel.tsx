@@ -1,8 +1,8 @@
 "use client";
 
 import { Pause, Play, SquareCenterlineDashedHorizontal } from "lucide-react";
-import type { MotionValue } from "motion/react";
-import { useCallback, useSyncExternalStore } from "react";
+import { useMotionValueEvent, type MotionValue } from "motion/react";
+import { useState } from "react";
 
 import {
   PRISM_STATES,
@@ -38,18 +38,8 @@ function MotionProgress({
   autoplayProgress,
   isAutoplayRunning,
 }: MotionProgressProps) {
-  const subscribe = useCallback(
-    (onStoreChange: () => void) =>
-      isAutoplayRunning
-        ? autoplayProgress.on("change", onStoreChange)
-        : () => undefined,
-    [autoplayProgress, isAutoplayRunning],
-  );
-  const getSnapshot = useCallback(
-    () => isAutoplayRunning ? autoplayProgress.get() : 0,
-    [autoplayProgress, isAutoplayRunning],
-  );
-  const progress = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const [progress, setProgress] = useState(() => autoplayProgress.get());
+  useMotionValueEvent(autoplayProgress, "change", setProgress);
 
   return (
     <Progress
@@ -57,7 +47,7 @@ function MotionProgress({
       maxValue={100}
       minValue={0}
       size="xs"
-      value={progress}
+      value={isAutoplayRunning ? progress : 0}
       className="-translate-y-0.5"
     />
   );
