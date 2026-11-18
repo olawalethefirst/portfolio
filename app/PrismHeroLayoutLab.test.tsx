@@ -147,7 +147,8 @@ describe("PrismHeroLayoutLab", () => {
       />,
     );
     const about = screen.getByRole("region", { name: "Meet the maker" });
-    expect(within(about).getByText("Saved server biography.")).toBeTruthy();
+    // The scroll reveal splits the biography into spans, so match its text content.
+    expect(about.textContent).toContain("Saved server biography.");
     expect(
       within(about)
         .getByRole("link", { name: "Start a conversation" })

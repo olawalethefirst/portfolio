@@ -4,7 +4,8 @@ import { useGSAP } from "@gsap/react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { MailPen } from "lucide-react";
-import { useId, useRef, useSyncExternalStore } from "react";
+import { useReducedMotion } from "motion/react";
+import { useId, useRef } from "react";
 
 import { Button } from "@/src/components/ui/Button";
 import { PerspectiveGridSection } from "@/src/components/ui/PerspectiveGridSection";
@@ -14,24 +15,6 @@ import { createSummaryReveal } from "./reveal";
 import { ABOUT_DEFAULT_CONTENT } from "./about-content";
 
 gsap.registerPlugin(useGSAP);
-
-const motionQuery = "(prefers-reduced-motion: reduce)";
-
-// Server output stays intact; subscribe to live preference changes after hydration.
-function subscribeToMotionPreference(onChange: () => void) {
-  if (typeof window.matchMedia !== "function") return () => {};
-  const media = window.matchMedia(motionQuery);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-}
-
-function canAnimate() {
-  return typeof window.matchMedia === "function" && !window.matchMedia(motionQuery).matches;
-}
-
-function serverCanAnimate() {
-  return false;
-}
 
 interface AboutCtaSectionProps {
   heading?: string;
@@ -45,11 +28,9 @@ export function AboutCtaSection({
   const titleId = useId();
   const sectionRef = useRef<HTMLElement>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
-  const animate = useSyncExternalStore(
-    subscribeToMotionPreference,
-    canAnimate,
-    serverCanAnimate,
-  );
+  // Null on the server and when unknown: the text stays fully readable. The
+  // preference is read when the page loads, not followed live.
+  const animate = useReducedMotion() === false;
   useGSAP((context) => {
     if (!animate || !summaryRef.current) return;
     let cancelled = false;

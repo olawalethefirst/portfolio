@@ -1,25 +1,21 @@
-import { act, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 
 import { AboutCtaSection } from "./AboutCtaSection";
 
 afterEach(() => vi.unstubAllGlobals());
 
-function reducedMotionPreference(initial: boolean) {
+const reduced = vi.hoisted(() => ({ value: false as boolean | null }));
+vi.mock("motion/react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("motion/react")>()),
+  useReducedMotion: () => reduced.value,
+}));
+
+beforeEach(() => {
   vi.stubGlobal("scrollTo", vi.fn());
-  let matches = initial;
-  const listeners = new Set<() => void>();
-  vi.stubGlobal("matchMedia", vi.fn(() => ({
-    get matches() { return matches; },
-    addEventListener: (_event: string, listener: () => void) => listeners.add(listener),
-    removeEventListener: (_event: string, listener: () => void) => listeners.delete(listener),
-  })));
-  return (next: boolean) => act(() => {
-    matches = next;
-    listeners.forEach((listener) => listener());
-  });
-}
+  reduced.value = true;
+});
 
 describe("About CTA", () => {
   it("renders fully readable text on the server", () => {
@@ -28,19 +24,20 @@ describe("About CTA", () => {
     expect(markup).not.toContain("opacity:");
   });
 
-  it("restores full visibility when reduced motion changes live", () => {
-    const setPreference = reducedMotionPreference(false);
-    render(<AboutCtaSection summary="Hello." />);
-    setPreference(true);
-    const paragraph = screen.getByText("Hello.", { selector: "p" });
+  it.each([
+    ["reveals the summary when reduced motion is off", false, true],
+    ["keeps the summary fully visible when reduced motion is on", true, false],
+    ["keeps the summary fully visible when the preference is unknown", null, false],
+  ])("%s", (_name, preference, revealed) => {
+    reduced.value = preference;
+    const { container } = render(<AboutCtaSection summary="Hello." />);
+    // The reveal splits the text into spans, so find the paragraph structurally.
+    const paragraph = container.querySelector("p") as HTMLElement;
     expect(paragraph.textContent).toBe("Hello.");
-    expect(paragraph.querySelector("[style*='opacity']")).toBeNull();
-    setPreference(false);
-    expect(paragraph.querySelector("[style*='opacity']")).not.toBeNull();
+    expect(Boolean(paragraph.querySelector("[style*='opacity']"))).toBe(revealed);
   });
 
   it("accepts editable heading and biography without changing its contact CTA", () => {
-    reducedMotionPreference(true);
     render(<AboutCtaSection heading="Meet the maker" summary="A custom biography." />);
     expect(screen.getByRole("region", { name: "Meet the maker" })).toBeTruthy();
     expect(screen.getByText("A custom biography.")).toBeTruthy();
@@ -48,7 +45,6 @@ describe("About CTA", () => {
   });
 
   it("links the conversation CTA to the contact form", () => {
-    reducedMotionPreference(true);
     render(<AboutCtaSection />);
     const link = screen.getByRole("link", { name: "Start a conversation" });
     link.focus();
