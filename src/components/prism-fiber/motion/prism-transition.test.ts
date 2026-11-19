@@ -22,6 +22,7 @@ function createChannels() {
   return {
     prismRotation: createChannel<number>(),
     figurePose: createChannel<PrismState>(),
+    faceOutline: createChannel<PrismState>(),
     monitorOpacity: createChannel<number>(),
   };
 }
@@ -43,6 +44,7 @@ describe("prism transition controller", () => {
     expect(channels.prismRotation.snap).toHaveBeenCalledWith(85);
     expect(channels.figurePose.snap).toHaveBeenCalledWith("iterate");
     expect(channels.monitorOpacity.snap).toHaveBeenCalledWith(0);
+    expect(channels.faceOutline.snap).toHaveBeenCalledWith("iterate");
   });
 
   it("advances every channel on one shared timeline", () => {
@@ -59,6 +61,8 @@ describe("prism transition controller", () => {
     expect(channels.prismRotation.update).toHaveBeenCalledWith(0.5);
     expect(channels.figurePose.update).toHaveBeenCalledWith(0.5);
     expect(channels.monitorOpacity.update).toHaveBeenCalledWith(0.5);
+    expect(channels.faceOutline.beginTransition).toHaveBeenCalledWith("solution");
+    expect(channels.faceOutline.update).toHaveBeenCalledWith(0.5);
   });
 
   it("captures the rendered values again when interrupted", () => {
@@ -114,6 +118,7 @@ describe("prism transition controller", () => {
     expect(channels.prismRotation.update).toHaveBeenCalledWith(0.5);
     expect(channels.figurePose.beginTransition).not.toHaveBeenCalled();
     expect(channels.figurePose.update).not.toHaveBeenCalled();
+    expect(channels.faceOutline.beginTransition).not.toHaveBeenCalled();
     expect(channels.monitorOpacity.beginTransition).not.toHaveBeenCalled();
     expect(channels.monitorOpacity.update).not.toHaveBeenCalled();
   });

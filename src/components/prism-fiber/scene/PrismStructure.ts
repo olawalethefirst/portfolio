@@ -16,6 +16,7 @@ import { buildBoardObject } from "./objects/BoardObject";
 import { buildFigureObject } from "./objects/FigureObject";
 import { buildOfficeObject } from "./objects/OfficeObject";
 import { buildProjectorObject } from "./objects/ProjectorObject";
+import { buildFaceOutlines } from "./FaceOutlines";
 import { createOwnedResources } from "./scene-utils";
 import { applyPrismAppearance, type PrismAppearance } from "./prism-appearance";
 
@@ -43,6 +44,8 @@ export interface BuiltPrismStructure {
   channels: PrismMotionChannels;
   applyAppearance(appearance: PrismAppearance): void;
   applyNotePalette(colors: readonly [string, string, string]): void;
+  applyOutlineColor(color: string): void;
+  setViewportSize(width: number, height: number): void;
   applyMonitorTexture(texture: Texture): void;
   dispose(): void;
 }
@@ -131,6 +134,11 @@ export function buildPrismStructure(
     faces[0].add(board.group);
     faces[1].add(projector.group);
     faces[2].add(office.group, figure.group);
+    const outlines = buildFaceOutlines(
+      { width: FACE_WIDTH, height: FACE_HEIGHT, apothem },
+      resources,
+    );
+    prism.add(outlines.group);
     root.add(figure.light, prism);
 
     return {
@@ -140,10 +148,13 @@ export function buildPrismStructure(
         board.applyAppearance(appearance.board);
       },
       applyNotePalette: board.applyNotePalette,
+      applyOutlineColor: outlines.applyColor,
+      setViewportSize: outlines.setViewportSize,
       applyMonitorTexture: office.applyMonitorTexture,
       channels: {
         prismRotation: createRotationChannel(prism),
         figurePose: figure.pose,
+        faceOutline: outlines.selection,
         monitorOpacity: office.monitorOpacity,
       },
       dispose() {

@@ -102,7 +102,8 @@ export function PrismScene({ state, viewAzimuthYRad = 0 }: PrismSceneProps) {
     scene.accents.update(theme);
   });
 
-  useFrame((_, delta) => {
+  useFrame(({ size }, delta) => {
+    live.current?.built.setViewportSize(size.width, size.height);
     live.current?.transition.advance(delta * 1000);
   });
 

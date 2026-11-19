@@ -17,10 +17,13 @@ const scene = await vi.hoisted(async () => {
     channels: {
       prismRotation: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
       figurePose: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
+      faceOutline: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
       monitorOpacity: { snap: vi.fn(), beginTransition: vi.fn(), update: vi.fn() },
     },
     applyAppearance: vi.fn(),
     applyNotePalette: vi.fn(),
+    applyOutlineColor: vi.fn(),
+    setViewportSize: vi.fn(),
     applyMonitorTexture: vi.fn(),
     dispose: vi.fn(),
     root: new Group(),

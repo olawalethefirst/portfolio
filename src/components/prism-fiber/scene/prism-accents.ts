@@ -15,6 +15,7 @@ export function createPrismAccents(built: BuiltPrismStructure) {
       try {
         const palette = readPrismAccentPalette();
         built.applyNotePalette(palette.notes);
+        built.applyOutlineColor(palette.accent);
         void monitor.update(palette.accent);
       } catch (error) {
         console.error("Prism accent palette resolution failed", error);

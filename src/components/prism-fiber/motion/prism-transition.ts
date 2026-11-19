@@ -8,6 +8,7 @@ import { PRISM_STATE_TARGETS, type PrismState } from "../state/prism-state";
 export interface PrismMotionChannels {
   prismRotation: MotionChannel<number>;
   figurePose: MotionChannel<PrismState>;
+  faceOutline: MotionChannel<PrismState>;
   monitorOpacity: MotionChannel<number>;
 }
 
@@ -26,6 +27,7 @@ function applyTargets(
   const stateTargets = PRISM_STATE_TARGETS[target.state];
   channels.prismRotation[method](resolvePrismRotationYDeg(target));
   channels.figurePose[method](target.state);
+  channels.faceOutline[method](target.state);
   channels.monitorOpacity[method](stateTargets.monitorOpacity);
 }
 
@@ -64,6 +66,7 @@ export function createPrismTransitionController(
     channels.prismRotation.update(progress);
     if (animateSemanticChannels) {
       channels.figurePose.update(progress);
+      channels.faceOutline.update(progress);
       channels.monitorOpacity.update(progress);
     }
     if (progress === 1) transitioning = false;
