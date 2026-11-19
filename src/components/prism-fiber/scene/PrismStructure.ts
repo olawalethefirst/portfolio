@@ -16,13 +16,14 @@ import { buildBoardObject } from "./objects/BoardObject";
 import { buildFigureObject } from "./objects/FigureObject";
 import { buildOfficeObject } from "./objects/OfficeObject";
 import { buildProjectorObject } from "./objects/ProjectorObject";
-import { buildFaceOutlines } from "./FaceOutlines";
+import { buildFaceOutlines, mitredFaceWidth } from "./FaceOutlines";
 import { createOwnedResources } from "./scene-utils";
 import { applyPrismAppearance, type PrismAppearance } from "./prism-appearance";
 
 const FACE_WIDTH = 1;
 const FACE_HEIGHT = 1.15;
 const CONTENT_HEIGHT = 1.1;
+const BACKING_INSET = 0.01;
 
 export interface PrismStructureAssets {
   board: Group;
@@ -86,7 +87,13 @@ export function buildPrismStructure(
   try {
     const root = new Group();
     const prism = new Group();
-    const backingGeometry = new PlaneGeometry(FACE_WIDTH, FACE_HEIGHT);
+    const apothem = FACE_WIDTH / (2 * Math.tan(Math.PI / 3));
+    const backingDistance = apothem - BACKING_INSET;
+    // Mitred width: neighbouring glass planes meet at one edge, with no overlap.
+    const backingGeometry = new PlaneGeometry(
+      mitredFaceWidth(backingDistance),
+      FACE_HEIGHT,
+    );
     const backingMaterial = new MeshPhysicalMaterial({
       color: 0xffffff,
       transparent: true,
@@ -100,15 +107,14 @@ export function buildPrismStructure(
     resources.geometries.add(backingGeometry);
     resources.materials.add(backingMaterial);
 
-    const apothem = FACE_WIDTH / (2 * Math.tan(Math.PI / 3));
     const faces = [new Group(), new Group(), new Group()];
     faces.forEach((face, index) => {
       const angle = index * ((2 * Math.PI) / 3);
       const backing = new Mesh(backingGeometry, backingMaterial);
       backing.position.set(
-        Math.sin(angle) * (apothem - 0.01),
+        Math.sin(angle) * (backingDistance),
         0,
-        Math.cos(angle) * (apothem - 0.01),
+        Math.cos(angle) * (backingDistance),
       );
       backing.rotation.y = angle;
       prism.add(backing);
@@ -135,7 +141,7 @@ export function buildPrismStructure(
     faces[1].add(projector.group);
     faces[2].add(office.group, figure.group);
     const outlines = buildFaceOutlines(
-      { width: FACE_WIDTH, height: FACE_HEIGHT, apothem },
+      { height: FACE_HEIGHT, apothem },
       resources,
     );
     prism.add(outlines.group);

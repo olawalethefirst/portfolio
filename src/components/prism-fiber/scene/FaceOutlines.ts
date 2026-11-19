@@ -16,10 +16,18 @@ const FACE_INDEX_BY_STATE: Record<PrismState, number> = {
 };
 
 /** Outline thickness in CSS pixels, independent of zoom and device pixel ratio. */
-export const FACE_OUTLINE_WIDTH_PX = 4;
+export const FACE_OUTLINE_WIDTH_PX = 2;
+const OUTLINE_INSET = 0.008;
+
+/**
+ * Width at which three faces at `distance` from the prism axis meet exactly at
+ * their vertical edges: the side of the equilateral triangle with that apothem.
+ */
+export function mitredFaceWidth(distance: number) {
+  return 2 * Math.sqrt(3) * distance;
+}
 
 export interface FaceOutlineSpec {
-  readonly width: number;
   readonly height: number;
   readonly apothem: number;
 }
@@ -40,7 +48,9 @@ export function buildFaceOutlines(
   spec: FaceOutlineSpec,
   resources: OwnedResources,
 ): FaceOutlines {
-  const halfWidth = spec.width / 2;
+  // Sits just outside the glass backing so it never z-fights with it.
+  const distance = spec.apothem - OUTLINE_INSET;
+  const halfWidth = mitredFaceWidth(distance) / 2;
   const halfHeight = spec.height / 2;
   const geometry = new LineGeometry();
   geometry.setPositions([
@@ -67,8 +77,6 @@ export function buildFaceOutlines(
   materials.forEach((material, index) => {
     const angle = index * ((2 * Math.PI) / 3);
     const outline = new Line2(geometry, material);
-    // Sits just outside the glass backing so it never z-fights with it.
-    const distance = spec.apothem - 0.008;
     outline.position.set(Math.sin(angle) * distance, 0, Math.cos(angle) * distance);
     outline.rotation.y = angle;
     group.add(outline);
