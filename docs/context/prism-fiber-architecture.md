@@ -154,7 +154,7 @@ go*, while each rendered object decides *how its own property moves there*.
 `Prism.tsx` is the stable public facade. Its API has a required semantic
 `state`, optional home-frame and camera-interaction policy inputs, an optional
 container `className`, and an optional semantic interaction callback. Its
-handle exposes `recentreView()` plus normalized `setDiscoveryProgress()`; it
+handle exposes `realignView()` plus normalized `setDiscoveryProgress()`; it
 does not expose camera coordinates, Motion values, Three.js types, or
 object-level controls. The facade delegates rendering to
 `stage/PrismStage.tsx` so internal stage organization can evolve without

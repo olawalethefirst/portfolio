@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { PrismState } from "./state/prism-state";
 import type { PrismHomeFrame } from "./stage/prism-home-frame";
 
-const stageRecentre = vi.hoisted(() => vi.fn());
+const stageRealign = vi.hoisted(() => vi.fn());
 const stageSetDiscoveryProgress = vi.hoisted(() => vi.fn());
 
 vi.mock("./stage/PrismStage", () => ({
@@ -26,7 +26,7 @@ vi.mock("./stage/PrismStage", () => ({
     ref,
   ) {
     useImperativeHandle(ref, () => ({
-      recentreView: stageRecentre,
+      realignView: stageRealign,
       setDiscoveryProgress: stageSetDiscoveryProgress,
     }));
 
@@ -76,7 +76,7 @@ describe("Prism public API", () => {
     expect(stage.getAttribute("data-allows-camera-zoom")).toBe("false");
   });
 
-  it("forwards interaction events and the recentre command", () => {
+  it("forwards interaction events and the realign command", () => {
     const onInteractionStart = vi.fn();
     const ref = createRef<PrismHandle>();
     render(
@@ -90,8 +90,8 @@ describe("Prism public API", () => {
     screen.getByRole("button", { name: "Explore" }).click();
     expect(onInteractionStart).toHaveBeenCalledTimes(1);
 
-    ref.current?.recentreView();
-    expect(stageRecentre).toHaveBeenCalled();
+    ref.current?.realignView();
+    expect(stageRealign).toHaveBeenCalled();
 
     ref.current?.setDiscoveryProgress(0.75);
     expect(stageSetDiscoveryProgress).toHaveBeenCalledWith(0.75);

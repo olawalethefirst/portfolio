@@ -114,7 +114,7 @@ describe("PrismStage", () => {
     expectOffset(-12.5);
     act(() => ref.current?.setDiscoveryProgress(1));
     expectOffset(0);
-    act(() => ref.current?.recentreView());
+    act(() => ref.current?.realignView());
     expectOffset(0);
     act(() => ref.current?.setDiscoveryProgress(0.25));
     expectOffset(-18.75);
@@ -183,7 +183,7 @@ describe("PrismStage", () => {
     expect(orbit.saveState).toHaveBeenCalled();
   });
 
-  it("reports interaction starts and recentres through a semantic handle", () => {
+  it("reports interaction starts and realigns through a semantic handle", () => {
     const onInteractionStart = vi.fn();
     const ref = createRef<PrismStageHandle>();
     render(
@@ -198,7 +198,7 @@ describe("PrismStage", () => {
     fireEvent.click(screen.getByText("Start orbit"));
     expect(onInteractionStart).toHaveBeenCalledTimes(2);
 
-    act(() => ref.current?.recentreView());
+    act(() => ref.current?.realignView());
     expect(orbit.reset).toHaveBeenCalled();
   });
 
@@ -266,7 +266,7 @@ describe("PrismStage", () => {
 
     expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0.5");
 
-    act(() => ref.current?.recentreView());
+    act(() => ref.current?.realignView());
 
     expect(scene.getAttribute("data-view-azimuth-y-rad")).toBe("0");
   });

@@ -30,7 +30,7 @@ vi.mock("../../Prism", () => ({
     ref,
   ) {
     useImperativeHandle(ref, () => ({
-      recentreView: vi.fn(),
+      realignView: vi.fn(),
       setDiscoveryProgress: prismSetDiscoveryProgress,
     }));
 

@@ -21,7 +21,7 @@ afterAll(() => {
 describe("HeroControlPanel", () => {
   it("presents labeled outline actions before progress and primary state tabs", () => {
     const onAutoplayToggle = vi.fn();
-    const onRecentre = vi.fn();
+    const onRealign = vi.fn();
     const onSegmentSelect = vi.fn();
 
     render(
@@ -31,23 +31,23 @@ describe("HeroControlPanel", () => {
         canAutoplay
         isAutoplayRunning
         onAutoplayToggle={onAutoplayToggle}
-        onRecentre={onRecentre}
+        onRealign={onRealign}
         onSegmentSelect={onSegmentSelect}
       />,
     );
 
     fireEvent.click(screen.getByRole("tab", { name: /iterate/i }));
     fireEvent.click(screen.getByRole("button", { name: "Pause autoplay" }));
-    fireEvent.click(screen.getByRole("button", { name: "Recentre view" }));
+    fireEvent.click(screen.getByRole("button", { name: "Realign view" }));
 
     expect(onSegmentSelect).toHaveBeenCalledWith("iterate");
     expect(onAutoplayToggle).toHaveBeenCalledTimes(1);
-    expect(onRecentre).toHaveBeenCalledTimes(1);
+    expect(onRealign).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("button", { name: "Pause autoplay" }).textContent).toContain(
       "Pause",
     );
-    expect(screen.getByRole("button", { name: "Recentre view" }).textContent).toContain(
-      "Recenter",
+    expect(screen.getByRole("button", { name: "Realign view" }).textContent).toContain(
+      "Realign",
     );
 
     expect(
@@ -63,7 +63,7 @@ describe("HeroControlPanel", () => {
         canAutoplay
         isAutoplayRunning={false}
         onAutoplayToggle={vi.fn()}
-        onRecentre={vi.fn()}
+        onRealign={vi.fn()}
         onSegmentSelect={vi.fn()}
       />,
     );
@@ -81,7 +81,7 @@ describe("HeroControlPanel", () => {
         canAutoplay={false}
         isAutoplayRunning={false}
         onAutoplayToggle={vi.fn()}
-        onRecentre={vi.fn()}
+        onRealign={vi.fn()}
         onSegmentSelect={vi.fn()}
       />,
     );
@@ -99,7 +99,7 @@ describe("HeroControlPanel", () => {
         canAutoplay
         isAutoplayRunning={running}
         onAutoplayToggle={vi.fn()}
-        onRecentre={vi.fn()}
+        onRealign={vi.fn()}
         onSegmentSelect={vi.fn()}
       />
     );

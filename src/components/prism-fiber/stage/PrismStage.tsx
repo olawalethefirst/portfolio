@@ -42,7 +42,7 @@ export interface PrismStageProps {
 }
 
 export interface PrismStageHandle {
-  recentreView(): void;
+  realignView(): void;
   setDiscoveryProgress(progress: number): void;
 }
 
@@ -192,7 +192,7 @@ export const PrismStage = forwardRef<PrismStageHandle, PrismStageProps>(
     useImperativeHandle(
       ref,
       () => ({
-        recentreView() {
+        realignView() {
           if (homeFrame) {
             homeViewRef.current?.();
           } else {

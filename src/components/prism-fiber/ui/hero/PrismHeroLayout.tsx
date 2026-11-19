@@ -153,7 +153,7 @@ export const PrismHeroLayout = forwardRef<
                 canAutoplay={canAutoplay}
                 isAutoplayRunning={isAutoplayRunning}
                 onAutoplayToggle={toggleAutoplay}
-                onRecentre={() => prismRef.current?.recentreView()}
+                onRealign={() => prismRef.current?.realignView()}
                 onSegmentSelect={selectState}
               />
             </aside>

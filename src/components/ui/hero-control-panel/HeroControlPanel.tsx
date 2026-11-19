@@ -21,7 +21,7 @@ export interface HeroControlPanelProps {
   isAutoplayRunning: boolean;
   onSegmentSelect: (segment: PrismState) => void;
   onAutoplayToggle: () => void;
-  onRecentre: () => void;
+  onRealign: () => void;
   className?: string;
 }
 
@@ -60,7 +60,7 @@ export function HeroControlPanel({
   isAutoplayRunning,
   onSegmentSelect,
   onAutoplayToggle,
-  onRecentre,
+  onRealign,
   className,
 }: HeroControlPanelProps) {
   const autoplayVerb = isAutoplayRunning ? "Pause" : "Play";
@@ -90,9 +90,9 @@ export function HeroControlPanel({
           {autoplayVerb}
         </Button>
         <Button
-          aria-label="Recentre view"
+          aria-label="Realign view"
           fullWidth
-          onPress={onRecentre}
+          onPress={onRealign}
           size="sm"
           startContent={
             <SquareCenterlineDashedHorizontal
@@ -102,7 +102,7 @@ export function HeroControlPanel({
           }
           variant="outline"
         >
-          Recenter
+          Realign
         </Button>
       </div>
 
