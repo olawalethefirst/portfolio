@@ -5,7 +5,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { CmsCollectionActions } from "./CmsCollectionActions";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { useCms } from "@/src/cms/CmsProvider";
 import {
   usePublicationsQuery,
   useReorderPublications,
@@ -37,7 +36,6 @@ const CollectionPreview = dynamic(
 
 export function PublicationList() {
   const router = useRouter();
-  const { working } = useCms();
   const { data, isPending, isError, refetch } = usePublicationsQuery();
   const { reorder, pending } = useReorderPublications();
   const [search, setSearch] = useState("");
@@ -85,7 +83,6 @@ export function PublicationList() {
           collection="publication"
           pending={pending || !data}
           onNew={() => {
-            working.clear("new");
             router.push("/admin/publications/new");
           }}
           onPreview={() => {

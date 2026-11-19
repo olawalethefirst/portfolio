@@ -5,7 +5,6 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { CmsCollectionActions } from "./CmsCollectionActions";
 import { CmsPreviewFrame, useCmsPreview } from "./CmsPreviewFrame";
-import { useProjects } from "@/src/cms/ProjectProvider";
 import {
   useProjectsQuery,
   useReorderProjects,
@@ -37,7 +36,6 @@ const CollectionPreview = dynamic(
 
 export function ProjectList() {
   const router = useRouter();
-  const { working } = useProjects();
   const { data, isPending, isError, refetch } = useProjectsQuery();
   const { reorder, pending } = useReorderProjects();
   const [announcement, setAnnouncement] = useState("");
@@ -83,7 +81,6 @@ export function ProjectList() {
           collection="project"
           pending={pending || !data}
           onNew={() => {
-            working.clear("new");
             router.push("/admin/projects/new");
           }}
           onPreview={() => {

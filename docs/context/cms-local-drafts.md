@@ -30,7 +30,7 @@ One localStorage entry per logical record:
 The JSON value is `{ id, value }`. Namespaces separate Hero, About, Contact
 (social), Projects, Publications, and SEO. A new-record draft uses `new` and
 retains its generated ID; the ID alias exists only in memory, avoiding duplicate
-stored content. Starting a fresh new record retains existing clearing behavior.
+stored content. Opening New resumes an unfinished draft; Discard changes starts blank.
 The studio supplies account identity for server query isolation. Local draft keys
 remain unscoped; account-scoped storage and migration are deferred.
 
