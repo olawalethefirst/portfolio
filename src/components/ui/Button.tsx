@@ -26,6 +26,7 @@ interface ButtonBaseProps {
   fullWidth?: boolean;
   isLoading?: boolean;
   isDisabled?: boolean;
+  isIconOnly?: boolean;
   startContent?: IconSlot;
   endContent?: IconSlot;
   className?: string;
@@ -64,6 +65,7 @@ export function Button(props: ButtonProps) {
       fullWidth = false,
       isLoading = false,
       isDisabled = false,
+      isIconOnly = false,
       startContent,
       endContent,
       className,
@@ -88,8 +90,8 @@ export function Button(props: ButtonProps) {
       </>
     );
     const sharedClassName = cn(
-      buttonVariants({ fullWidth, size, variant }),
-      "rounded-none",
+      buttonVariants({ fullWidth, isIconOnly, size, variant }),
+      !isIconOnly && "rounded-none",
       className,
     );
 

@@ -42,3 +42,22 @@ it("keeps the screen mounted, with its local state, when a preview opens and clo
   expect(screen.getByRole("link", { name: "Projects" })).toBeTruthy();
   expect((screen.getByRole("textbox", { name: "Draft" }) as HTMLInputElement).value).toBe("unsaved");
 });
+
+it("offers an icon-only link that opens the public site in a new tab", () => {
+  render(<CmsShell>Collection</CmsShell>);
+  const link = screen.getByRole("link", { name: "View site (opens in a new tab)" });
+  expect(link.getAttribute("href")).toBe("/");
+  expect(link.getAttribute("target")).toBe("_blank");
+  expect(link.getAttribute("rel")).toContain("noopener");
+  expect(link.textContent).toBe("");
+});
+
+it("hides the site link, with the rest of the header, during a preview", () => {
+  function Screen() {
+    const setPreview = useContext(CmsPreviewVisibility);
+    return <button onClick={() => setPreview?.(true)}>Open preview</button>;
+  }
+  render(<CmsShell><Screen /></CmsShell>);
+  fireEvent.click(screen.getByRole("button", { name: "Open preview" }));
+  expect(screen.queryByRole("link", { name: "View site (opens in a new tab)" })).toBeNull();
+});

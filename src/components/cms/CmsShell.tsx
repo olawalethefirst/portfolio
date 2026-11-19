@@ -1,7 +1,7 @@
 "use client";
 
 import { Drawer } from "@heroui/react/drawer";
-import { BookOpen, FolderKanban, Menu, PanelTop, UserRound, MessagesSquare, Search } from "lucide-react";
+import { BookOpen, FolderKanban, Globe, Menu, PanelTop, UserRound, MessagesSquare, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createContext, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { CmsAppearanceControls } from "./CmsAppearanceControls";
@@ -90,7 +90,19 @@ export function CmsShell({ children }: { children: ReactNode }) {
                 </Drawer>
               </div>
             </div>
-            <CmsAppearanceControls />
+            <div className="flex items-center gap-1">
+              <Button
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="ghost"
+                isIconOnly
+                aria-label="View site (opens in a new tab)"
+              >
+                <Globe aria-hidden="true" className="size-4" />
+              </Button>
+              <CmsAppearanceControls />
+            </div>
           </SectionContainer>
         </header>}
         <main id="cms-main" className={preview ? "min-h-dvh" : undefined}>
