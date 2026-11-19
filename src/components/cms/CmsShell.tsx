@@ -49,14 +49,14 @@ export function CmsShell({ children }: { children: ReactNode }) {
   );
   return (
     <CmsPreviewVisibility value={setPreview}>
-    <div className={preview ? "min-h-dvh bg-surface text-foreground" : "min-h-dvh bg-background text-foreground lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]"}>
+    <div className={preview ? "min-h-dvh bg-surface text-foreground" : "min-h-dvh bg-background text-foreground md:grid md:grid-cols-[15rem_minmax(0,1fr)]"}>
       {!preview && <a
         href="#cms-main"
         className="sr-only z-50 bg-surface p-4 focus:not-sr-only focus:fixed"
       >
         Skip to content
       </a>}
-      {!preview && <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-5 py-8 lg:flex">
+      {!preview && <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-5 py-8 md:flex">
         <p className="text-lg font-semibold tracking-tight">
           Content studio<span className="text-accent">.</span>
         </p>
@@ -67,7 +67,7 @@ export function CmsShell({ children }: { children: ReactNode }) {
         {!preview && <header className="sticky top-0 z-20 border-b border-border bg-background">
           <SectionContainer className="flex flex-wrap items-center justify-between gap-3 py-3">
             <div className="flex items-center gap-3">
-              <div className="lg:hidden">
+              <div className="md:hidden">
                 <Drawer isOpen={menuOpen} onOpenChange={setMenuOpen}>
                   <Button
                     aria-label="Open content navigation"

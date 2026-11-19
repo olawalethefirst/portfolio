@@ -75,8 +75,8 @@ PanelTop icon was chosen over Sparkles to identify the top page section rather
 than an effect. It uses the shared navigation icon sizing and decorative treatment,
 including the existing navigation exception for ghost buttons.
 
-Desktop uses a persistent sidebar, content header, and restrained form width.
-Mobile uses a labelled navigation drawer with library-owned focus containment
+From the `md` breakpoint (768px) the studio uses a persistent sidebar, content
+header, and restrained form width. Below it, it uses a labelled navigation drawer with library-owned focus containment
 and Escape dismissal. Publication editors expose separate fullscreen card and
 article/destination preview actions alongside the editing fields, without an
 inline preview tab. Keep save/status controls reachable without obscuring content.
