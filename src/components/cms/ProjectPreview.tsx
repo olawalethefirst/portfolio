@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode } from "react";
 import type { ProjectDraft } from "@/src/cms/projects";
-import { httpsUrl } from "@/src/cms/publications";
+import { httpsUrl, publicationTags } from "@/src/cms/publications";
 import { ProjectItem } from "@/src/components/project-item/ProjectItem";
 
 export class ProjectPreviewBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -30,6 +30,7 @@ export function ProjectPreview({ value }: { value: ProjectDraft }) {
           what={value.what.trim() || "Describe what you built."}
           how={value.how.trim() || "Describe how you built it."}
           platform={value.platform}
+          tags={publicationTags(value.tagsText)}
           screenTextureSrc={value.screenshot || undefined}
           liveHref={validLink ? value.liveUrl : "#"}
           stackIndex={0}

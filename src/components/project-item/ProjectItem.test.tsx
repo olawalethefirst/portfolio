@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { ProjectDeviceStageProps } from "./ProjectDeviceStage";
@@ -40,6 +40,7 @@ describe("ProjectItem", () => {
         liveHref="https://example.com/field-notes"
         name="Field Notes"
         platform="mobile"
+        tags={["Mobile", "Notes"]}
         how="Shared services coordinate team decisions."
         what="A shared decision journal for teams."
         stackIndex={2}
@@ -58,7 +59,11 @@ describe("ProjectItem", () => {
         "A calmer way for distributed teams to capture decisions in motion.",
       ),
     ).toBeTruthy();
-    expect(screen.getByText("Mobile")).toBeTruthy();
+    expect(
+      within(screen.getByRole("list", { name: "Topics" }))
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(["Mobile", "Notes"]);
     expect(screen.getByRole("button", { name: "What? About Field Notes" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "How? Field Notes works" })).toBeTruthy();
     expect(
@@ -92,6 +97,7 @@ describe("ProjectItem", () => {
         modelEntryRotation={modelEntryRotation}
         name="Field Notes"
         platform="mobile"
+        tags={["Mobile", "Notes"]}
         how="Shared services coordinate team decisions."
         what="A shared decision journal for teams."
         stackIndex={2}
@@ -118,6 +124,7 @@ describe("ProjectItem", () => {
         liveHref="https://example.com/project"
         name="Project"
         platform={platform}
+        tags={[]}
         how="How it works."
         what="What it is."
         stackIndex={1}

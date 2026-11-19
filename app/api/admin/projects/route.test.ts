@@ -11,7 +11,7 @@ import { GET as collection } from "./route";
 import { GET as detail } from "./[id]/route";
 
 const id = "11111111-1111-4111-8111-111111111111";
-const draft = { name: "Draft", summary: "", what: "", how: "", platform: "web", screenshot: "", screenshotAlt: "", liveUrl: "" };
+const draft = { name: "Draft", summary: "", what: "", how: "", platform: "web", tagsText: "", screenshot: "", screenshotAlt: "", liveUrl: "" };
 const record = { id, draft, published: { ...draft, name: "Live" } };
 const request = () => new NextRequest("https://portfolio.test/api/admin/projects");
 const handlers = [

@@ -10,6 +10,8 @@ export const CONTENT_LIMITS = {
     summary: 92,
     what: 228,
     how: 294,
+    tagLength: 16,
+    tagCount: 6,
   },
   publication: {
     title: 40,

@@ -29,7 +29,7 @@ unexpected fields rather than forwarding them to database writes.
 | DELETE item / published | No body |
 
 Project editable fields follow src/cms/projects.ts: name, summary, what, how,
-platform, screenshot, screenshotAlt, liveUrl. Publication fields follow
+platform, tagsText, screenshot, screenshotAlt, liveUrl. Publication fields follow
 src/cms/publications.ts: title, summary, bodyMarkdown, coverSrc, coverAlt,
 tagsText, publishedOn. No kind or externalUrl. Keep date-only publishedOn as
 YYYY-MM-DD, not a JavaScript Date or timezone timestamp.
@@ -103,7 +103,7 @@ required content string is structural 400; a present blank required string is
 | About | heading, biography |
 | Social | github, linkedin, x |
 | SEO | path, title, description |
-| Project | name, summary, what, how, platform, screenshot, screenshotAlt, liveUrl |
+| Project | name, summary, what, how, platform, tagsText, screenshot, screenshotAlt, liveUrl |
 | Publication | title, summary, bodyMarkdown, coverSrc, coverAlt, tagsText, publishedOn; bodyMarkdown targets the existing Article action |
 
 Keep existing editor-defined visual focus order, not JSON property order. Reveal

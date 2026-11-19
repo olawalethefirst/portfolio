@@ -12,6 +12,7 @@ export const labProjects: ReadonlyArray<
     },
     name: "Field Notes",
     platform: "mobile",
+    tags: ["Mobile", "Notes", "Teams"],
     screenTextureSrc: "/dummy_project_mobile.webp",
     what:
       "A mobile workspace for distributed teams to capture decisions, retain their context, and share updates while work is in motion. It gives teammates a shared record they can return to when they need to understand what was decided.",
@@ -29,6 +30,7 @@ export const labProjects: ReadonlyArray<
     },
     name: "Relay",
     platform: "web",
+    tags: ["Web", "Operations", "Workflow"],
     screenTextureSrc: "/dummy_project.webp",
     what:
       "An operations workspace that helps teams coordinate handoffs and track work across shared processes. It brings responsibilities and progress into one view so people can see what needs attention and who takes the next step.",

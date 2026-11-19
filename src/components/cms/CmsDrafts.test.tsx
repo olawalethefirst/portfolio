@@ -6,7 +6,7 @@ import { CmsProvider } from "@/src/cms/CmsProvider";
 import { mockHeroApi } from "@/src/cms/test-support/mockHeroApi";
 import { CmsQueryProvider } from "@/src/cms/CmsQueryProvider";
 import { ProjectProvider } from "@/src/cms/ProjectProvider";
-import { initialProjects } from "@/src/cms/projects";
+import { initialProjects, type ProjectDraft } from "@/src/cms/projects";
 import { initialPublications } from "@/src/cms/publication-fixtures";
 import { mockPublicationApi } from "@/src/cms/test-support/mockPublicationApi";
 import { SeoProvider } from "@/src/cms/SeoProvider";
@@ -146,6 +146,31 @@ it.each(editors)(
     ).toBe("Saved on this device.");
   },
 );
+
+it("restores a project working draft saved before tags existed", async () => {
+  const legacy: Partial<ProjectDraft> = { ...initialProjects()[0].draft, name: "Legacy" };
+  delete legacy.tagsText;
+  localStorage.setItem(
+    "portfolio:cms-drafts:v1:projects:new",
+    JSON.stringify({ id: "legacy-draft", value: legacy }),
+  );
+  try {
+    await render(
+      <Providers>
+        <ProjectEditor id="new" />
+      </Providers>,
+    );
+    expect(
+      (screen.getByRole("textbox", { name: "Name" }) as HTMLInputElement).value,
+    ).toBe("Legacy");
+    expect(
+      (screen.getByRole("textbox", { name: "Tags" }) as HTMLInputElement).value,
+    ).toBe("");
+    expect(screen.queryByRole("alert", { name: "Local draft status" })).toBeNull();
+  } finally {
+    localStorage.clear();
+  }
+});
 
 it("reports a local storage failure while keeping the form editable", async () => {
   const write = vi

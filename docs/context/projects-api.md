@@ -45,7 +45,9 @@ Hero/About there is no required singleton to reject on absence.
 
 `PrismHeroLayoutLab` takes the resulting `PublishedProject[]` as its `projects`
 prop and maps each entry to `Omit<ProjectItemProps, "stackIndex">`: `liveUrl`
-becomes `liveHref`, `screenshot` becomes `screenTextureSrc` (empty string maps
+becomes `liveHref`, `tagsText` is parsed with `publicationTags` into `tags`
+(rendered as the wrapping topic chips in the project header; `platform` no
+longer renders a pill and only selects the device model), `screenshot` becomes `screenTextureSrc` (empty string maps
 to `undefined`, since `ProjectDeviceStage` falls back to no screen texture), and
 `modelEntryRotation` is omitted — `ProjectItem` falls back to a per-platform
 default (`defaultModelEntryRotations`: mobile turns from 90° to front, web from

@@ -1,6 +1,6 @@
 "use client";
 import { CmsRadioGroup } from "./CmsRadioGroup";
-import { Link } from "lucide-react";
+import { Link, Tags } from "lucide-react";
 import type { ProjectDraft, ProjectErrors } from "@/src/cms/projects";
 import { CmsEditorContent, CmsFieldSection } from "./CmsLayout";
 import { CmsField } from "./CmsField";
@@ -22,6 +22,7 @@ export function ProjectFields({ value, errors, onChange, onBlur, imageReset, onI
     <CmsFieldSection title="Content">
       <CmsField name="name" onBlur={() => onBlur?.("name")} label="Name" value={value.name} onChange={(next) => field("name", next)} error={errors.name} />
       {([['summary', 'Summary'], ['what', 'What'], ['how', 'How']] as const).map(([key, label]) => <CmsField key={key} name={key} onBlur={() => onBlur?.(key)} label={label} value={value[key]} onChange={(next) => field(key, next)} multiline="short" error={errors[key]} />)}
+      <CmsField name="tagsText" onBlur={() => onBlur?.("tagsText")} label="Tags" icon={<Tags />} value={value.tagsText} onChange={(next) => field("tagsText", next)} error={errors.tagsText} hint="Separate topics with commas. Up to 6 tags; repeated tags appear only once." />
       <CmsRadioGroup name="platform" label="Platform" value={value.platform}
         options={platforms} onChange={(next) => field("platform", next)} />
       <CmsField name="liveUrl" onBlur={() => onBlur?.("liveUrl")} label="Live URL" type="url" icon={<Link />} value={value.liveUrl} onChange={(next) => field("liveUrl", next)} error={errors.liveUrl} hint="A complete HTTPS destination for the project." />

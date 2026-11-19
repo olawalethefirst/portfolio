@@ -21,6 +21,7 @@ export interface ProjectItemProps {
   name: string;
   summary: string;
   platform: ProjectPlatform;
+  tags: readonly string[];
   what: string;
   how: string;
   liveHref: string;
@@ -32,16 +33,12 @@ export interface ProjectItemProps {
 
 export type { ProjectPlatform } from "./ProjectDeviceStage";
 
-const platformLabels: Record<ProjectPlatform, string> = {
-  mobile: "Mobile",
-  web: "Web",
-};
-
 export function ProjectItem({
   id,
   name,
   summary,
   platform,
+  tags,
   what,
   how,
   liveHref,
@@ -79,11 +76,20 @@ export function ProjectItem({
             </p>
           </header>
 
-          <div className="justify-self-end">
-            <Chip color="accent" variant="soft">
-              {platformLabels[platform]}
-            </Chip>
-          </div>
+          {tags.length ? (
+            <ul
+              aria-label="Topics"
+              className="flex flex-wrap justify-end gap-2 justify-self-end"
+            >
+              {tags.map((tag) => (
+                <li key={tag}>
+                  <Chip color="accent" variant="soft" size="sm">
+                    {tag}
+                  </Chip>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </SectionContainer>
       </div>
 

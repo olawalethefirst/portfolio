@@ -188,6 +188,7 @@ function ProjectEditorForm({
       "summary",
       "what",
       "how",
+      "tagsText",
       "platform",
       "liveUrl",
       "screenshot",

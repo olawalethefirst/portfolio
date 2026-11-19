@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CONTENT_LIMITS } from "@/src/config/content-limits";
 import { labProjects } from "@/src/components/project-item/lab-projects";
-import { httpsUrl } from "./publications";
+import { httpsUrl, publicationTags } from "./publications";
 
 const limits = CONTENT_LIMITS.project;
 export const projectDraftSchema = z.object({
@@ -10,6 +10,7 @@ export const projectDraftSchema = z.object({
   what: z.string(),
   how: z.string(),
   platform: z.enum(["mobile", "web"]),
+  tagsText: z.string(),
   screenshot: z.string(),
   screenshotAlt: z.string(),
   liveUrl: z.string(),
@@ -43,6 +44,19 @@ export const projectPublishSchema = projectDraftSchema
     liveUrl: z.string().refine(httpsUrl, "Enter a complete HTTPS destination."),
   })
   .superRefine((value, context) => {
+    const tags = publicationTags(value.tagsText);
+    if (tags.some((tag) => tag.length > limits.tagLength))
+      context.addIssue({
+        code: "custom",
+        path: ["tagsText"],
+        message: `Use ${limits.tagLength} characters or fewer per tag.`,
+      });
+    if (tags.length > limits.tagCount)
+      context.addIssue({
+        code: "custom",
+        path: ["tagsText"],
+        message: `Use ${limits.tagCount} tags or fewer.`,
+      });
     if (!value.screenshotAlt.trim()) {
       context.addIssue({
         code: "custom",
@@ -52,6 +66,13 @@ export const projectPublishSchema = projectDraftSchema
     }
   });
 export type ProjectDraft = z.infer<typeof projectDraftSchema>;
+/**
+ * Shape accepted when restoring a browser working draft. Drafts saved before
+ * tags existed have no `tagsText`; restore them with empty tags, not as errors.
+ */
+export const storedProjectDraftSchema = projectDraftSchema.extend({
+  tagsText: z.string().default(""),
+});
 export interface ProjectRecord {
   id: string;
   draft: ProjectDraft;
@@ -74,6 +95,7 @@ export function emptyProject(): ProjectDraft {
     what: "",
     how: "",
     platform: "web",
+    tagsText: "",
     screenshot: "",
     screenshotAlt: "",
     liveUrl: "",
@@ -87,6 +109,7 @@ export function initialProjects(): ProjectRecord[] {
       what: item.what,
       how: item.how,
       platform: item.platform,
+      tagsText: item.tags.join(", "),
       screenshot: item.screenTextureSrc ?? "",
       screenshotAlt: `${item.name} interface`,
       liveUrl: item.liveHref,

@@ -59,7 +59,8 @@ An ordered collection. Each record has an `id`, saved `draft` and nullable
 | `summary` | Text | Nonblank; at most 92 characters |
 | `what` | Text | Nonblank; at most 228 characters |
 | `how` | Text | Nonblank; at most 294 characters |
-| `platform` | Enum | `web` or `mobile` |
+| `platform` | Enum | `web` or `mobile`; selects the 3D device model and its default entry rotation |
+| `tagsText` | Comma-separated editor input | Optional; at most 6 distinct tags; at most 16 characters each |
 | `screenshot` | Image source string | Required |
 | `screenshotAlt` | Text | Nonblank |
 | `liveUrl` | URL string | Complete HTTPS destination |

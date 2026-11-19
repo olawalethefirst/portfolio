@@ -42,6 +42,8 @@ shared counting-policy change. Database integration remains deferred.
 | Project | `summary` | 92 | Relay summary |
 | Project | `what` | 228 | Field Notes What popover |
 | Project | `how` | 294 | Field Notes How popover |
+| Project | each parsed tag | 16 | Same budget as Publication tags |
+| Project | parsed tag count | 6 | Wraps in the project header |
 | Publication | `title` | 40 | Longest current card titles |
 | Publication | `summary` | 112 | Productive constraints summary |
 | Publication | each parsed tag | 16 | Product strategy / Systems thinking |

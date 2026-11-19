@@ -37,6 +37,7 @@ const content = (name: string, screenshot: string): ProjectDraft => ({
   what: "What",
   how: "How",
   platform: "web",
+  tagsText: "Tag one, Tag two",
   screenshot,
   screenshotAlt: "Interface",
   liveUrl: "https://example.com",
@@ -47,6 +48,7 @@ const snapshot = (name: string, screenshot: string) => [
   "What",
   "How",
   "web",
+  "Tag one, Tag two",
   screenshot,
   "Interface",
   "https://example.com",
@@ -80,7 +82,7 @@ it("lists only published projects, with id, in editorial order", async () => {
     { id, ...content("Live version", screenshotUrl) },
   ]);
   expect(execute.mock.calls[0][0]).toBe(
-    'select "published_projects"."project_id", "published_projects"."name", "published_projects"."summary", "published_projects"."what", "published_projects"."how", "published_projects"."platform", "published_projects"."screenshot", "published_projects"."screenshot_alt", "published_projects"."live_url" from "published_projects" inner join "projects" on "projects"."id" = "published_projects"."project_id" order by "projects"."position" asc, "projects"."id" asc',
+    'select "published_projects"."project_id", "published_projects"."name", "published_projects"."summary", "published_projects"."what", "published_projects"."how", "published_projects"."platform", "published_projects"."tags_text", "published_projects"."screenshot", "published_projects"."screenshot_alt", "published_projects"."live_url" from "published_projects" inner join "projects" on "projects"."id" = "published_projects"."project_id" order by "projects"."position" asc, "projects"."id" asc',
   );
 });
 
@@ -91,7 +93,7 @@ it("excludes a project with no published snapshot", async () => {
 
 it("preserves draft-only records and empty screenshot references", async () => {
   execute.mockResolvedValue({
-    rows: [[id, 0, ...snapshot("", ""), ...Array(9).fill(null)]],
+    rows: [[id, 0, ...snapshot("", ""), ...Array(10).fill(null)]],
   });
   expect(await readProject(id)).toEqual({
     id,
@@ -135,6 +137,7 @@ it("inserts an unfinished draft using database-generated identity and stores its
     "What",
     "How",
     "web",
+    "Tag one, Tag two",
     screenshotUrl,
     "Interface",
     "https://example.com",
@@ -144,7 +147,7 @@ it("inserts an unfinished draft using database-generated identity and stores its
 it("stores an empty screenshot as an empty string, not null", async () => {
   execute.mockResolvedValue({ rows: [[id, 0, ...snapshot("Draft", "")]] });
   await insertProject({ ...draftInput, screenshot: "" });
-  expect(execute.mock.calls[0][1][5]).toBe("");
+  expect(execute.mock.calls[0][1][6]).toBe("");
 });
 
 it("updates only the requested saved draft and returns the stored record", async () => {
@@ -156,7 +159,7 @@ it("updates only the requested saved draft and returns the stored record", async
   });
   const [query, params] = execute.mock.calls[0];
   expect(query).toMatch(/^update "projects"/);
-  expect(query).toContain('where "projects"."id" = $9');
+  expect(query).toContain('where "projects"."id" = $10');
   expect(query).toContain("returning");
   expect(params).toEqual([
     "Draft",
@@ -164,6 +167,7 @@ it("updates only the requested saved draft and returns the stored record", async
     "What",
     "How",
     "web",
+    "Tag one, Tag two",
     screenshotUrl,
     "Interface",
     "https://example.com",
@@ -202,6 +206,7 @@ it("inserts or replaces the published snapshot for the project identity", async 
     "What",
     "How",
     "web",
+    "Tag one, Tag two",
     screenshotUrl,
     "Interface",
     "https://example.com",
@@ -210,6 +215,7 @@ it("inserts or replaces the published snapshot for the project identity", async 
     "What",
     "How",
     "web",
+    "Tag one, Tag two",
     screenshotUrl,
     "Interface",
     "https://example.com",

@@ -25,6 +25,7 @@ const publishedProject: PublishedProject = {
   what: "What it does.",
   how: "How it works.",
   platform: "mobile",
+  tagsText: "Tag one, Tag two",
   screenshot: "/media/asset-1",
   screenshotAlt: "Field Notes screenshot",
   liveUrl: "https://example.com/field-notes",

@@ -40,6 +40,7 @@ export function PrismHeroLayoutLab({
     name: project.name,
     summary: project.summary,
     platform: project.platform,
+    tags: publicationTags(project.tagsText),
     what: project.what,
     how: project.how,
     liveHref: project.liveUrl,

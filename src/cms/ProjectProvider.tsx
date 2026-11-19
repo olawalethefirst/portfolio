@@ -2,7 +2,7 @@
 
 import { useDraftStore, type DraftStore } from "./working-drafts";
 import { createContext, useContext, type ReactNode } from "react";
-import { projectDraftSchema, type ProjectDraft } from "./projects";
+import { storedProjectDraftSchema, type ProjectDraft } from "./projects";
 
 interface ProjectContextValue {
   working: DraftStore<ProjectDraft>;
@@ -17,7 +17,7 @@ const Context = createContext<ProjectContextValue | null>(null);
 export function ProjectProvider({ children }: { children: ReactNode }) {
   const working = useDraftStore<ProjectDraft>({
     namespace: "projects",
-    schema: projectDraftSchema,
+    schema: storedProjectDraftSchema,
   });
   return <Context value={{ working }}>{children}</Context>;
 }

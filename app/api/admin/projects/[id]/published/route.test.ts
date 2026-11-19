@@ -12,7 +12,7 @@ import { DELETE, PUT } from "./route";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const content = {
-  name: "Studio", summary: "Summary", what: "What", how: "How", platform: "web",
+  name: "Studio", summary: "Summary", what: "What", how: "How", platform: "web", tagsText: "Tools",
   screenshot: "/media/22222222-2222-4222-8222-222222222222", screenshotAlt: "Interface",
   liveUrl: "https://example.com",
 };

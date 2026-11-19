@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProjectRecord } from "@/src/cms/projects";
+import { publicationTags } from "@/src/cms/publications";
 import { ProjectsSection } from "@/src/components/home-sections/ProjectsSection";
 import { CmsEmptyState } from "./CmsLayout";
 import { ProjectPreviewBoundary } from "./ProjectPreview";
@@ -13,6 +14,7 @@ export function ProjectCollectionPreview({ records }: { records: readonly Projec
     what: published.what,
     how: published.how,
     platform: published.platform,
+    tags: publicationTags(published.tagsText),
     liveHref: published.liveUrl,
     screenTextureSrc: published.screenshot || undefined,
   }] : []);
