@@ -47,9 +47,9 @@ Hero/About there is no required singleton to reject on absence.
 prop and maps each entry to `Omit<ProjectItemProps, "stackIndex">`: `liveUrl`
 becomes `liveHref`, `screenshot` becomes `screenTextureSrc` (empty string maps
 to `undefined`, since `ProjectDeviceStage` falls back to no screen texture), and
-`modelEntryRotation` is omitted — `EntryRotationGroup` already falls back to a
-zero rotation when it is absent, so no Project-specific entry animation is
-authored here. `ProjectsSection` still computes `stackIndex` itself. The
+`modelEntryRotation` is omitted — `ProjectItem` falls back to a per-platform
+default (`defaultModelEntryRotations`: mobile turns from 90° to front, web from
+face-on to -90°), so no Project-specific entry animation is authored here. `ProjectsSection` still computes `stackIndex` itself. The
 previous static `labProjects` fixture is no longer used on the homepage; it
 remains for CMS preview/test fixtures only.
 

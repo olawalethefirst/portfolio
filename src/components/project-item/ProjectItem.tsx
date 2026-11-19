@@ -9,6 +9,7 @@ import { Chip } from "../ui/Chip";
 import { SectionContainer } from "../ui/SectionContainer";
 import { cn } from "../ui/utils";
 import { ProjectExplanation } from "./ProjectExplanation";
+import { defaultModelEntryRotations } from "./device-framing";
 import {
   ProjectDeviceStage,
   type ModelEntryRotation,
@@ -91,7 +92,7 @@ export function ProjectItem({
           <ProjectDeviceStage
             className="h-full w-full"
             isVisible={isVisible}
-            modelEntryRotation={modelEntryRotation}
+            modelEntryRotation={modelEntryRotation ?? defaultModelEntryRotations[platform]}
             name={name}
             platform={platform}
             reduceMotion={reduceMotion}

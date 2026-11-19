@@ -107,4 +107,26 @@ describe("ProjectItem", () => {
       }),
     );
   });
+
+  it.each([
+    ["mobile", { initial: [0, Math.PI / 2, 0], visible: [0, 0, 0] }],
+    ["web", { initial: [0, 0, 0], visible: [0, -Math.PI / 2, 0] }],
+  ] as const)("rotates %s projects into view by default", (platform, modelEntryRotation) => {
+    render(
+      <ProjectItem
+        id="project"
+        liveHref="https://example.com/project"
+        name="Project"
+        platform={platform}
+        how="How it works."
+        what="What it is."
+        stackIndex={1}
+        summary="A summary."
+      />,
+    );
+
+    expect(renderProjectDeviceStage).toHaveBeenCalledWith(
+      expect.objectContaining({ modelEntryRotation }),
+    );
+  });
 });

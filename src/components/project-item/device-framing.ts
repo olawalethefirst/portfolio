@@ -1,3 +1,11 @@
+import type { ModelEntryRotation, ProjectPlatform } from "./ProjectDeviceStage";
+
+/** Used when a project does not author its own entry rotation. */
+export const defaultModelEntryRotations: Record<ProjectPlatform, ModelEntryRotation> = {
+  mobile: { initial: [0, Math.PI / 2, 0], visible: [0, 0, 0] },
+  web: { initial: [0, 0, 0], visible: [0, -Math.PI / 2, 0] },
+};
+
 interface RotationSafeFraming {
   radius: number;
   distance: number;
