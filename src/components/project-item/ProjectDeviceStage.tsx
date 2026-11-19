@@ -66,7 +66,7 @@ const deviceProfiles: Record<ProjectPlatform, DeviceProfile> = {
   },
   web: {
     assetPath: "/project_laptop.glb",
-    baseScale: 0.684,
+    baseScale: 0.8,
     missingScreenError: "The web project model does not contain a Screen mesh.",
     needsPlanarScreenUvs: false,
     screenMeshName: "Screen",
