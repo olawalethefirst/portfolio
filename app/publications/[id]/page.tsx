@@ -16,7 +16,7 @@ import { listPublicationComments } from "@/src/db/publication-comments";
 import { readPublication } from "@/src/db/publications";
 
 import { LabThemeShell } from "../../LabThemeShell";
-import { PublicationActionBar } from "./PublicationActionBar";
+import { HeaderActionBar } from "@/src/components/ui/header-action-bar";
 
 const loadPublished = cache(async (id: string) => {
   const record = await readPublication(id);
@@ -50,7 +50,7 @@ export default async function PublicationPage({
     <LabThemeShell>
       <main className="relative min-h-screen bg-surface">
         <SectionContainer className="pointer-events-none fixed inset-x-0 top-8 z-10">
-          <PublicationActionBar className="pointer-events-auto" />
+          <HeaderActionBar buttonClassName="pointer-events-auto" />
         </SectionContainer>
         <PublicationDetails
           publication={{

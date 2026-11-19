@@ -1,5 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const { back, push } = vi.hoisted(() => ({ back: vi.fn(), push: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ back, push }) }));
 
 import { SOCIAL_DEFAULT_DESTINATIONS } from "@/src/components/contact-conversation/social-profiles";
 import { ContactPreview } from "./ContactPreview";

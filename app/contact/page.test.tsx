@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 vi.mock("server-only", () => ({}));
 vi.mock("next/server", () => ({ connection: vi.fn(async () => {}) }));
 vi.mock("@/src/db/social", () => ({ readSocial: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ back: vi.fn(), push: vi.fn() }) }));
 vi.mock("../LabThemeShell", () => ({ LabThemeShell: ({ children }: { children: ReactNode }) => children }));
 
 import { readSocial } from "@/src/db/social";
